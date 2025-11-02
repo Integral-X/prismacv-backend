@@ -1,6 +1,6 @@
 export const AppConfig = () => ({
   app: {
-    name: process.env.APP_NAME || 'CrackCV Backend',
+    name: process.env.APP_NAME || 'PrismaCV Backend',
     version: process.env.APP_VERSION || '1.0.0',
     port: parseInt(process.env.PORT, 10) || 3000,
     apiPrefix: process.env.API_PREFIX || 'api/v1',
@@ -36,7 +36,7 @@ export const AppConfig = () => ({
       useSSL: process.env.MINIO_USE_SSL === 'true',
       accessKey: process.env.MINIO_ACCESS_KEY || 'minioadmin',
       secretKey: process.env.MINIO_SECRET_KEY || 'minioadmin',
-      bucketName: process.env.MINIO_BUCKET_NAME || 'crackcv-storage',
+      bucketName: process.env.MINIO_BUCKET_NAME || 'prismacv-storage',
     },
   },
   notifications: {

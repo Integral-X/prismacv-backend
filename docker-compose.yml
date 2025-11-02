@@ -4,7 +4,7 @@ services:
   # Backend API
   backend:
     build: .
-    container_name: crackcv-backend
+    container_name: prismacv-backend
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -13,43 +13,43 @@ services:
     depends_on:
       - postgres
     networks:
-      - crackcv-network
+      - prismacv-network
     environment:
-      - DATABASE_URL=postgres://crackcv:password@postgres:5432/crackcv_dev
+      - DATABASE_URL=postgres://prismacv:password@postgres:5432/prismacv_dev
 
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
-    container_name: crackcv-postgres
+    container_name: prismacv-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: crackcv_dev
-      POSTGRES_USER: crackcv
+      POSTGRES_DB: prismacv_dev
+      POSTGRES_USER: prismacv
       POSTGRES_PASSWORD: password
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - crackcv-network
+      - prismacv-network
 
   # Test PostgreSQL Database
   postgres_test:
     image: postgres:15-alpine
-    container_name: crackcv-postgres-test
+    container_name: prismacv-postgres-test
     restart: unless-stopped
     environment:
-      POSTGRES_DB: crackcv_test
-      POSTGRES_USER: crackcv
+      POSTGRES_DB: prismacv_test
+      POSTGRES_USER: prismacv
       POSTGRES_PASSWORD: password
     ports:
       - "5433:5432"
     networks:
-      - crackcv-network
+      - prismacv-network
 
 volumes:
   postgres_data:
 
 networks:
-  crackcv-network:
+  prismacv-network:
     driver: bridge

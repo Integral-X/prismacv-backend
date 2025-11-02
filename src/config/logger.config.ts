@@ -49,7 +49,7 @@ export const LoggerConfig = (): WinstonModuleOptions => {
     defaultMeta: {
       service:
         process.env.APP_NAME?.toLowerCase().replace(/\s+/g, '-') ||
-        'crackcv-backend',
+        'prismacv-backend',
     },
     transports,
   };

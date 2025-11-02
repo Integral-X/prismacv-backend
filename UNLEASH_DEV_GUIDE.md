@@ -78,7 +78,7 @@ Leave `UNLEASH_API_TOKEN` empty to use mock mode during development.
 
 ## Creating New Features
 
-1. Create flag in [Unleash Dashboard](https://unleash.crackcv.com)
+1. Create flag in [Unleash Dashboard](https://unleash.prismacv.com)
 2. Use in code: `unleashService.isEnabled('flag-name')`
 3. Deploy with flag OFF
 4. Enable in dashboard when ready

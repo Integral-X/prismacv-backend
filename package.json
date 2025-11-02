@@ -1,7 +1,7 @@
 {
-  "name": "crackcv-backend",
+  "name": "prismacv-backend",
   "version": "1.0.0",
-  "description": "CrackCV Backend API",
+  "description": "PrismaCV Backend API",
   "author": "mahiuddinalkamal",
   "private": true,
   "license": "MIT",
@@ -13,18 +13,18 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main.js",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "pretest": "export DATABASE_URL=postgresql://crackcv:password@localhost:5433/crackcv_test && npx prisma migrate deploy",
+    "pretest": "export DATABASE_URL=postgresql://prismacv:password@localhost:5433/prismacv_test && npx prisma migrate deploy",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "export DATABASE_URL=${DATABASE_URL:-postgresql://crackcv:password@localhost:5433/crackcv_test} && npx prisma migrate deploy && npx prisma db seed && jest --config ./test/e2e/jest-e2e.json",
+    "test:e2e": "export DATABASE_URL=${DATABASE_URL:-postgresql://prismacv:password@localhost:5433/prismacv_test} && npx prisma migrate deploy && npx prisma db seed && jest --config ./test/e2e/jest-e2e.json",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
-    "docker:build": "docker build -t crackcv-backend .",
-    "docker:run": "docker run -p 3000:3000 --network=host --env-file .env crackcv-backend"
+    "docker:build": "docker build -t prismacv-backend .",
+    "docker:run": "docker run -p 3000:3000 --network=host --env-file .env prismacv-backend"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
