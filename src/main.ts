@@ -71,11 +71,11 @@ async function bootstrap() {
   );
 
   // Swagger documentation
-  const appName = configService.get<string>('app.name', 'CrackCV Backend');
+  const appName = configService.get<string>('app.name', 'PrismaCV Backend');
   const appVersion = configService.get<string>('app.version', '1.0.0');
   const config = new DocumentBuilder()
     .setTitle(`${appName} API`)
-    .setDescription('CrackCV Backend API')
+    .setDescription('PrismaCV Backend API')
     .setVersion(appVersion)
     .addBearerAuth(
       {

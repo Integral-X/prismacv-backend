@@ -1,4 +1,4 @@
-# Crack CV Backend
+# PrismaCV Backend
 
 Your CV buddy.
 
@@ -19,8 +19,8 @@ Your CV buddy.
 
 ```bash
 # Clone the repository
-git clone https://github.com/integral-x/crackcv-backend.git
-cd crackcv-backend
+git clone https://github.com/integral-x/prismacv-backend.git
+cd prismacv-backend
 
 # Install dependencies
 npm install
@@ -37,7 +37,7 @@ cp .env.example .env
 
 ## Feature Flags
 
-This project uses [Unleash](https://unleash.crackcv.com) for feature flag management.
+This project uses [Unleash](https://unleash.prismacv.com) for feature flag management.
 
 See [developer guide](./UNLEASH_DEV_GUIDE.md) for documentation.
 
@@ -60,7 +60,7 @@ npm run test:cov
 
 ## API Documentation
 
-API documentation is available via Swagger-UI at: [https://api.crackcv.com/api/v1/docs](https://api.crackcv.com/api/v1/docs)
+API documentation is available via Swagger-UI at: [https://api.prismacv.com/api/v1/docs](https://api.prismacv.com/api/v1/docs)
 
 ## Contributing
 
@@ -68,4 +68,4 @@ Contributions are welcome! Please open an issue or submit a pull request.
 
 ## License
 
-Copyright (c) 2025 CrackCV.
+Copyright (c) 2025 PrismaCV.

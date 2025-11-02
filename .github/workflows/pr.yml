@@ -13,7 +13,7 @@ jobs:
         image: postgres:15
         env:
           POSTGRES_PASSWORD: password
-          POSTGRES_DB: crackcv_test
+          POSTGRES_DB: prismacv_test
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -41,12 +41,12 @@ jobs:
       - name: Run database migrations
         run: npx prisma migrate deploy
         env:
-          DATABASE_URL: postgresql://postgres:password@localhost:5432/crackcv_test
+          DATABASE_URL: postgresql://postgres:password@localhost:5432/prismacv_test
 
       - name: Seed database
         run: npx prisma db seed
         env:
-          DATABASE_URL: postgresql://postgres:password@localhost:5432/crackcv_test
+          DATABASE_URL: postgresql://postgres:password@localhost:5432/prismacv_test
 
       - name: Run linting
         run: npm run lint
@@ -60,13 +60,13 @@ jobs:
       - name: Run tests
         run: npm run test:cov
         env:
-          DATABASE_URL: postgresql://postgres:password@localhost:5432/crackcv_test
+          DATABASE_URL: postgresql://postgres:password@localhost:5432/prismacv_test
           UNLEASH_API_TOKEN: ${{ secrets.UNLEASH_API_TOKEN }}
 
       - name: Run E2E tests
         run: npm run test:e2e
         env:
-          DATABASE_URL: postgresql://postgres:password@localhost:5432/crackcv_test
+          DATABASE_URL: postgresql://postgres:password@localhost:5432/prismacv_test
           UNLEASH_API_TOKEN: ${{ secrets.UNLEASH_API_TOKEN }}
 
       - name: Upload coverage to Codecov
@@ -101,7 +101,7 @@ jobs:
         id: repo
         uses: ASzc/change-string-case-action@v6
         with:
-          string: "crackcv-backend"
+          string: "prismacv-backend"
 
       - name: Build Docker image
         run: docker build -t ${{ steps.repo.outputs.lowercase }}:${{ github.sha }} .

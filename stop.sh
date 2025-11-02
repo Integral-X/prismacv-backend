@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "Stopping CrackCV Backend service..."
+echo "Stopping PrismaCV Backend service..."
 
 # Stop the development server if running
 echo "Stopping development server..."
