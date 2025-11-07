@@ -5,5 +5,8 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
-    reviewers:
-      - "mahiuddinalkamal"
+    commit-message:
+      prefix: "chore(deps):"
+      prefix-development: "chore(deps-dev):"
+    assignees:
+      - "dependabot[bot]"
