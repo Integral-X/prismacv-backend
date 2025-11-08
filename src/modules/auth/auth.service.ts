@@ -205,7 +205,7 @@ export class AuthService {
       return await this.jwtService.verifyAsync(token, {
         secret: process.env.JWT_REFRESH_SECRET,
       });
-    } catch (error) {
+    } catch {
       this.logger.warn('Token verification failed: invalid or expired token');
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
