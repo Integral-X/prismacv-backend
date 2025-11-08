@@ -5,6 +5,8 @@ import { ConfigService } from '@nestjs/config';
 import { WinstonModule } from 'nest-winston';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
+import { AdminAuthController } from './admin-auth.controller';
+import { UserAuthController } from './user-auth.controller';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { UsersService } from './users.service';
@@ -38,7 +40,7 @@ import { AuthMapper } from './mappers/auth.mapper';
     Logger,
     AuthMapper,
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, AdminAuthController, UserAuthController],
   exports: [AuthService],
 })
 export class AuthModule {}

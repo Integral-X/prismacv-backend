@@ -1,6 +1,14 @@
 import { BaseEntity } from '../../../shared/entities/base.entity';
 
 /**
+ * User role enumeration
+ */
+export enum UserRole {
+  REGULAR = 'REGULAR',
+  PLATFORM_ADMIN = 'PLATFORM_ADMIN',
+}
+
+/**
  * User entity representing a user in the system
  * Contains only business properties without validation or API decorators
  */
@@ -8,6 +16,7 @@ export class User extends BaseEntity {
   email: string;
   password: string;
   name?: string;
+  role: UserRole;
   refreshToken?: string;
 
   constructor() {

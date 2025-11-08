@@ -17,7 +17,7 @@ describe('Auth Refresh (e2e)', () => {
 
     // Login to get a refresh token
     const loginResponse = await request(app.getHttpServer())
-      .post('/auth/login')
+      .post('/auth/admin/login')
       .send({ email: 'admin@example.com', password: 'admin' });
 
     refreshToken = loginResponse.body.refreshToken;

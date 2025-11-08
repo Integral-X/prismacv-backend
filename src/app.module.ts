@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { WinstonModule } from 'nest-winston';
+import { APP_GUARD } from '@nestjs/core';
 
 // Configuration
 import { DatabaseModule } from './config/database.module';
@@ -13,6 +14,9 @@ import unleashConfig from './modules/unleash/unleash.config';
 import { AuthModule } from './modules/auth/auth.module';
 import { UnleashModule } from './modules/unleash/unleash.module';
 import { HealthModule } from './modules/health/health.module';
+
+// Guards
+import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 
 @Module({
   imports: [
@@ -43,6 +47,12 @@ import { HealthModule } from './modules/health/health.module';
     AuthModule,
     UnleashModule,
     HealthModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
   ],
 })
 export class AppModule {}

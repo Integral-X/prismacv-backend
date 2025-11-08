@@ -1,8 +1,15 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { UnleashService, FeatureFlag } from './unleash.service';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiQuery,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 
 @ApiTags('Feature Flags')
+@ApiBearerAuth()
 @Controller('features')
 export class UnleashController {
   constructor(private readonly unleashService: UnleashService) {}

@@ -17,6 +17,7 @@ export class UsersService {
     user.email = prismaUser.email;
     user.password = prismaUser.password;
     user.name = prismaUser.name;
+    user.role = prismaUser.role as any; // Map Prisma UserRole to entity UserRole
     user.refreshToken = prismaUser.refreshToken;
     user.createdAt = prismaUser.createdAt;
     user.updatedAt = prismaUser.updatedAt;
@@ -40,6 +41,7 @@ export class UsersService {
         email: userEntity.email,
         password: userEntity.password,
         name: userEntity.name,
+        role: userEntity.role as any,
         refreshToken: userEntity.refreshToken,
       },
     });
@@ -60,6 +62,7 @@ export class UsersService {
           email: userEntity.email,
           password: userEntity.password,
           name: userEntity.name,
+          role: userEntity.role as any, // Persist role to database
         },
       });
 

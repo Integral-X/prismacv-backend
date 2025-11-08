@@ -71,11 +71,13 @@ async function bootstrap() {
   );
 
   // Swagger documentation
-  const appName = configService.get<string>('app.name', 'PrismaCV Backend');
+  const appName = configService.get<string>('app.name', 'PrismaCV');
   const appVersion = configService.get<string>('app.version', '1.0.0');
   const config = new DocumentBuilder()
-    .setTitle(`${appName} API`)
-    .setDescription('PrismaCV Backend API')
+    .setTitle(`${appName} API Documentation`)
+    .setDescription(
+      'RESTful API for PrismaCV - An AI powered CV management platform. ',
+    )
     .setVersion(appVersion)
     .addBearerAuth(
       {
@@ -88,7 +90,9 @@ async function bootstrap() {
       },
       'JWT-auth',
     )
-    .addTag('Authentication', 'User authentication and authorization')
+    .addTag('Admin Authentication', 'Platform admin authentication endpoints')
+    .addTag('User Authentication', 'Regular user authentication endpoints')
+    .addTag('Feature Flags', 'Feature flag management endpoints')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
