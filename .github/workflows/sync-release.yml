@@ -15,6 +15,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update release branch
         run: |
@@ -22,13 +23,18 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
           # Fetch all branches
-          git fetch origin release:release 2>/dev/null || git checkout -b release origin/main
+          git fetch origin
           
-          # Switch to release branch
-          git checkout release
-          
-          # Merge main into release
-          git merge origin/main --no-edit -m "chore: sync release branch [skip ci]"
+          # Check if release branch exists
+          if git show-ref --verify --quiet refs/remotes/origin/release; then
+            git checkout release
+            if ! git merge origin/main --no-edit -m "chore: sync main to release [skip ci]"; then
+              echo "::error::Merge conflict detected. Manual resolution required."
+              exit 1
+            fi
+          else
+            git checkout -b release origin/main
+          fi
           
           # Push to release branch
           git push origin release
