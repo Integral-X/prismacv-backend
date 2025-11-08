@@ -10,7 +10,6 @@ import { UserSignupRequestDto } from '../../../src/modules/auth/dto/request/user
 import { RefreshTokenRequestDto } from '../../../src/modules/auth/dto/request/refresh-token.request.dto';
 import { AdminAuthResponseDto } from '../../../src/modules/auth/dto/response/admin-auth.response.dto';
 import { UserAuthResponseDto } from '../../../src/modules/auth/dto/response/user-auth.response.dto';
-import { AuthResponseDto } from '../../../src/modules/auth/dto/response/auth.response.dto';
 import { UserProfileResponseDto } from '../../../src/modules/auth/dto/response/user-profile.response.dto';
 import { User, UserRole } from '../../../src/modules/auth/entities/user.entity';
 import { AuthCredentials } from '../../../src/modules/auth/entities/auth-credentials.entity';
@@ -76,12 +75,6 @@ describe('AuthController', () => {
     user: mockUserProfile,
   };
 
-  const mockAuthResponse: AuthResponseDto = {
-    user: mockAdminProfile,
-    accessToken: 'access-token',
-    refreshToken: 'refresh-token',
-  };
-
   beforeEach(async () => {
     const mockAuthService = {
       refreshToken: jest.fn(),
@@ -94,7 +87,6 @@ describe('AuthController', () => {
     const mockAuthMapper = {
       signupRequestToEntity: jest.fn(),
       loginRequestToCredentials: jest.fn(),
-      userToAuthResponse: jest.fn(),
       userToAdminAuthResponse: jest.fn(),
       userToUserAuthResponse: jest.fn(),
     };
@@ -326,18 +318,18 @@ describe('AuthController', () => {
         user: mockAdminUser,
         tokens: mockTokenPair,
       });
-      authMapper.userToAuthResponse.mockReturnValue(mockAuthResponse);
+      authMapper.userToAdminAuthResponse.mockReturnValue(mockAdminAuthResponse);
 
       const result = await controller.refresh(refreshDto);
 
       expect(authService.refreshToken).toHaveBeenCalledWith(
         refreshDto.refreshToken,
       );
-      expect(authMapper.userToAuthResponse).toHaveBeenCalledWith(
+      expect(authMapper.userToAdminAuthResponse).toHaveBeenCalledWith(
         mockAdminUser,
         mockTokenPair,
       );
-      expect(result).toEqual(mockAuthResponse);
+      expect(result).toEqual(mockAdminAuthResponse);
     });
 
     it('should handle service error during token refresh', async () => {
@@ -355,7 +347,7 @@ describe('AuthController', () => {
       expect(authService.refreshToken).toHaveBeenCalledWith(
         refreshDto.refreshToken,
       );
-      expect(authMapper.userToAuthResponse).not.toHaveBeenCalled();
+      expect(authMapper.userToAdminAuthResponse).not.toHaveBeenCalled();
     });
 
     it('should handle mapper error during refresh response', async () => {
@@ -367,7 +359,7 @@ describe('AuthController', () => {
         user: mockAdminUser,
         tokens: mockTokenPair,
       });
-      authMapper.userToAuthResponse.mockImplementation(() => {
+      authMapper.userToAdminAuthResponse.mockImplementation(() => {
         throw new BadRequestException('User data is required');
       });
 
@@ -377,7 +369,7 @@ describe('AuthController', () => {
       expect(authService.refreshToken).toHaveBeenCalledWith(
         refreshDto.refreshToken,
       );
-      expect(authMapper.userToAuthResponse).toHaveBeenCalledWith(
+      expect(authMapper.userToAdminAuthResponse).toHaveBeenCalledWith(
         mockAdminUser,
         mockTokenPair,
       );

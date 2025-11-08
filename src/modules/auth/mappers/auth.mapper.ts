@@ -1,11 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { SignupRequestDto } from '../dto/request/signup.request.dto';
 import { LoginRequestDto } from '../dto/request/login.request.dto';
-import { AdminLoginRequestDto } from '../dto/request/admin-login.request.dto';
-import { AdminSignupRequestDto } from '../dto/request/admin-signup.request.dto';
-import { UserLoginRequestDto } from '../dto/request/user-login.request.dto';
-import { UserSignupRequestDto } from '../dto/request/user-signup.request.dto';
-import { AuthResponseDto } from '../dto/response/auth.response.dto';
 import { AdminAuthResponseDto } from '../dto/response/admin-auth.response.dto';
 import { UserAuthResponseDto } from '../dto/response/user-auth.response.dto';
 import { UserProfileResponseDto } from '../dto/response/user-profile.response.dto';
@@ -86,30 +81,6 @@ export class AuthMapper {
     profile.updatedAt = user.updatedAt;
 
     return profile;
-  }
-
-  /**
-   * Converts User entity and optional tokens to AuthResponseDto
-   * @param user - The user entity from business logic
-   * @param tokens - Optional token pair containing access and refresh tokens (only for PLATFORM_ADMIN users)
-   * @returns AuthResponseDto for client response
-   * @throws BadRequestException if user is null/undefined
-   */
-  userToAuthResponse(user: User, tokens?: TokenPair): AuthResponseDto {
-    if (!user) {
-      throw new BadRequestException('User data is required');
-    }
-
-    const response = new AuthResponseDto();
-    response.user = this.userToProfileResponse(user);
-
-    // Conditionally include tokens based on whether they are provided
-    if (tokens) {
-      response.accessToken = tokens.accessToken;
-      response.refreshToken = tokens.refreshToken;
-    }
-
-    return response;
   }
 
   /**

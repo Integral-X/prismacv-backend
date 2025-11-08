@@ -22,7 +22,6 @@ import { UserSignupRequestDto } from './dto/request/user-signup.request.dto';
 import { RefreshTokenRequestDto } from './dto/request/refresh-token.request.dto';
 import { AdminAuthResponseDto } from './dto/response/admin-auth.response.dto';
 import { UserAuthResponseDto } from './dto/response/user-auth.response.dto';
-import { AuthResponseDto } from './dto/response/auth.response.dto';
 import { AuthMapper } from './mappers/auth.mapper';
 import { Public } from '../../common/decorators/public.decorator';
 
@@ -188,8 +187,8 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description:
-      'Token refreshed successfully. Response includes user profile and new JWT tokens.',
-    type: AuthResponseDto,
+      'Token refreshed successfully. Response includes admin profile and new JWT tokens.',
+    type: AdminAuthResponseDto,
   })
   @ApiResponse({
     status: 401,
@@ -201,7 +200,7 @@ export class AuthController {
   })
   async refresh(
     @Body() refreshTokenRequestDto: RefreshTokenRequestDto,
-  ): Promise<AuthResponseDto> {
+  ): Promise<AdminAuthResponseDto> {
     // Validate refresh token is provided
     if (!refreshTokenRequestDto?.refreshToken) {
       throw new BadRequestException('Refresh token is required');
@@ -212,7 +211,10 @@ export class AuthController {
       const result = await this.authService.refreshToken(
         refreshTokenRequestDto.refreshToken,
       );
-      return this.authMapper.userToAuthResponse(result.user, result.tokens);
+      return this.authMapper.userToAdminAuthResponse(
+        result.user,
+        result.tokens!,
+      );
     } catch (error) {
       if (error instanceof UnauthorizedException) {
         throw new UnauthorizedException('Invalid or expired refresh token');
