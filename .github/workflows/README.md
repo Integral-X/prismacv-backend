@@ -17,16 +17,16 @@ This project uses three separate workflows for continuous integration and deploy
 - Database migrations and seeding
 
 ### 2. Sync Release Branch (`sync-release.yml`)
-**Trigger**: Push to `main` branch
+**Trigger**: Push to `main` branch (except commits with `[skip ci]`)
 
 **Purpose**: Automatically sync changes from `main` to `release` branch
 
 **Jobs**:
 - Checkout code with full history
 - Merge `main` into `release` branch
-- Push updated `release` branch
+- Push updated `release` branch (triggers release workflow)
 
-**Note**: Uses `[skip ci]` in commit message to prevent triggering the release workflow
+**Note**: Skips execution if commit message contains `[skip ci]` to prevent infinite loops when semantic-release commits back
 
 ### 3. Release (`release.yml`)
 **Trigger**: Push to `release` branch
