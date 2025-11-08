@@ -7,7 +7,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { UsersService } from './users.service';
-import { User } from './entities/user.entity';
+import { User, UserRole } from './entities/user.entity';
 import { AuthCredentials } from './entities/auth-credentials.entity';
 import { TokenPair } from './entities/token-pair.entity';
 
@@ -22,23 +22,49 @@ export class AuthService {
   async validateUser(credentials: AuthCredentials): Promise<User | null> {
     const user = await this.usersService.findByEmail(credentials.email);
     if (user && (await bcrypt.compare(credentials.password, user.password))) {
+      this.logger.log(
+        `User validation successful: email=${user.email}, role=${user.role}, userId=${user.id}`,
+      );
       return user;
     }
+    this.logger.warn(`User validation failed: email=${credentials.email}`);
     return null;
   }
 
-  async login(user: User): Promise<{ user: User; tokens: TokenPair }> {
-    const tokenData = await this.getTokens(user.id, user.email);
-    await this.updateRefreshToken(user.id, tokenData.refreshToken);
+  async login(
+    user: User,
+  ): Promise<{ user: User; tokens?: TokenPair | undefined }> {
+    // Log authentication attempt with role information
+    this.logger.log(
+      `User login: email=${user.email}, role=${user.role}, userId=${user.id}`,
+    );
 
-    const tokens = new TokenPair();
-    tokens.accessToken = tokenData.accessToken;
-    tokens.refreshToken = tokenData.refreshToken;
+    // Generate tokens only for PLATFORM_ADMIN users
+    if (user.role === UserRole.PLATFORM_ADMIN) {
+      const tokenData = await this.getTokens(user.id, user.email, user.role);
+      await this.updateRefreshToken(user.id, tokenData.refreshToken);
 
-    return { user, tokens };
+      const tokens = new TokenPair();
+      tokens.accessToken = tokenData.accessToken;
+      tokens.refreshToken = tokenData.refreshToken;
+
+      this.logger.log(
+        `JWT tokens generated for PLATFORM_ADMIN: email=${user.email}, userId=${user.id}`,
+      );
+
+      return { user, tokens };
+    }
+
+    // Regular users don't get tokens
+    this.logger.log(
+      `Profile returned for REGULAR user: email=${user.email}, userId=${user.id}`,
+    );
+    return { user, tokens: undefined };
   }
 
-  async signup(user: User): Promise<{ user: User; tokens: TokenPair }> {
+  async signup(
+    user: User,
+  ): Promise<{ user: User; tokens?: TokenPair | undefined }> {
     try {
       // Hash the password using existing bcrypt patterns (salt rounds 10)
       const hashedPassword = await bcrypt.hash(user.password, 10);
@@ -48,21 +74,41 @@ export class AuthService {
       userToCreate.email = user.email;
       userToCreate.password = hashedPassword;
       userToCreate.name = user.name;
+      // Set default role to REGULAR for new users
+      userToCreate.role = user.role || UserRole.REGULAR;
 
       // Create the user using entity
       const createdUser = await this.usersService.create(userToCreate);
 
-      this.logger.log(`New user registered with email: ${createdUser.email}`);
+      this.logger.log(
+        `User signup successful: email=${createdUser.email}, role=${createdUser.role}, userId=${createdUser.id}`,
+      );
 
-      // Generate JWT tokens using existing getTokens method
-      const tokenData = await this.getTokens(createdUser.id, createdUser.email);
-      await this.updateRefreshToken(createdUser.id, tokenData.refreshToken);
+      // Generate tokens only for PLATFORM_ADMIN users
+      if (createdUser.role === UserRole.PLATFORM_ADMIN) {
+        const tokenData = await this.getTokens(
+          createdUser.id,
+          createdUser.email,
+          createdUser.role,
+        );
+        await this.updateRefreshToken(createdUser.id, tokenData.refreshToken);
 
-      const tokens = new TokenPair();
-      tokens.accessToken = tokenData.accessToken;
-      tokens.refreshToken = tokenData.refreshToken;
+        const tokens = new TokenPair();
+        tokens.accessToken = tokenData.accessToken;
+        tokens.refreshToken = tokenData.refreshToken;
 
-      return { user: createdUser, tokens };
+        this.logger.log(
+          `JWT tokens generated for new PLATFORM_ADMIN: email=${createdUser.email}, userId=${createdUser.id}`,
+        );
+
+        return { user: createdUser, tokens };
+      }
+
+      // Regular users don't get tokens
+      this.logger.log(
+        `Profile returned for new REGULAR user: email=${createdUser.email}, userId=${createdUser.id}`,
+      );
+      return { user: createdUser, tokens: undefined };
     } catch (error) {
       // Handle duplicate email errors with appropriate responses
       if (error instanceof ConflictException) {
@@ -77,11 +123,14 @@ export class AuthService {
 
   async refreshToken(
     refreshToken: string,
-  ): Promise<{ user: User; tokens: TokenPair }> {
+  ): Promise<{ user: User; tokens?: TokenPair | undefined }> {
     const decoded = await this.decodeRefreshToken(refreshToken);
     const user = await this.usersService.findById(decoded.sub);
     if (!user || !user.refreshToken) {
-      throw new UnauthorizedException();
+      this.logger.warn(
+        `Token refresh failed: user not found or no refresh token, userId=${decoded.sub}`,
+      );
+      throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
     const refreshTokenMatches = await bcrypt.compare(
@@ -90,25 +139,35 @@ export class AuthService {
     );
 
     if (!refreshTokenMatches) {
-      throw new UnauthorizedException();
+      this.logger.warn(
+        `Token refresh failed: invalid refresh token, email=${user.email}, userId=${user.id}, role=${user.role}`,
+      );
+      throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
-    const tokenData = await this.getTokens(user.id, user.email);
+    // Maintain role-based token generation logic
+    // Tokens contain role information from getTokens method
+    const tokenData = await this.getTokens(user.id, user.email, user.role);
     await this.updateRefreshToken(user.id, tokenData.refreshToken);
 
     const tokens = new TokenPair();
     tokens.accessToken = tokenData.accessToken;
     tokens.refreshToken = tokenData.refreshToken;
 
+    this.logger.log(
+      `Token refreshed successfully: email=${user.email}, userId=${user.id}, role=${user.role}`,
+    );
+
     return { user, tokens };
   }
 
-  async getTokens(userId: string, email: string) {
+  async getTokens(userId: string, email: string, role: string) {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
         {
           sub: userId,
           email,
+          role,
         },
         {
           secret: process.env.JWT_SECRET,
@@ -119,6 +178,7 @@ export class AuthService {
         {
           sub: userId,
           email,
+          role,
         },
         {
           secret: process.env.JWT_REFRESH_SECRET,
@@ -146,8 +206,8 @@ export class AuthService {
         secret: process.env.JWT_REFRESH_SECRET,
       });
     } catch (error) {
-      this.logger.error('Error decoding refresh token:', error);
-      throw new UnauthorizedException();
+      this.logger.warn('Token verification failed: invalid or expired token');
+      throw new UnauthorizedException('Invalid or expired refresh token');
     }
   }
 }

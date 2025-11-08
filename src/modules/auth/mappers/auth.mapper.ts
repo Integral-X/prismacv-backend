@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { SignupRequestDto } from '../dto/request/signup.request.dto';
 import { LoginRequestDto } from '../dto/request/login.request.dto';
 import { AuthResponseDto } from '../dto/response/auth.response.dto';
+import { UserProfileResponseDto } from '../dto/response/user-profile.response.dto';
 import { User } from '../entities/user.entity';
 import { AuthCredentials } from '../entities/auth-credentials.entity';
 import { TokenPair } from '../entities/token-pair.entity';
@@ -60,23 +61,47 @@ export class AuthMapper {
   }
 
   /**
-   * Converts User entity and tokens to AuthResponseDto
+   * Converts User entity to UserProfileResponseDto
    * @param user - The user entity from business logic
-   * @param tokens - The token pair containing access and refresh tokens
-   * @returns AuthResponseDto for client response
-   * @throws BadRequestException if user or tokens are null/undefined
+   * @returns UserProfileResponseDto for client response
+   * @throws BadRequestException if user is null/undefined
    */
-  userToAuthResponse(user: User, tokens: TokenPair): AuthResponseDto {
+  userToProfileResponse(user: User): UserProfileResponseDto {
     if (!user) {
       throw new BadRequestException('User data is required');
     }
-    if (!tokens) {
-      throw new BadRequestException('Token data is required');
+
+    const profile = new UserProfileResponseDto();
+    profile.id = user.id;
+    profile.email = user.email;
+    profile.name = user.name;
+    profile.role = user.role;
+    profile.createdAt = user.createdAt;
+    profile.updatedAt = user.updatedAt;
+
+    return profile;
+  }
+
+  /**
+   * Converts User entity and optional tokens to AuthResponseDto
+   * @param user - The user entity from business logic
+   * @param tokens - Optional token pair containing access and refresh tokens (only for PLATFORM_ADMIN users)
+   * @returns AuthResponseDto for client response
+   * @throws BadRequestException if user is null/undefined
+   */
+  userToAuthResponse(user: User, tokens?: TokenPair): AuthResponseDto {
+    if (!user) {
+      throw new BadRequestException('User data is required');
     }
 
     const response = new AuthResponseDto();
-    response.accessToken = tokens.accessToken;
-    response.refreshToken = tokens.refreshToken;
+    response.user = this.userToProfileResponse(user);
+
+    // Conditionally include tokens based on whether they are provided
+    if (tokens) {
+      response.accessToken = tokens.accessToken;
+      response.refreshToken = tokens.refreshToken;
+    }
 
     return response;
   }
