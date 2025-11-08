@@ -7,6 +7,7 @@ on:
 jobs:
   sync-release:
     runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
     permissions:
       contents: write
 
@@ -28,12 +29,9 @@ jobs:
           # Check if release branch exists
           if git show-ref --verify --quiet refs/remotes/origin/release; then
             git checkout release
-            if ! git merge origin/main --no-edit -m "chore: sync main to release [skip ci]"; then
-              echo "::error::Merge conflict detected. Manual resolution required."
-              exit 1
-            fi
+            git merge origin/main --no-edit
           else
-            git checkout -b release origin/main
+            git checkout -b release
           fi
           
           # Push to release branch
