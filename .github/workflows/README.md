@@ -19,17 +19,23 @@ This project uses three separate workflows for continuous integration and deploy
 ### 2. Sync Release Branch (`sync-release.yml`)
 **Trigger**: Push to `main` branch (except commits with `[skip ci]`)
 
-**Purpose**: Automatically sync changes from `main` to `release` branch
+**Purpose**: Automatically sync changes from `main` to `release` branch and trigger release
 
 **Jobs**:
 - Checkout code with full history
 - Merge `main` into `release` branch
-- Push updated `release` branch (triggers release workflow)
+- Push updated `release` branch
+- Manually trigger the release workflow via GitHub API
 
-**Note**: Skips execution if commit message contains `[skip ci]` to prevent infinite loops when semantic-release commits back
+**Note**: 
+- Skips execution if commit message contains `[skip ci]` to prevent infinite loops
+- Explicitly triggers release workflow to ensure it runs (GitHub Actions doesn't always auto-trigger on branch pushes from workflows)
 
 ### 3. Release (`release.yml`)
-**Trigger**: Push to `release` branch
+**Trigger**: 
+- Push to `release` branch
+- Manual workflow dispatch
+- Triggered by sync-release workflow
 
 **Purpose**: Create semantic releases and publish Docker images
 
