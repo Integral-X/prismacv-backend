@@ -31,88 +31,150 @@ export class AuthService {
     return null;
   }
 
-  async login(
-    user: User,
-  ): Promise<{ user: User; tokens?: TokenPair | undefined }> {
-    // Log authentication attempt with role information
+  /**
+   * Admin login - validates credentials and ensures PLATFORM_ADMIN role
+   * Returns user and JWT tokens
+   */
+  async adminLogin(
+    credentials: AuthCredentials,
+  ): Promise<{ user: User; tokens: TokenPair }> {
+    const user = await this.validateUser(credentials);
+    if (!user) {
+      this.logger.warn(
+        `Admin login failed: invalid credentials, email=${credentials.email}`,
+      );
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Ensure user has PLATFORM_ADMIN role
+    if (user.role !== UserRole.PLATFORM_ADMIN) {
+      this.logger.warn(
+        `Admin login failed: user is not PLATFORM_ADMIN, email=${user.email}, role=${user.role}`,
+      );
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Generate tokens for admin
+    const tokenData = await this.getTokens(user.id, user.email, user.role);
+    await this.updateRefreshToken(user.id, tokenData.refreshToken);
+
+    const tokens = new TokenPair();
+    tokens.accessToken = tokenData.accessToken;
+    tokens.refreshToken = tokenData.refreshToken;
+
     this.logger.log(
-      `User login: email=${user.email}, role=${user.role}, userId=${user.id}`,
+      `Admin login successful: email=${user.email}, userId=${user.id}`,
     );
 
-    // Generate tokens only for PLATFORM_ADMIN users
-    if (user.role === UserRole.PLATFORM_ADMIN) {
-      const tokenData = await this.getTokens(user.id, user.email, user.role);
-      await this.updateRefreshToken(user.id, tokenData.refreshToken);
+    return { user, tokens };
+  }
+
+  /**
+   * Admin signup - creates user with PLATFORM_ADMIN role
+   * Returns user and JWT tokens
+   */
+  async adminSignup(user: User): Promise<{ user: User; tokens: TokenPair }> {
+    try {
+      // Hash the password
+      const hashedPassword = await bcrypt.hash(user.password, 10);
+
+      // Create user entity with PLATFORM_ADMIN role
+      const userToCreate = new User();
+      userToCreate.email = user.email;
+      userToCreate.password = hashedPassword;
+      userToCreate.name = user.name;
+      userToCreate.role = UserRole.PLATFORM_ADMIN;
+
+      // Create the user
+      const createdUser = await this.usersService.create(userToCreate);
+
+      this.logger.log(
+        `Admin signup successful: email=${createdUser.email}, userId=${createdUser.id}`,
+      );
+
+      // Generate tokens for admin
+      const tokenData = await this.getTokens(
+        createdUser.id,
+        createdUser.email,
+        createdUser.role,
+      );
+      await this.updateRefreshToken(createdUser.id, tokenData.refreshToken);
 
       const tokens = new TokenPair();
       tokens.accessToken = tokenData.accessToken;
       tokens.refreshToken = tokenData.refreshToken;
 
-      this.logger.log(
-        `JWT tokens generated for PLATFORM_ADMIN: email=${user.email}, userId=${user.id}`,
-      );
+      return { user: createdUser, tokens };
+    } catch (error) {
+      if (error instanceof ConflictException) {
+        this.logger.warn(
+          `Admin signup attempt with existing email: ${user.email}`,
+        );
+        throw error;
+      }
 
-      return { user, tokens };
+      this.logger.error('Error during admin signup:', error);
+      throw error;
     }
-
-    // Regular users don't get tokens
-    this.logger.log(
-      `Profile returned for REGULAR user: email=${user.email}, userId=${user.id}`,
-    );
-    return { user, tokens: undefined };
   }
 
-  async signup(
-    user: User,
-  ): Promise<{ user: User; tokens?: TokenPair | undefined }> {
+  /**
+   * User login - validates credentials and ensures REGULAR role
+   * Returns user profile only (no tokens)
+   */
+  async userLogin(credentials: AuthCredentials): Promise<{ user: User }> {
+    const user = await this.validateUser(credentials);
+    if (!user) {
+      this.logger.warn(
+        `User login failed: invalid credentials, email=${credentials.email}`,
+      );
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Ensure user has REGULAR role
+    if (user.role !== UserRole.REGULAR) {
+      this.logger.warn(
+        `User login failed: user is not REGULAR, email=${user.email}, role=${user.role}`,
+      );
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    this.logger.log(
+      `User login successful: email=${user.email}, userId=${user.id}`,
+    );
+
+    return { user };
+  }
+
+  /**
+   * User signup - creates user with REGULAR role
+   * Returns user profile only (no tokens)
+   */
+  async userSignup(user: User): Promise<{ user: User }> {
     try {
-      // Hash the password using existing bcrypt patterns (salt rounds 10)
+      // Hash the password
       const hashedPassword = await bcrypt.hash(user.password, 10);
 
-      // Create user entity with hashed password
+      // Create user entity with REGULAR role
       const userToCreate = new User();
       userToCreate.email = user.email;
       userToCreate.password = hashedPassword;
       userToCreate.name = user.name;
-      // Set default role to REGULAR for new users
-      userToCreate.role = user.role || UserRole.REGULAR;
+      userToCreate.role = UserRole.REGULAR;
 
-      // Create the user using entity
+      // Create the user
       const createdUser = await this.usersService.create(userToCreate);
 
       this.logger.log(
-        `User signup successful: email=${createdUser.email}, role=${createdUser.role}, userId=${createdUser.id}`,
+        `User signup successful: email=${createdUser.email}, userId=${createdUser.id}`,
       );
 
-      // Generate tokens only for PLATFORM_ADMIN users
-      if (createdUser.role === UserRole.PLATFORM_ADMIN) {
-        const tokenData = await this.getTokens(
-          createdUser.id,
-          createdUser.email,
-          createdUser.role,
-        );
-        await this.updateRefreshToken(createdUser.id, tokenData.refreshToken);
-
-        const tokens = new TokenPair();
-        tokens.accessToken = tokenData.accessToken;
-        tokens.refreshToken = tokenData.refreshToken;
-
-        this.logger.log(
-          `JWT tokens generated for new PLATFORM_ADMIN: email=${createdUser.email}, userId=${createdUser.id}`,
-        );
-
-        return { user: createdUser, tokens };
-      }
-
-      // Regular users don't get tokens
-      this.logger.log(
-        `Profile returned for new REGULAR user: email=${createdUser.email}, userId=${createdUser.id}`,
-      );
-      return { user: createdUser, tokens: undefined };
+      return { user: createdUser };
     } catch (error) {
-      // Handle duplicate email errors with appropriate responses
       if (error instanceof ConflictException) {
-        this.logger.warn(`Signup attempt with existing email: ${user.email}`);
+        this.logger.warn(
+          `User signup attempt with existing email: ${user.email}`,
+        );
         throw error;
       }
 

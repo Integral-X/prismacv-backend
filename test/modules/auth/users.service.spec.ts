@@ -3,7 +3,7 @@ import { UsersService } from '../../../src/modules/auth/users.service';
 import { PrismaService } from '../../../src/config/prisma.service';
 import { ConflictException } from '@nestjs/common';
 import { mockDeep, DeepMockProxy } from 'jest-mock-extended';
-import { Prisma } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 import { User } from '../../../src/modules/auth/entities/user.entity';
 
 describe('UsersService', () => {
@@ -42,6 +42,7 @@ describe('UsersService', () => {
         email: userEntity.email,
         password: userEntity.password,
         name: userEntity.name,
+        role: UserRole.REGULAR,
         refreshToken: null,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -84,6 +85,7 @@ describe('UsersService', () => {
         email: userEntity.email,
         password: 'existingpassword',
         name: 'Existing User',
+        role: UserRole.REGULAR,
         refreshToken: null,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -128,6 +130,7 @@ describe('UsersService', () => {
         email: userEntityWithoutName.email,
         password: userEntityWithoutName.password,
         name: null,
+        role: UserRole.REGULAR,
         refreshToken: null,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -187,6 +190,7 @@ describe('UsersService', () => {
         email: 'test@example.com',
         password: 'hashedpassword',
         name: 'Test User',
+        role: UserRole.REGULAR,
         refreshToken: null,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -223,6 +227,7 @@ describe('UsersService', () => {
         email: 'test@example.com',
         password: 'hashedpassword',
         name: 'Test User',
+        role: UserRole.REGULAR,
         refreshToken: 'refresh-token-123',
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -264,6 +269,7 @@ describe('UsersService', () => {
         email: userEntityUpdate.email,
         password: 'hashedpassword',
         name: userEntityUpdate.name,
+        role: UserRole.REGULAR,
         refreshToken: userEntityUpdate.refreshToken,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -297,6 +303,7 @@ describe('UsersService', () => {
         email: 'test@example.com',
         password: 'hashedpassword',
         name: 'Test User',
+        role: UserRole.REGULAR,
         refreshToken: 'new-token-only',
         createdAt: new Date(),
         updatedAt: new Date(),
