@@ -28,7 +28,7 @@ jobs:
           git checkout release
           
           # Merge main into release
-          git merge origin/main --no-edit
+          git merge origin/main --no-edit -m "chore: sync release branch [skip ci]"
           
           # Push to release branch
           git push origin release
