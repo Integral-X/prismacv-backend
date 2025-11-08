@@ -88,7 +88,9 @@ async function bootstrap() {
       },
       'JWT-auth',
     )
-    .addTag('Authentication', 'User authentication and authorization')
+    .addTag('Admin Authentication', 'Platform admin authentication endpoints')
+    .addTag('User Authentication', 'Regular user authentication endpoints')
+    .addTag('Feature Flags', 'Feature flag management endpoints')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
