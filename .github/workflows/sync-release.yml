@@ -28,7 +28,10 @@ jobs:
           # Check if release branch exists
           if git show-ref --verify --quiet refs/remotes/origin/release; then
             git checkout release
-            git merge origin/main --no-edit -m "chore: sync main to release [skip ci]"
+            if ! git merge origin/main --no-edit -m "chore: sync main to release [skip ci]"; then
+              echo "::error::Merge conflict detected. Manual resolution required."
+              exit 1
+            fi
           else
             git checkout -b release origin/main
           fi
