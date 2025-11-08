@@ -30,7 +30,7 @@ jobs:
             git checkout release
             git merge origin/main --no-edit -m "chore: sync main to release [skip ci]"
           else
-            git checkout -b release
+            git checkout -b release origin/main
           fi
           
           # Push to release branch
