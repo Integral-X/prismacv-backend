@@ -14,10 +14,12 @@ export enum UserRole {
  */
 export class User extends BaseEntity {
   email: string;
-  password: string;
+  password?: string; // Optional for OAuth users
   name?: string;
   role: UserRole;
   refreshToken?: string;
+  provider?: string; // OAuth provider (e.g., 'LINKEDIN', 'GOOGLE')
+  providerId?: string; // OAuth provider user ID
 
   constructor() {
     super();

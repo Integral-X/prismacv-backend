@@ -2,7 +2,7 @@ import { Injectable, ConflictException } from '@nestjs/common';
 import { PrismaService } from '@/config/prisma.service';
 import { User as PrismaUser } from '@prisma/client';
 import { Prisma } from '@prisma/client';
-import { User } from './entities/user.entity';
+import { User, UserRole } from './entities/user.entity';
 
 @Injectable()
 export class UsersService {
@@ -15,10 +15,12 @@ export class UsersService {
     const user = new User();
     user.id = prismaUser.id;
     user.email = prismaUser.email;
-    user.password = prismaUser.password;
+    user.password = prismaUser.password || undefined;
     user.name = prismaUser.name;
-    user.role = prismaUser.role as any; // Map Prisma UserRole to entity UserRole
+    user.role = prismaUser.role as UserRole; // Map Prisma UserRole to entity UserRole
     user.refreshToken = prismaUser.refreshToken;
+    user.provider = prismaUser.provider || undefined;
+    user.providerId = prismaUser.providerId || undefined;
     user.createdAt = prismaUser.createdAt;
     user.updatedAt = prismaUser.updatedAt;
     return user;
@@ -43,6 +45,8 @@ export class UsersService {
         name: userEntity.name,
         role: userEntity.role as any,
         refreshToken: userEntity.refreshToken,
+        provider: userEntity.provider as any,
+        providerId: userEntity.providerId,
       },
     });
     return this.prismaUserToEntity(updatedUser);
@@ -62,7 +66,7 @@ export class UsersService {
           email: userEntity.email,
           password: userEntity.password,
           name: userEntity.name,
-          role: userEntity.role as any, // Persist role to database
+          role: userEntity.role as UserRole, // Persist role to database
         },
       });
 
@@ -76,6 +80,83 @@ export class UsersService {
         }
       }
       // Re-throw other errors
+      throw error;
+    }
+  }
+
+  /**
+   * Find user by OAuth provider and provider ID
+   */
+  async findByProvider(
+    provider: string,
+    providerId: string,
+  ): Promise<User | null> {
+    const prismaUser = await this.prisma.user.findFirst({
+      where: {
+        provider,
+        providerId,
+      },
+    });
+    return prismaUser ? this.prismaUserToEntity(prismaUser) : null;
+  }
+
+  /**
+   * Create a new user from OAuth profile
+   */
+  async createOAuthUser(profile: {
+    provider: string;
+    providerId: string;
+    email: string;
+    name?: string;
+  }): Promise<User> {
+    try {
+      const createdUser = await this.prisma.user.create({
+        data: {
+          email: profile.email,
+          name: profile.name,
+          provider: profile.provider,
+          providerId: profile.providerId,
+          role: 'REGULAR', // OAuth users default to REGULAR role
+        },
+      });
+      return this.prismaUserToEntity(createdUser);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          throw new ConflictException(
+            'User with this email or OAuth account already exists',
+          );
+        }
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Link OAuth account to existing user
+   */
+  async linkOAuthAccount(
+    userId: string,
+    provider: string,
+    providerId: string,
+  ): Promise<User> {
+    try {
+      const updatedUser = await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          provider: provider as any,
+          providerId,
+        },
+      });
+      return this.prismaUserToEntity(updatedUser);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          throw new ConflictException(
+            'OAuth account is already linked to another user',
+          );
+        }
+      }
       throw error;
     }
   }
