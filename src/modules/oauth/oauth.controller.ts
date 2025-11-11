@@ -17,6 +17,8 @@ import { LinkedInAuthGuard } from './guards/linkedin-auth.guard';
 import { Public } from '@/common/decorators/public.decorator';
 import { OAuthCallbackResponseDto } from './dto/oauth-callback.response.dto';
 import { AuthMapper } from '@/modules/auth/mappers/auth.mapper';
+import { User } from '@/modules/auth/entities/user.entity';
+import { TokenPair } from '@/modules/auth/entities/token-pair.entity';
 
 @ApiTags('OAuth Authentication')
 @Controller('oauth')
@@ -60,7 +62,8 @@ export class OAuthController {
   })
   async linkedinCallback(@Req() req: Request, @Res() res: Response) {
     // req.user is set by Passport strategy after successful authentication
-    const { user, tokens } = req.user as any;
+    // Type assertion: Passport strategy returns { user, tokens }
+    const { user, tokens } = req.user as { user: User; tokens: TokenPair };
 
     // Map user to response DTO
     const userResponse = this.authMapper.userToUserAuthResponse(user);

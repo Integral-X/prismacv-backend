@@ -44,6 +44,9 @@ describe('UsersService', () => {
         name: userEntity.name,
         role: UserRole.REGULAR,
         refreshToken: null,
+        avatarUrl: null,
+        provider: 'local',
+        providerId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -87,6 +90,9 @@ describe('UsersService', () => {
         name: 'Existing User',
         role: UserRole.REGULAR,
         refreshToken: null,
+        avatarUrl: null,
+        provider: 'local',
+        providerId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -132,6 +138,9 @@ describe('UsersService', () => {
         name: null,
         role: UserRole.REGULAR,
         refreshToken: null,
+        avatarUrl: null,
+        provider: 'local',
+        providerId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -192,6 +201,9 @@ describe('UsersService', () => {
         name: 'Test User',
         role: UserRole.REGULAR,
         refreshToken: null,
+        avatarUrl: null,
+        provider: 'local',
+        providerId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -229,6 +241,9 @@ describe('UsersService', () => {
         name: 'Test User',
         role: UserRole.REGULAR,
         refreshToken: 'refresh-token-123',
+        avatarUrl: null,
+        provider: 'local',
+        providerId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -271,6 +286,9 @@ describe('UsersService', () => {
         name: userEntityUpdate.name,
         role: UserRole.REGULAR,
         refreshToken: userEntityUpdate.refreshToken,
+        avatarUrl: null,
+        provider: 'local',
+        providerId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -305,6 +323,9 @@ describe('UsersService', () => {
         name: 'Test User',
         role: UserRole.REGULAR,
         refreshToken: 'new-token-only',
+        avatarUrl: null,
+        provider: 'local',
+        providerId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
