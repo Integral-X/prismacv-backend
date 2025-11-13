@@ -20,7 +20,6 @@ import { User } from '@/modules/auth/entities/user.entity';
 export class OAuthController {
   constructor(private readonly authMapper: AuthMapper) {}
 
-  @Public()
   @Get('linkedin')
   @UseGuards(LinkedInAuthGuard)
   @ApiOperation({
