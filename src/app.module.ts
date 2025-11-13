@@ -12,6 +12,7 @@ import unleashConfig from './modules/unleash/unleash.config';
 
 // Core modules
 import { AuthModule } from './modules/auth/auth.module';
+import { OAuthModule } from './modules/oauth/oauth.module';
 import { UnleashModule } from './modules/unleash/unleash.module';
 import { HealthModule } from './modules/health/health.module';
 
@@ -45,6 +46,7 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 
     // Core modules
     AuthModule,
+    OAuthModule,
     UnleashModule,
     HealthModule,
   ],
