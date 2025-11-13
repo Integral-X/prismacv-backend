@@ -27,6 +27,7 @@ async function main() {
       email: 'admin@example.com',
       password: adminPassword,
       role: 'PLATFORM_ADMIN',
+      provider: null,
     },
   });
 
@@ -36,7 +37,7 @@ async function main() {
 }
 
 main()
-  .catch((e) => {
+  .catch(e => {
     logger.error('Error during seeding:', e);
     process.exit(1);
   })

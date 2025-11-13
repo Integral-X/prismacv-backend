@@ -12,6 +12,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { UsersService } from './users.service';
 import { PrismaService } from '@/config/prisma.service';
 import { AuthMapper } from './mappers/auth.mapper';
+import { JWT_EXPIRATION } from '@/shared/constants/jwt.constants';
 
 @Module({
   imports: [
@@ -20,7 +21,9 @@ import { AuthMapper } from './mappers/auth.mapper';
       useFactory: async (
         configService: ConfigService,
       ): Promise<JwtModuleOptions> => {
-        const expiresIn = configService.get<string>('JWT_EXPIRES_IN') || '15m';
+        const expiresIn =
+          configService.get<string>('JWT_EXPIRES_IN') ||
+          JWT_EXPIRATION.ACCESS_TOKEN;
         return {
           secret: configService.get<string>('JWT_SECRET'),
           signOptions: { expiresIn: expiresIn as any },

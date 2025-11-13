@@ -10,6 +10,7 @@ import { UsersService } from './users.service';
 import { User, UserRole } from './entities/user.entity';
 import { AuthCredentials } from './entities/auth-credentials.entity';
 import { TokenPair } from './entities/token-pair.entity';
+import { JWT_EXPIRATION } from '@/shared/constants/jwt.constants';
 
 @Injectable()
 export class AuthService {
@@ -21,12 +22,26 @@ export class AuthService {
 
   async validateUser(credentials: AuthCredentials): Promise<User | null> {
     const user = await this.usersService.findByEmail(credentials.email);
-    if (user && (await bcrypt.compare(credentials.password, user.password))) {
+    if (!user) {
+      this.logger.warn(`User validation failed: email=${credentials.email}`);
+      return null;
+    }
+
+    // OAuth users don't have passwords
+    if (!user.password) {
+      this.logger.warn(
+        `User validation failed: user is OAuth-only, email=${credentials.email}`,
+      );
+      return null;
+    }
+
+    if (await bcrypt.compare(credentials.password, user.password)) {
       this.logger.log(
         `User validation successful: email=${user.email}, role=${user.role}, userId=${user.id}`,
       );
       return user;
     }
+
     this.logger.warn(`User validation failed: email=${credentials.email}`);
     return null;
   }
@@ -233,7 +248,7 @@ export class AuthService {
         },
         {
           secret: process.env.JWT_SECRET,
-          expiresIn: '15m',
+          expiresIn: JWT_EXPIRATION.ACCESS_TOKEN,
         },
       ),
       this.jwtService.signAsync(
@@ -244,7 +259,7 @@ export class AuthService {
         },
         {
           secret: process.env.JWT_REFRESH_SECRET,
-          expiresIn: '7d',
+          expiresIn: JWT_EXPIRATION.REFRESH_TOKEN,
         },
       ),
     ]);

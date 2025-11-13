@@ -7,20 +7,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserRole {
-  REGULAR
-  PLATFORM_ADMIN
-}
-
 model User {
   id           String    @id @default(cuid())
   email        String    @unique
-  password     String
+  password     String?
   name         String?
   role         UserRole  @default(REGULAR)
   refreshToken String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+  avatarUrl    String?
+  provider     String?
+  providerId   String?
 
+  @@unique([provider, providerId])
   @@map("users")
+}
+
+enum OAuthProvider {
+  LINKEDIN
+  GOOGLE
+}
+
+enum UserRole {
+  REGULAR
+  PLATFORM_ADMIN
 }

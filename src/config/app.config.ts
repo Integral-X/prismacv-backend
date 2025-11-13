@@ -1,3 +1,6 @@
+import { JWT_EXPIRATION } from '@/shared/constants/jwt.constants';
+import { APP_CONSTANTS } from '@/shared/constants/app.constants';
+
 export const AppConfig = () => ({
   app: {
     name: process.env.APP_NAME || 'PrismaCV',
@@ -12,9 +15,11 @@ export const AppConfig = () => ({
   },
   jwt: {
     secret: process.env.JWT_SECRET,
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    expiresIn: process.env.JWT_EXPIRES_IN || JWT_EXPIRATION.DEFAULT_EXPIRES_IN,
     refreshSecret: process.env.JWT_REFRESH_SECRET,
-    refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d',
+    refreshExpiresIn:
+      process.env.JWT_REFRESH_EXPIRES_IN ||
+      JWT_EXPIRATION.DEFAULT_REFRESH_EXPIRES_IN,
   },
   bcrypt: {
     rounds: parseInt(process.env.BCRYPT_ROUNDS, 10) || 12,
@@ -56,7 +61,8 @@ export const AppConfig = () => ({
     origin: process.env.CORS_ORIGIN?.split(',') || ['*'],
   },
   upload: {
-    maxFileSize: parseInt(process.env.MAX_FILE_SIZE, 10) || 10485760, // 10MB
+    maxFileSize:
+      parseInt(process.env.MAX_FILE_SIZE, 10) || APP_CONSTANTS.MAX_FILE_SIZE,
     allowedTypes: process.env.ALLOWED_FILE_TYPES?.split(',') || [
       'image/jpeg',
       'image/png',
