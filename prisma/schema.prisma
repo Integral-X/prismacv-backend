@@ -20,7 +20,7 @@ model User {
   provider     String?
   providerId   String?
 
-  @@index([provider, providerId])
+  @@unique([provider, providerId])
   @@map("users")
 }
 

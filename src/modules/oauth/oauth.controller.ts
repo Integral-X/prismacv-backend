@@ -1,5 +1,11 @@
-import { Controller, Get, UseGuards, Req, Res } from '@nestjs/common';
-import { HTTP_STATUS } from '@/shared/constants/http-status.constants';
+import {
+  Controller,
+  Get,
+  UseGuards,
+  Req,
+  Res,
+  HttpStatus,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -29,7 +35,7 @@ export class OAuthController {
       'Redirects user to LinkedIn for authentication. After successful authentication, user will be redirected to the callback URL.',
   })
   @ApiResponse({
-    status: HTTP_STATUS.FOUND,
+    status: HttpStatus.FOUND,
     description: 'Redirects to LinkedIn OAuth page',
   })
   async linkedinAuth() {
@@ -46,13 +52,13 @@ export class OAuthController {
       'Handles the callback from LinkedIn after user authentication. Returns user profile only (no JWT tokens). This endpoint is called by LinkedIn and must be public.',
   })
   @ApiResponse({
-    status: HTTP_STATUS.OK,
+    status: HttpStatus.OK,
     description:
       'OAuth authentication successful. Returns user profile only (no JWT tokens).',
     type: OAuthCallbackResponseDto,
   })
   @ApiResponse({
-    status: HTTP_STATUS.UNAUTHORIZED,
+    status: HttpStatus.UNAUTHORIZED,
     description: 'Unauthorized - OAuth authentication failed',
   })
   async linkedinCallback(@Req() req: Request, @Res() res: Response) {
@@ -69,6 +75,6 @@ export class OAuthController {
 
     // In production, you might want to redirect to frontend
     // For now, return JSON response
-    res.status(HTTP_STATUS.OK).json(response);
+    res.status(HttpStatus.OK).json(response);
   }
 }
