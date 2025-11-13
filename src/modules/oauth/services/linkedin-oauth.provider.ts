@@ -4,6 +4,7 @@ import {
   IOAuthProvider,
   OAuthProfile,
 } from '../interfaces/oauth-provider.interface';
+import { OAUTH_PROVIDERS } from '@/shared/constants/oauth.constants';
 
 /**
  * LinkedIn OAuth provider implementation
@@ -12,13 +13,13 @@ import {
 @Injectable()
 export class LinkedInOAuthProvider implements IOAuthProvider<Profile> {
   getProviderName(): string {
-    return 'LINKEDIN';
+    return OAUTH_PROVIDERS.LINKEDIN;
   }
 
   validateProfile(profile: Profile): OAuthProfile {
     // LinkedIn profile structure from passport-linkedin-oauth2
     // https://github.com/auth0/passport-linkedin-oauth2
-    if (!profile || !profile.id) {
+    if (!profile?.id) {
       throw new Error('Invalid LinkedIn profile: missing id');
     }
 

@@ -7,14 +7,4 @@ export class OAuthCallbackResponseDto {
     type: UserAuthResponseDto,
   })
   user: UserAuthResponseDto;
-
-  @ApiProperty({
-    description: 'JWT Access Token for authentication',
-  })
-  accessToken: string;
-
-  @ApiProperty({
-    description: 'JWT Refresh Token for token renewal',
-  })
-  refreshToken: string;
 }

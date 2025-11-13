@@ -8,38 +8,20 @@ datasource db {
 }
 
 model User {
-  id             String           @id @default(cuid())
-  email          String           @unique
-  password       String?
-  name           String?
-  role           UserRole         @default(REGULAR)
-  refreshToken   String?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  avatarUrl      String?
-  provider       String           @default("local")
-  providerId     String?
-  oauth_accounts oauth_accounts[]
+  id           String    @id @default(cuid())
+  email        String    @unique
+  password     String?
+  name         String?
+  role         UserRole  @default(REGULAR)
+  refreshToken String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  avatarUrl    String?
+  provider     String?
+  providerId   String?
 
   @@index([provider, providerId])
   @@map("users")
-}
-
-model oauth_accounts {
-  id           String    @id
-  userId       String
-  provider     String
-  providerId   String
-  accessToken  String?
-  refreshToken String?
-  expiresAt    DateTime?
-  metadata     Json?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime
-  users        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerId])
-  @@index([userId])
 }
 
 enum OAuthProvider {

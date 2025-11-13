@@ -1,16 +1,11 @@
-import {
-  Controller,
-  Get,
-  UseGuards,
-  Req,
-  Res,
-  HttpStatus,
-} from '@nestjs/common';
+import { Controller, Get, UseGuards, Req, Res } from '@nestjs/common';
+import { HTTP_STATUS } from '@/shared/constants/http-status.constants';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiExcludeEndpoint,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { LinkedInAuthGuard } from './guards/linkedin-auth.guard';
@@ -18,9 +13,9 @@ import { Public } from '@/common/decorators/public.decorator';
 import { OAuthCallbackResponseDto } from './dto/oauth-callback.response.dto';
 import { AuthMapper } from '@/modules/auth/mappers/auth.mapper';
 import { User } from '@/modules/auth/entities/user.entity';
-import { TokenPair } from '@/modules/auth/entities/token-pair.entity';
 
 @ApiTags('OAuth Authentication')
+@ApiBearerAuth()
 @Controller('oauth')
 export class OAuthController {
   constructor(private readonly authMapper: AuthMapper) {}
@@ -34,7 +29,7 @@ export class OAuthController {
       'Redirects user to LinkedIn for authentication. After successful authentication, user will be redirected to the callback URL.',
   })
   @ApiResponse({
-    status: 302,
+    status: HTTP_STATUS.FOUND,
     description: 'Redirects to LinkedIn OAuth page',
   })
   async linkedinAuth() {
@@ -48,34 +43,32 @@ export class OAuthController {
   @ApiOperation({
     summary: 'LinkedIn OAuth callback',
     description:
-      'Handles the callback from LinkedIn after user authentication. Returns user profile and JWT tokens.',
+      'Handles the callback from LinkedIn after user authentication. Returns user profile only (no JWT tokens). This endpoint is called by LinkedIn and must be public.',
   })
   @ApiResponse({
-    status: 200,
+    status: HTTP_STATUS.OK,
     description:
-      'OAuth authentication successful. Returns user profile and JWT tokens.',
+      'OAuth authentication successful. Returns user profile only (no JWT tokens).',
     type: OAuthCallbackResponseDto,
   })
   @ApiResponse({
-    status: 401,
-    description: 'OAuth authentication failed',
+    status: HTTP_STATUS.UNAUTHORIZED,
+    description: 'Unauthorized - OAuth authentication failed',
   })
   async linkedinCallback(@Req() req: Request, @Res() res: Response) {
     // req.user is set by Passport strategy after successful authentication
-    // Type assertion: Passport strategy returns { user, tokens }
-    const { user, tokens } = req.user as { user: User; tokens: TokenPair };
+    // Type assertion: Passport strategy returns { user }
+    const { user } = req.user as { user: User };
 
     // Map user to response DTO
     const userResponse = this.authMapper.userToUserAuthResponse(user);
 
     const response: OAuthCallbackResponseDto = {
       user: userResponse,
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
     };
 
-    // In production, you might want to redirect to frontend with tokens
+    // In production, you might want to redirect to frontend
     // For now, return JSON response
-    res.status(HttpStatus.OK).json(response);
+    res.status(HTTP_STATUS.OK).json(response);
   }
 }
