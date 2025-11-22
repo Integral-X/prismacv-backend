@@ -33,7 +33,7 @@ export class GoogleOAuthProvider implements IOAuthProvider<Profile> {
       email,
       name:
         profile.displayName ||
-        `${profile.name?.givenName ?? ''} ${profile.name?.familyName ?? ''}`.trim() ||
+        `${profile.name?.givenName || ''} ${profile.name?.familyName || ''}`.trim() ||
         undefined,
       firstName: profile.name?.givenName,
       lastName: profile.name?.familyName,
