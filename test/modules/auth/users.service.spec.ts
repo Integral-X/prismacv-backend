@@ -5,6 +5,7 @@ import { ConflictException } from '@nestjs/common';
 import { mockDeep, DeepMockProxy } from 'jest-mock-extended';
 import { Prisma, UserRole } from '@prisma/client';
 import { User } from '../../../src/modules/auth/entities/user.entity';
+import { extractTimestampFromUuidv7 } from '../../../src/shared/utils/uuid.util';
 
 describe('UsersService', () => {
   let usersService: UsersService;
@@ -81,12 +82,20 @@ describe('UsersService', () => {
           }),
         }),
       );
-      // Verify that a UUIDv7 id was generated (36 chars with dashes)
+      // Verify that a valid UUIDv7 was generated (standard UUID format: 8-4-4-4-12)
       const callArgs = (prismaService.user.create as jest.Mock).mock
         .calls[0][0];
       expect(callArgs.data.id).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
       );
+      // Verify time-ordering property of UUIDv7 by extracting timestamp
+      const extractedTimestamp = extractTimestampFromUuidv7(callArgs.data.id);
+      expect(extractedTimestamp).not.toBeNull();
+      // Timestamp should be recent (within last minute)
+      const now = Date.now();
+      const oneMinuteAgo = now - 60000;
+      expect(extractedTimestamp!.getTime()).toBeGreaterThan(oneMinuteAgo);
+      expect(extractedTimestamp!.getTime()).toBeLessThanOrEqual(now);
       expect(result).toBeInstanceOf(User);
       expect(result.id).toBe(expectedUserEntity.id);
       expect(result.email).toBe(expectedUserEntity.email);
