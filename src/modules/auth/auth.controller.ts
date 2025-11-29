@@ -15,6 +15,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
+import { OtpService } from './otp.service';
 import { RefreshTokenRequestDto } from './dto/request/refresh-token.request.dto';
 import { VerifyOtpRequestDto } from './dto/request/verify-otp.request.dto';
 import { ResendOtpRequestDto } from './dto/request/resend-otp.request.dto';
@@ -30,6 +31,7 @@ import { Public } from '../../common/decorators/public.decorator';
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
+    private readonly otpService: OtpService,
     private readonly authMapper: AuthMapper,
   ) {}
 
@@ -109,7 +111,7 @@ export class AuthController {
   async verifyOtp(
     @Body() verifyOtpRequestDto: VerifyOtpRequestDto,
   ): Promise<OtpVerificationResponseDto> {
-    const user = await this.authService.verifyOtp(
+    const user = await this.otpService.verifyOtp(
       verifyOtpRequestDto.email,
       verifyOtpRequestDto.otp,
     );
@@ -148,7 +150,7 @@ export class AuthController {
   async resendOtp(
     @Body() resendOtpRequestDto: ResendOtpRequestDto,
   ): Promise<OtpResendResponseDto> {
-    const result = await this.authService.resendOtp(resendOtpRequestDto.email);
+    const result = await this.otpService.resendOtp(resendOtpRequestDto.email);
 
     return {
       message: 'OTP sent successfully',

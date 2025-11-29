@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from '../../../src/modules/auth/auth.service';
+import { OtpService } from '../../../src/modules/auth/otp.service';
 import { UsersService } from '../../../src/modules/auth/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -44,6 +45,17 @@ describe('AuthService', () => {
           provide: EmailService,
           useValue: {
             sendOtpEmail: jest.fn().mockResolvedValue(true),
+          },
+        },
+        {
+          provide: OtpService,
+          useValue: {
+            generateOtpCode: jest.fn().mockReturnValue('123456'),
+            generateAndSendOtp: jest
+              .fn()
+              .mockResolvedValue({ expiresAt: new Date() }),
+            verifyOtp: jest.fn(),
+            resendOtp: jest.fn().mockResolvedValue({ expiresAt: new Date() }),
           },
         },
         {
