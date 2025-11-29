@@ -84,7 +84,7 @@ export class AuthController {
   }
 
   @Post('verify-otp')
-    summary: 'Verify email OTP',
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Verify email OTP',
     description:

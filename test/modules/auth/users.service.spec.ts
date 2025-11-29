@@ -420,6 +420,7 @@ describe('UsersService', () => {
         emailVerified: false,
         otpCode: otpCode,
         otpExpiresAt: expiresAt,
+        otpAttempts: 0,
         avatarUrl: null,
         provider: null,
         providerId: null,
@@ -436,6 +437,7 @@ describe('UsersService', () => {
         data: {
           otpCode,
           otpExpiresAt: expiresAt,
+          otpAttempts: 0,
         },
       });
       expect(result).toBeInstanceOf(User);
@@ -458,6 +460,7 @@ describe('UsersService', () => {
         emailVerified: false,
         otpCode: otpCode,
         otpExpiresAt: expiresAt,
+        otpAttempts: 0,
         avatarUrl: null,
         provider: null,
         providerId: null,
