@@ -25,7 +25,7 @@ import { OtpResendResponseDto } from './dto/response/otp-resend.response.dto';
 import { AuthMapper } from './mappers/auth.mapper';
 import { Public } from '../../common/decorators/public.decorator';
 
-@ApiTags('Authentication')
+@ApiTags('Auth Utilities')
 @ApiBearerAuth('JWT-auth')
 @Controller('auth')
 export class AuthController {
