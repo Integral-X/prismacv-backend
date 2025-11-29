@@ -13,7 +13,7 @@ import { UserAuthResponseDto } from './dto/response/user-auth.response.dto';
 import { AuthMapper } from './mappers/auth.mapper';
 
 @ApiTags('User Authentication')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('auth/user')
 export class UserAuthController {
   constructor(

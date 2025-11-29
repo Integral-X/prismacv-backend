@@ -22,6 +22,7 @@ describe('UserAuthController', () => {
     name: 'Regular User',
     role: UserRole.REGULAR,
     refreshToken: null,
+    emailVerified: false,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
@@ -31,6 +32,7 @@ describe('UserAuthController', () => {
     email: 'user@example.com',
     name: 'Regular User',
     role: UserRole.REGULAR,
+    emailVerified: false,
     createdAt: new Date(),
     updatedAt: new Date(),
   };

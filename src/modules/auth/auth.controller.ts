@@ -7,14 +7,25 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RefreshTokenRequestDto } from './dto/request/refresh-token.request.dto';
+import { VerifyOtpRequestDto } from './dto/request/verify-otp.request.dto';
+import { ResendOtpRequestDto } from './dto/request/resend-otp.request.dto';
 import { AdminAuthResponseDto } from './dto/response/admin-auth.response.dto';
+import { OtpVerificationResponseDto } from './dto/response/otp-verification.response.dto';
+import { OtpResendResponseDto } from './dto/response/otp-resend.response.dto';
 import { AuthMapper } from './mappers/auth.mapper';
 import { Public } from '../../common/decorators/public.decorator';
 
-@ApiTags('Admin Authentication')
+@ApiTags('Authentication')
+@ApiBearerAuth('JWT-auth')
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -68,5 +79,80 @@ export class AuthController {
       }
       throw error;
     }
+  }
+
+  @Post('verify-otp')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Verify email OTP (JWT protected)',
+    description:
+      "Verifies the OTP sent to the user's email address during registration. Upon successful verification, the email is marked as verified. Requires platform admin JWT.",
+  })
+  @ApiBody({ type: VerifyOtpRequestDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Email verified successfully.',
+    type: OtpVerificationResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid or expired OTP',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Missing or invalid JWT token',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Not Found - User not found',
+  })
+  async verifyOtp(
+    @Body() verifyOtpRequestDto: VerifyOtpRequestDto,
+  ): Promise<OtpVerificationResponseDto> {
+    const user = await this.authService.verifyOtp(
+      verifyOtpRequestDto.email,
+      verifyOtpRequestDto.otp,
+    );
+
+    return {
+      message: 'Email verified successfully',
+      user: this.authMapper.userToProfileResponse(user),
+    };
+  }
+
+  @Post('resend-otp')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Resend OTP (JWT protected)',
+    description:
+      "Resends a new OTP to the user's email address. Use this when the previous OTP has expired or was not received. Requires platform admin JWT.",
+  })
+  @ApiBody({ type: ResendOtpRequestDto })
+  @ApiResponse({
+    status: 200,
+    description: 'OTP sent successfully.',
+    type: OtpResendResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Email already verified',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Missing or invalid JWT token',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Not Found - User not found',
+  })
+  async resendOtp(
+    @Body() resendOtpRequestDto: ResendOtpRequestDto,
+  ): Promise<OtpResendResponseDto> {
+    const result = await this.authService.resendOtp(resendOtpRequestDto.email);
+
+    return {
+      message: 'OTP sent successfully',
+      expiresAt: result.expiresAt,
+    };
   }
 }

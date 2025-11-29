@@ -2,9 +2,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from '../../../src/modules/auth/auth.service';
 import { UsersService } from '../../../src/modules/auth/users.service';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { UnauthorizedException, Logger } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../../../src/config/prisma.service';
+import { EmailService } from '../../../src/modules/email/email.service';
 import { mockDeep, DeepMockProxy } from 'jest-mock-extended';
 import { User } from '../../../src/modules/auth/entities/user.entity';
 import { AuthCredentials } from '../../../src/modules/auth/entities/auth-credentials.entity';
@@ -26,6 +28,24 @@ describe('AuthService', () => {
         UsersService,
         JwtService,
         { provide: PrismaService, useValue: mockDeep<PrismaService>() },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn((key: string, defaultValue?: any) => {
+              const config: Record<string, any> = {
+                OTP_EXPIRY_MINUTES: 10,
+                APP_NAME: 'PrismaCV',
+              };
+              return config[key] ?? defaultValue;
+            }),
+          },
+        },
+        {
+          provide: EmailService,
+          useValue: {
+            sendOtpEmail: jest.fn().mockResolvedValue(true),
+          },
+        },
         {
           provide: Logger,
           useValue: {

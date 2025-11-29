@@ -2,6 +2,8 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { SignupRequestDto } from '../dto/request/signup.request.dto';
 import { LoginRequestDto } from '../dto/request/login.request.dto';
 import { AdminAuthResponseDto } from '../dto/response/admin-auth.response.dto';
+import { AdminLoginResponseDto } from '../dto/response/admin-login.response.dto';
+import { AdminSignupResponseDto } from '../dto/response/admin-signup.response.dto';
 import { UserAuthResponseDto } from '../dto/response/user-auth.response.dto';
 import { UserProfileResponseDto } from '../dto/response/user-profile.response.dto';
 import { User } from '../entities/user.entity';
@@ -77,6 +79,7 @@ export class AuthMapper {
     profile.email = user.email;
     profile.name = user.name;
     profile.role = user.role;
+    profile.emailVerified = user.emailVerified;
     profile.createdAt = user.createdAt;
     profile.updatedAt = user.updatedAt;
 
@@ -102,6 +105,41 @@ export class AuthMapper {
     response.user = this.userToProfileResponse(user);
     response.accessToken = tokens.accessToken;
     response.refreshToken = tokens.refreshToken;
+
+    return response;
+  }
+
+  /**
+   * Converts TokenPair to AdminLoginResponseDto (tokens only, no user profile)
+   * @param tokens - Token pair containing access and refresh tokens
+   * @returns AdminLoginResponseDto for client response
+   * @throws BadRequestException if tokens are null/undefined
+   */
+  tokensToAdminLoginResponse(tokens: TokenPair): AdminLoginResponseDto {
+    if (!tokens) {
+      throw new BadRequestException('Tokens are required');
+    }
+
+    const response = new AdminLoginResponseDto();
+    response.accessToken = tokens.accessToken;
+    response.refreshToken = tokens.refreshToken;
+
+    return response;
+  }
+
+  /**
+   * Converts User entity to AdminSignupResponseDto (profile only, no tokens)
+   * @param user - The admin user entity from business logic
+   * @returns AdminSignupResponseDto for client response
+   * @throws BadRequestException if user is null/undefined
+   */
+  userToAdminSignupResponse(user: User): AdminSignupResponseDto {
+    if (!user) {
+      throw new BadRequestException('User data is required');
+    }
+
+    const response = new AdminSignupResponseDto();
+    response.user = this.userToProfileResponse(user);
 
     return response;
   }

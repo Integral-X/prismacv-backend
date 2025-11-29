@@ -18,10 +18,14 @@ export class User extends BaseEntity {
   name?: string;
   role: UserRole;
   refreshToken?: string;
+  emailVerified: boolean = false;
+  otpCode?: string;
+  otpExpiresAt?: Date;
   provider?: string; // OAuth provider (e.g., 'LINKEDIN', 'GOOGLE')
   providerId?: string; // OAuth provider user ID
 
   constructor() {
     super();
+    this.emailVerified = false;
   }
 }

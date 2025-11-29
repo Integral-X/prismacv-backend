@@ -44,6 +44,9 @@ describe('UsersService', () => {
         name: userEntity.name,
         role: UserRole.REGULAR,
         refreshToken: null,
+        emailVerified: false,
+        otpCode: null,
+        otpExpiresAt: null,
         avatarUrl: null,
         provider: null,
         providerId: null,
@@ -68,13 +71,22 @@ describe('UsersService', () => {
       expect(prismaService.user.findUnique).toHaveBeenCalledWith({
         where: { email: userEntity.email },
       });
-      expect(prismaService.user.create).toHaveBeenCalledWith({
-        data: {
-          email: userEntity.email,
-          password: userEntity.password,
-          name: userEntity.name,
-        },
-      });
+      expect(prismaService.user.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            email: userEntity.email,
+            password: userEntity.password,
+            name: userEntity.name,
+            role: userEntity.role,
+          }),
+        }),
+      );
+      // Verify that a UUIDv7 id was generated (36 chars with dashes)
+      const callArgs = (prismaService.user.create as jest.Mock).mock
+        .calls[0][0];
+      expect(callArgs.data.id).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+      );
       expect(result).toBeInstanceOf(User);
       expect(result.id).toBe(expectedUserEntity.id);
       expect(result.email).toBe(expectedUserEntity.email);
@@ -90,6 +102,9 @@ describe('UsersService', () => {
         name: 'Existing User',
         role: UserRole.REGULAR,
         refreshToken: null,
+        emailVerified: false,
+        otpCode: null,
+        otpExpiresAt: null,
         avatarUrl: null,
         provider: null,
         providerId: null,
@@ -138,6 +153,9 @@ describe('UsersService', () => {
         name: null,
         role: UserRole.REGULAR,
         refreshToken: null,
+        emailVerified: false,
+        otpCode: null,
+        otpExpiresAt: null,
         avatarUrl: null,
         provider: null,
         providerId: null,
@@ -150,13 +168,22 @@ describe('UsersService', () => {
 
       const result = await usersService.create(userEntityWithoutName);
 
-      expect(prismaService.user.create).toHaveBeenCalledWith({
-        data: {
-          email: userEntityWithoutName.email,
-          password: userEntityWithoutName.password,
-          name: undefined,
-        },
-      });
+      expect(prismaService.user.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            email: userEntityWithoutName.email,
+            password: userEntityWithoutName.password,
+            name: undefined,
+            role: userEntityWithoutName.role,
+          }),
+        }),
+      );
+      // Verify that a UUIDv7 id was generated
+      const callArgs = (prismaService.user.create as jest.Mock).mock
+        .calls[0][0];
+      expect(callArgs.data.id).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+      );
       expect(result).toBeInstanceOf(User);
       expect(result.email).toBe(userEntityWithoutName.email);
       expect(result.password).toBe(userEntityWithoutName.password);
@@ -201,6 +228,9 @@ describe('UsersService', () => {
         name: 'Test User',
         role: UserRole.REGULAR,
         refreshToken: null,
+        emailVerified: false,
+        otpCode: null,
+        otpExpiresAt: null,
         avatarUrl: null,
         provider: null,
         providerId: null,
@@ -241,6 +271,9 @@ describe('UsersService', () => {
         name: 'Test User',
         role: UserRole.REGULAR,
         refreshToken: 'refresh-token-123',
+        emailVerified: false,
+        otpCode: null,
+        otpExpiresAt: null,
         avatarUrl: null,
         provider: null,
         providerId: null,
@@ -286,6 +319,9 @@ describe('UsersService', () => {
         name: userEntityUpdate.name,
         role: UserRole.REGULAR,
         refreshToken: userEntityUpdate.refreshToken,
+        emailVerified: false,
+        otpCode: null,
+        otpExpiresAt: null,
         avatarUrl: null,
         provider: null,
         providerId: null,
@@ -323,6 +359,9 @@ describe('UsersService', () => {
         name: 'Test User',
         role: UserRole.REGULAR,
         refreshToken: 'new-token-only',
+        emailVerified: false,
+        otpCode: null,
+        otpExpiresAt: null,
         avatarUrl: null,
         provider: null,
         providerId: null,

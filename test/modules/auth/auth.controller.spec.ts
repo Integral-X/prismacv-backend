@@ -21,6 +21,7 @@ describe('AuthController', () => {
     name: 'Admin User',
     role: UserRole.PLATFORM_ADMIN,
     refreshToken: 'refresh-token',
+    emailVerified: false,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
@@ -30,6 +31,7 @@ describe('AuthController', () => {
     email: 'admin@example.com',
     name: 'Admin User',
     role: UserRole.PLATFORM_ADMIN,
+    emailVerified: false,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
