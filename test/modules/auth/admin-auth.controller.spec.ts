@@ -5,7 +5,8 @@ import { AuthService } from '../../../src/modules/auth/auth.service';
 import { AuthMapper } from '../../../src/modules/auth/mappers/auth.mapper';
 import { AdminLoginRequestDto } from '../../../src/modules/auth/dto/request/admin-login.request.dto';
 import { AdminSignupRequestDto } from '../../../src/modules/auth/dto/request/admin-signup.request.dto';
-import { AdminAuthResponseDto } from '../../../src/modules/auth/dto/response/admin-auth.response.dto';
+import { AdminLoginResponseDto } from '../../../src/modules/auth/dto/response/admin-login.response.dto';
+import { AdminSignupResponseDto } from '../../../src/modules/auth/dto/response/admin-signup.response.dto';
 import { UserProfileResponseDto } from '../../../src/modules/auth/dto/response/user-profile.response.dto';
 import { User, UserRole } from '../../../src/modules/auth/entities/user.entity';
 import { AuthCredentials } from '../../../src/modules/auth/entities/auth-credentials.entity';
@@ -17,21 +18,23 @@ describe('AdminAuthController', () => {
   let authMapper: jest.Mocked<AuthMapper>;
 
   const mockAdminUser: User = Object.assign(new User(), {
-    id: '1',
+    id: '019ad180-3e8e-7fba-a0e9-2ac46c58f8fb',
     email: 'admin@example.com',
     password: 'hashedpassword',
     name: 'Admin User',
     role: UserRole.PLATFORM_ADMIN,
     refreshToken: 'refresh-token',
+    emailVerified: false,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
 
   const mockAdminProfile: UserProfileResponseDto = {
-    id: '1',
+    id: '019ad180-3e8e-7fba-a0e9-2ac46c58f8fb',
     email: 'admin@example.com',
     name: 'Admin User',
     role: UserRole.PLATFORM_ADMIN,
+    emailVerified: false,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -41,10 +44,13 @@ describe('AdminAuthController', () => {
     refreshToken: 'refresh-token',
   };
 
-  const mockAdminAuthResponse: AdminAuthResponseDto = {
-    user: mockAdminProfile,
+  const mockAdminLoginResponse: AdminLoginResponseDto = {
     accessToken: 'access-token',
     refreshToken: 'refresh-token',
+  };
+
+  const mockAdminSignupResponse: AdminSignupResponseDto = {
+    user: mockAdminProfile,
   };
 
   beforeEach(async () => {
@@ -56,7 +62,8 @@ describe('AdminAuthController', () => {
     const mockAuthMapper = {
       signupRequestToEntity: jest.fn(),
       loginRequestToCredentials: jest.fn(),
-      userToAdminAuthResponse: jest.fn(),
+      tokensToAdminLoginResponse: jest.fn(),
+      userToAdminSignupResponse: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -79,7 +86,7 @@ describe('AdminAuthController', () => {
   });
 
   describe('login', () => {
-    it('should login admin successfully with DTOs and mapper', async () => {
+    it('should login admin successfully and return tokens only', async () => {
       const loginDto: AdminLoginRequestDto = {
         email: 'admin@example.com',
         password: 'admin123',
@@ -94,7 +101,9 @@ describe('AdminAuthController', () => {
         user: mockAdminUser,
         tokens: mockTokenPair,
       });
-      authMapper.userToAdminAuthResponse.mockReturnValue(mockAdminAuthResponse);
+      authMapper.tokensToAdminLoginResponse.mockReturnValue(
+        mockAdminLoginResponse,
+      );
 
       const result = await controller.login(loginDto);
 
@@ -102,11 +111,12 @@ describe('AdminAuthController', () => {
         loginDto,
       );
       expect(authService.adminLogin).toHaveBeenCalledWith(credentials);
-      expect(authMapper.userToAdminAuthResponse).toHaveBeenCalledWith(
-        mockAdminUser,
+      expect(authMapper.tokensToAdminLoginResponse).toHaveBeenCalledWith(
         mockTokenPair,
       );
-      expect(result).toEqual(mockAdminAuthResponse);
+      expect(result).toEqual(mockAdminLoginResponse);
+      expect(result.accessToken).toBeDefined();
+      expect(result.refreshToken).toBeDefined();
     });
 
     it('should handle mapper error during admin login', async () => {
@@ -130,7 +140,7 @@ describe('AdminAuthController', () => {
   });
 
   describe('signup', () => {
-    it('should signup admin successfully with DTOs and mapper', async () => {
+    it('should signup admin successfully and return user profile only', async () => {
       const signupDto: AdminSignupRequestDto = {
         email: 'admin@example.com',
         password: 'admin123',
@@ -145,19 +155,22 @@ describe('AdminAuthController', () => {
       authMapper.signupRequestToEntity.mockReturnValue(userEntity);
       authService.adminSignup.mockResolvedValue({
         user: mockAdminUser,
-        tokens: mockTokenPair,
       });
-      authMapper.userToAdminAuthResponse.mockReturnValue(mockAdminAuthResponse);
+      authMapper.userToAdminSignupResponse.mockReturnValue(
+        mockAdminSignupResponse,
+      );
 
       const result = await controller.signup(signupDto);
 
       expect(authMapper.signupRequestToEntity).toHaveBeenCalledWith(signupDto);
       expect(authService.adminSignup).toHaveBeenCalledWith(userEntity);
-      expect(authMapper.userToAdminAuthResponse).toHaveBeenCalledWith(
+      expect(authMapper.userToAdminSignupResponse).toHaveBeenCalledWith(
         mockAdminUser,
-        mockTokenPair,
       );
-      expect(result).toEqual(mockAdminAuthResponse);
+      expect(result).toEqual(mockAdminSignupResponse);
+      expect(result.user).toBeDefined();
+      expect(result.user.id).toBe(mockAdminProfile.id);
+      expect(result.user.email).toBe(mockAdminProfile.email);
     });
 
     it('should handle mapper error during admin signup', async () => {

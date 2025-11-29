@@ -4,6 +4,7 @@ import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { WinstonModule } from 'nest-winston';
 import { AuthService } from './auth.service';
+import { OtpService } from './otp.service';
 import { AuthController } from './auth.controller';
 import { AdminAuthController } from './admin-auth.controller';
 import { UserAuthController } from './user-auth.controller';
@@ -35,6 +36,7 @@ import { JWT_EXPIRATION } from '@/shared/constants/jwt.constants';
   ],
   providers: [
     AuthService,
+    OtpService,
     LocalStrategy,
     JwtStrategy,
     UsersService,
@@ -44,6 +46,6 @@ import { JWT_EXPIRATION } from '@/shared/constants/jwt.constants';
     AuthMapper,
   ],
   controllers: [AuthController, AdminAuthController, UserAuthController],
-  exports: [AuthService],
+  exports: [AuthService, OtpService],
 })
 export class AuthModule {}

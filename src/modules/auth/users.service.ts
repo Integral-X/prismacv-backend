@@ -3,6 +3,7 @@ import { PrismaService } from '@/config/prisma.service';
 import { User as PrismaUser } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { User, UserRole } from './entities/user.entity';
+import { generateUuidv7 } from '@/shared/utils/uuid.util';
 
 @Injectable()
 export class UsersService {
@@ -19,6 +20,10 @@ export class UsersService {
     user.name = prismaUser.name;
     user.role = prismaUser.role as UserRole; // Map Prisma UserRole to entity UserRole
     user.refreshToken = prismaUser.refreshToken;
+    user.emailVerified = prismaUser.emailVerified;
+    user.otpCode = prismaUser.otpCode || undefined;
+    user.otpExpiresAt = prismaUser.otpExpiresAt || undefined;
+    user.otpAttempts = prismaUser.otpAttempts;
     user.provider = prismaUser.provider || undefined;
     user.providerId = prismaUser.providerId || undefined;
     user.createdAt = prismaUser.createdAt;
@@ -60,9 +65,10 @@ export class UsersService {
         throw new ConflictException('User with this email already exists');
       }
 
-      // Create new user using entity properties
+      // Create new user using entity properties with UUIDv7
       const createdUser = await this.prisma.user.create({
         data: {
+          id: generateUuidv7(),
           email: userEntity.email,
           password: userEntity.password,
           name: userEntity.name,
@@ -112,6 +118,7 @@ export class UsersService {
     try {
       const createdUser = await this.prisma.user.create({
         data: {
+          id: generateUuidv7(),
           email: profile.email,
           name: profile.name,
           provider: profile.provider,
@@ -159,5 +166,88 @@ export class UsersService {
       }
       throw error;
     }
+  }
+
+  /**
+   * Save OTP code and expiration for a user
+   * Resets attempt counter when generating new OTP
+   */
+  async saveOtp(
+    userId: string,
+    otpCode: string,
+    expiresAt: Date,
+  ): Promise<User> {
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        otpCode,
+        otpExpiresAt: expiresAt,
+        otpAttempts: 0,
+      },
+    });
+    return this.prismaUserToEntity(updatedUser);
+  }
+
+  /**
+   * Clear OTP code for a user
+   * Also resets attempt counter
+   */
+  async clearOtp(userId: string): Promise<User> {
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        otpCode: null,
+        otpExpiresAt: null,
+        otpAttempts: 0,
+      },
+    });
+    return this.prismaUserToEntity(updatedUser);
+  }
+
+  /**
+   * Mark user email as verified
+   * Clears OTP data and resets attempt counter
+   */
+  async markEmailVerified(userId: string): Promise<User> {
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        emailVerified: true,
+        otpCode: null,
+        otpExpiresAt: null,
+        otpAttempts: 0,
+      },
+    });
+    return this.prismaUserToEntity(updatedUser);
+  }
+
+  /**
+   * Increment OTP verification attempts for a user
+   */
+  async incrementOtpAttempts(userId: string): Promise<User> {
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        otpAttempts: {
+          increment: 1,
+        },
+      },
+    });
+    return this.prismaUserToEntity(updatedUser);
+  }
+
+  /**
+   * Clear OTP and lock it (used when max attempts exceeded)
+   * Clears OTP code but keeps attempt count for logging purposes
+   */
+  async lockOtp(userId: string): Promise<User> {
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        otpCode: null,
+        otpExpiresAt: null,
+      },
+    });
+    return this.prismaUserToEntity(updatedUser);
   }
 }

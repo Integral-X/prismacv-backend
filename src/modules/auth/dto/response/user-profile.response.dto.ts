@@ -18,6 +18,12 @@ export class UserProfileResponseDto {
   })
   role: UserRole;
 
+  @ApiProperty({
+    description: 'Whether the email has been verified',
+    example: false,
+  })
+  emailVerified: boolean;
+
   @ApiProperty({ description: 'Account creation timestamp' })
   createdAt: Date;
 

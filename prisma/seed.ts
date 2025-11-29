@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { createLogger, format, transports } from 'winston';
+import { uuidv7 } from 'uuidv7';
 
 const logger = createLogger({
   level: 'info',
@@ -24,6 +25,7 @@ async function main() {
     where: { email: 'admin@example.com' },
     update: {},
     create: {
+      id: uuidv7(),
       email: 'admin@example.com',
       password: adminPassword,
       role: 'PLATFORM_ADMIN',

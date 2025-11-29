@@ -5,8 +5,10 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import { UsersService } from './users.service';
+import { OtpService } from './otp.service';
 import { User, UserRole } from './entities/user.entity';
 import { AuthCredentials } from './entities/auth-credentials.entity';
 import { TokenPair } from './entities/token-pair.entity';
@@ -17,6 +19,8 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
+    private readonly otpService: OtpService,
     private readonly logger: Logger = new Logger(AuthService.name),
   ) {}
 
@@ -86,9 +90,10 @@ export class AuthService {
 
   /**
    * Admin signup - creates user with PLATFORM_ADMIN role
-   * Returns user and JWT tokens
+   * Returns user profile only (no tokens - user must login after signup)
+   * Sends OTP email for email verification
    */
-  async adminSignup(user: User): Promise<{ user: User; tokens: TokenPair }> {
+  async adminSignup(user: User): Promise<{ user: User }> {
     try {
       // Hash the password
       const hashedPassword = await bcrypt.hash(user.password, 10);
@@ -107,19 +112,13 @@ export class AuthService {
         `Admin signup successful: email=${createdUser.email}, userId=${createdUser.id}`,
       );
 
-      // Generate tokens for admin
-      const tokenData = await this.getTokens(
-        createdUser.id,
-        createdUser.email,
-        createdUser.role,
-      );
-      await this.updateRefreshToken(createdUser.id, tokenData.refreshToken);
+      // Generate and send OTP for email verification
+      await this.otpService.generateAndSendOtp(createdUser);
 
-      const tokens = new TokenPair();
-      tokens.accessToken = tokenData.accessToken;
-      tokens.refreshToken = tokenData.refreshToken;
+      // Refetch user to get updated OTP fields
+      const updatedUser = await this.usersService.findById(createdUser.id);
 
-      return { user: createdUser, tokens };
+      return { user: updatedUser || createdUser };
     } catch (error) {
       if (error instanceof ConflictException) {
         this.logger.warn(
@@ -164,6 +163,7 @@ export class AuthService {
   /**
    * User signup - creates user with REGULAR role
    * Returns user profile only (no tokens)
+   * Sends OTP email for email verification
    */
   async userSignup(user: User): Promise<{ user: User }> {
     try {
@@ -184,7 +184,13 @@ export class AuthService {
         `User signup successful: email=${createdUser.email}, userId=${createdUser.id}`,
       );
 
-      return { user: createdUser };
+      // Generate and send OTP for email verification
+      await this.otpService.generateAndSendOtp(createdUser);
+
+      // Refetch user to get updated OTP fields
+      const updatedUser = await this.usersService.findById(createdUser.id);
+
+      return { user: updatedUser || createdUser };
     } catch (error) {
       if (error instanceof ConflictException) {
         this.logger.warn(
