@@ -84,7 +84,7 @@ export class AuthController {
   @Post('verify-otp')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Verify email OTP (JWT protected)',
+    summary: 'Verify email OTP,
     description:
       "Verifies the OTP sent to the user's email address during registration. Upon successful verification, the email is marked as verified. Requires platform admin JWT.",
   })
