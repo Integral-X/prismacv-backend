@@ -386,4 +386,71 @@ describe('UsersService', () => {
       expect(result.refreshToken).toBe('new-token-only');
     });
   });
+
+  describe('markEmailVerified', () => {
+    it('should mark email as verified and clear OTP fields', async () => {
+      const userId = '1';
+      const updatedPrismaUser = {
+        id: userId,
+        email: 'test@example.com',
+        password: 'hashedpassword',
+        name: 'Test User',
+        role: UserRole.REGULAR,
+        refreshToken: null,
+        emailVerified: true,
+        otpCode: null,
+        otpExpiresAt: null,
+        avatarUrl: null,
+        provider: null,
+        providerId: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      prismaService.user.update.mockResolvedValue(updatedPrismaUser);
+
+      const result = await usersService.markEmailVerified(userId);
+
+      expect(prismaService.user.update).toHaveBeenCalledWith({
+        where: { id: userId },
+        data: {
+          emailVerified: true,
+          otpCode: null,
+          otpExpiresAt: null,
+        },
+      });
+      expect(result).toBeInstanceOf(User);
+      expect(result.id).toBe(userId);
+      expect(result.emailVerified).toBe(true);
+      expect(result.otpCode).toBeUndefined();
+      expect(result.otpExpiresAt).toBeUndefined();
+    });
+
+    it('should return User entity with emailVerified set to true', async () => {
+      const userId = '2';
+      const updatedPrismaUser = {
+        id: userId,
+        email: 'another@example.com',
+        password: 'hashedpassword',
+        name: 'Another User',
+        role: UserRole.REGULAR,
+        refreshToken: 'some-token',
+        emailVerified: true,
+        otpCode: null,
+        otpExpiresAt: null,
+        avatarUrl: null,
+        provider: null,
+        providerId: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      prismaService.user.update.mockResolvedValue(updatedPrismaUser);
+
+      const result = await usersService.markEmailVerified(userId);
+
+      expect(result).toBeInstanceOf(User);
+      expect(result.emailVerified).toBe(true);
+    });
+  });
 });
