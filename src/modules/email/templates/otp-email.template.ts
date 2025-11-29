@@ -10,9 +10,33 @@ export interface OtpEmailTemplateData {
   userName?: string;
 }
 
+/**
+ * Escapes HTML special characters to prevent XSS vulnerabilities
+ * @param text - The text to escape
+ * @returns The escaped text safe for HTML insertion
+ */
+function escapeHtml(text: string): string {
+  if (!text) {
+    return text;
+  }
+  const htmlEscapeMap: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  };
+  return text.replace(/[&<>"']/g, (char) => htmlEscapeMap[char]);
+}
+
 export function generateOtpEmailTemplate(data: OtpEmailTemplateData): string {
   const { appName, otpCode, expiryMinutes, userName } = data;
-  const greeting = userName ? `Hello ${userName},` : 'Hello,';
+
+  // Escape user-provided values to prevent XSS
+  const safeAppName = escapeHtml(appName);
+  const safeOtpCode = escapeHtml(otpCode);
+  const safeUserName = userName ? escapeHtml(userName) : undefined;
+  const greeting = safeUserName ? `Hello ${safeUserName},` : 'Hello,';
 
   return `
 <!DOCTYPE html>
@@ -20,7 +44,7 @@ export function generateOtpEmailTemplate(data: OtpEmailTemplateData): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Verify Your Email - ${appName}</title>
+  <title>Verify Your Email - ${safeAppName}</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -117,23 +141,23 @@ export function generateOtpEmailTemplate(data: OtpEmailTemplateData): string {
     <div class="content">
       <p class="greeting">${greeting}</p>
       <p class="message">
-        Thank you for registering with ${appName}! To complete your registration and verify your email address, please use the verification code below:
+        Thank you for registering with ${safeAppName}! To complete your registration and verify your email address, please use the verification code below:
       </p>
       
       <div class="otp-container">
         <div class="otp-label">Your Verification Code</div>
-        <div class="otp-code">${otpCode}</div>
+        <div class="otp-code">${safeOtpCode}</div>
         <div class="expiry-notice">⏱️ This code expires in ${expiryMinutes} minutes</div>
       </div>
       
       <div class="warning">
-        <strong>Security Tip:</strong> Never share this code with anyone. ${appName} will never ask you for this code via phone or chat.
+        <strong>Security Tip:</strong> Never share this code with anyone. ${safeAppName} will never ask you for this code via phone or chat.
       </div>
     </div>
     <div class="footer">
-      <p>This email was sent by ${appName}.</p>
+      <p>This email was sent by ${safeAppName}.</p>
       <p>If you didn't create an account, you can safely ignore this email.</p>
-      <p>&copy; ${new Date().getFullYear()} ${appName}. All rights reserved.</p>
+      <p>&copy; ${new Date().getFullYear()} ${safeAppName}. All rights reserved.</p>
     </div>
   </div>
 </body>
