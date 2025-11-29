@@ -67,6 +67,8 @@ describe('UsersService', () => {
       prismaService.user.findUnique.mockResolvedValue(null);
       prismaService.user.create.mockResolvedValue(createdPrismaUser);
 
+      // Capture time before the service call to handle slow test environments
+      const testStartTime = Date.now();
       const result = await usersService.create(userEntity);
 
       expect(prismaService.user.findUnique).toHaveBeenCalledWith({
@@ -91,11 +93,10 @@ describe('UsersService', () => {
       // Verify time-ordering property of UUIDv7 by extracting timestamp
       const extractedTimestamp = extractTimestampFromUuidv7(callArgs.data.id);
       expect(extractedTimestamp).not.toBeNull();
-      // Timestamp should be recent (within last minute)
-      const now = Date.now();
-      const oneMinuteAgo = now - 60000;
-      expect(extractedTimestamp!.getTime()).toBeGreaterThan(oneMinuteAgo);
-      expect(extractedTimestamp!.getTime()).toBeLessThanOrEqual(now);
+      // Timestamp should be between test start and now (with margin for slow environments)
+      const timestampMs = extractedTimestamp?.getTime() ?? 0;
+      expect(timestampMs).toBeGreaterThanOrEqual(testStartTime - 1000);
+      expect(timestampMs).toBeLessThanOrEqual(Date.now() + 1000);
       expect(result).toBeInstanceOf(User);
       expect(result.id).toBe(expectedUserEntity.id);
       expect(result.email).toBe(expectedUserEntity.email);
