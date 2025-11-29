@@ -123,7 +123,7 @@ export class AuthController {
   @Post('resend-otp')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Resend OTP (JWT protected)',
+    summary: 'Resend OTP',
     description:
       "Resends a new OTP to the user's email address. Use this when the previous OTP has expired or was not received. Requires platform admin JWT.",
   })
