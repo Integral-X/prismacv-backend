@@ -386,4 +386,67 @@ describe('UsersService', () => {
       expect(result.refreshToken).toBe('new-token-only');
     });
   });
+
+  describe('clearOtp', () => {
+    it('should clear OTP fields successfully', async () => {
+      const userId = '1';
+      const updatedPrismaUser = {
+        id: userId,
+        email: 'test@example.com',
+        password: 'hashedpassword',
+        name: 'Test User',
+        role: UserRole.REGULAR,
+        refreshToken: null,
+        emailVerified: false,
+        otpCode: null,
+        otpExpiresAt: null,
+        avatarUrl: null,
+        provider: null,
+        providerId: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      prismaService.user.update.mockResolvedValue(updatedPrismaUser);
+
+      const result = await usersService.clearOtp(userId);
+
+      expect(prismaService.user.update).toHaveBeenCalledWith({
+        where: { id: userId },
+        data: {
+          otpCode: null,
+          otpExpiresAt: null,
+        },
+      });
+      expect(result).toBeInstanceOf(User);
+      expect(result.id).toBe(userId);
+    });
+
+    it('should return user with OTP fields set to null', async () => {
+      const userId = '1';
+      const updatedPrismaUser = {
+        id: userId,
+        email: 'test@example.com',
+        password: 'hashedpassword',
+        name: 'Test User',
+        role: UserRole.REGULAR,
+        refreshToken: null,
+        emailVerified: false,
+        otpCode: null,
+        otpExpiresAt: null,
+        avatarUrl: null,
+        provider: null,
+        providerId: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      prismaService.user.update.mockResolvedValue(updatedPrismaUser);
+
+      const result = await usersService.clearOtp(userId);
+
+      expect(result.otpCode).toBeUndefined();
+      expect(result.otpExpiresAt).toBeUndefined();
+    });
+  });
 });
