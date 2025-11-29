@@ -16,6 +16,9 @@ export interface OtpEmailTemplateData {
  * @returns The escaped text safe for HTML insertion
  */
 function escapeHtml(text: string): string {
+  if (!text) {
+    return text;
+  }
   const htmlEscapeMap: Record<string, string> = {
     '&': '&amp;',
     '<': '&lt;',
@@ -23,7 +26,7 @@ function escapeHtml(text: string): string {
     '"': '&quot;',
     "'": '&#39;',
   };
-  return text.replace(/[&<>"']/g, char => htmlEscapeMap[char]);
+  return text.replace(/[&<>"']/g, (char) => htmlEscapeMap[char]);
 }
 
 export function generateOtpEmailTemplate(data: OtpEmailTemplateData): string {
