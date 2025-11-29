@@ -388,9 +388,11 @@ describe('UsersService', () => {
   });
 
   describe('clearOtp', () => {
-    it('should clear OTP fields successfully', async () => {
-      const userId = '1';
-      const updatedPrismaUser = {
+    const userId = '1';
+    let clearedPrismaUser: any;
+
+    beforeEach(() => {
+      clearedPrismaUser = {
         id: userId,
         email: 'test@example.com',
         password: 'hashedpassword',
@@ -406,8 +408,10 @@ describe('UsersService', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
+    });
 
-      prismaService.user.update.mockResolvedValue(updatedPrismaUser);
+    it('should clear OTP fields successfully', async () => {
+      prismaService.user.update.mockResolvedValue(clearedPrismaUser);
 
       const result = await usersService.clearOtp(userId);
 
@@ -423,25 +427,7 @@ describe('UsersService', () => {
     });
 
     it('should return user with OTP fields set to null', async () => {
-      const userId = '1';
-      const updatedPrismaUser = {
-        id: userId,
-        email: 'test@example.com',
-        password: 'hashedpassword',
-        name: 'Test User',
-        role: UserRole.REGULAR,
-        refreshToken: null,
-        emailVerified: false,
-        otpCode: null,
-        otpExpiresAt: null,
-        avatarUrl: null,
-        provider: null,
-        providerId: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      prismaService.user.update.mockResolvedValue(updatedPrismaUser);
+      prismaService.user.update.mockResolvedValue(clearedPrismaUser);
 
       const result = await usersService.clearOtp(userId);
 
