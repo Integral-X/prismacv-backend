@@ -8,11 +8,14 @@
   Note: In production, you may want to create a mapping table to preserve old CUIDs for reference.
 */
 
+-- Ensure the pg_uuidv7 extension is enabled for UUIDv7 generation
+CREATE EXTENSION IF NOT EXISTS pg_uuidv7;
+
 -- Step 1: Add a temporary column for the new UUID
 ALTER TABLE "users" ADD COLUMN "new_id" UUID;
 
--- Step 2: Generate new UUIDs for existing records (using gen_random_uuid as a fallback)
-UPDATE "users" SET "new_id" = gen_random_uuid();
+-- Step 2: Generate new UUIDs for existing records using UUIDv7
+UPDATE "users" SET "new_id" = uuid_generate_v7();
 
 -- Step 3: Make the new column NOT NULL
 ALTER TABLE "users" ALTER COLUMN "new_id" SET NOT NULL;
