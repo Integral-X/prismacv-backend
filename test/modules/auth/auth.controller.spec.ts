@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { AuthController } from '../../../src/modules/auth/auth.controller';
 import { AuthService } from '../../../src/modules/auth/auth.service';
+import { OtpService } from '../../../src/modules/auth/otp.service';
 import { AuthMapper } from '../../../src/modules/auth/mappers/auth.mapper';
 import { RefreshTokenRequestDto } from '../../../src/modules/auth/dto/request/refresh-token.request.dto';
 import { AdminAuthResponseDto } from '../../../src/modules/auth/dto/response/admin-auth.response.dto';
@@ -21,6 +22,7 @@ describe('AuthController', () => {
     name: 'Admin User',
     role: UserRole.PLATFORM_ADMIN,
     refreshToken: 'refresh-token',
+    emailVerified: false,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
@@ -30,6 +32,7 @@ describe('AuthController', () => {
     email: 'admin@example.com',
     name: 'Admin User',
     role: UserRole.PLATFORM_ADMIN,
+    emailVerified: false,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -50,8 +53,14 @@ describe('AuthController', () => {
       refreshToken: jest.fn(),
     };
 
+    const mockOtpService = {
+      verifyOtp: jest.fn(),
+      resendOtp: jest.fn(),
+    };
+
     const mockAuthMapper = {
       userToAdminAuthResponse: jest.fn(),
+      userToProfileResponse: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -60,6 +69,10 @@ describe('AuthController', () => {
         {
           provide: AuthService,
           useValue: mockAuthService,
+        },
+        {
+          provide: OtpService,
+          useValue: mockOtpService,
         },
         {
           provide: AuthMapper,
