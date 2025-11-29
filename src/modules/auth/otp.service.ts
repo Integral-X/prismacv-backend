@@ -3,12 +3,17 @@ import {
   Logger,
   BadRequestException,
   NotFoundException,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
 import { EmailService } from '@/modules/email/email.service';
+
+// Maximum number of failed OTP verification attempts before locking
+const MAX_OTP_ATTEMPTS = 5;
 
 @Injectable()
 export class OtpService {
@@ -76,6 +81,7 @@ export class OtpService {
 
   /**
    * Verify OTP code for email verification
+   * Includes rate limiting to prevent brute-force attacks
    */
   async verifyOtp(email: string, otpCode: string): Promise<User> {
     const user = await this.usersService.findByEmail(email.toLowerCase());
@@ -101,6 +107,17 @@ export class OtpService {
       );
     }
 
+    // Check if max attempts exceeded (OTP was locked)
+    if (user.otpAttempts >= MAX_OTP_ATTEMPTS) {
+      this.logger.warn(
+        `OTP verification failed: max attempts exceeded, email=${email}, attempts=${user.otpAttempts}`,
+      );
+      throw new HttpException(
+        'Too many failed attempts. Please request a new verification code.',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
     // Check if OTP is expired
     if (new Date() > user.otpExpiresAt) {
       this.logger.warn(`OTP verification failed: OTP expired, email=${email}`);
@@ -111,8 +128,30 @@ export class OtpService {
 
     // Verify OTP code
     if (user.otpCode !== otpCode) {
-      this.logger.warn(`OTP verification failed: invalid OTP, email=${email}`);
-      throw new BadRequestException('Invalid verification code');
+      // Increment failed attempt counter
+      const updatedUser = await this.usersService.incrementOtpAttempts(user.id);
+      const remainingAttempts = MAX_OTP_ATTEMPTS - updatedUser.otpAttempts;
+
+      this.logger.warn(
+        `OTP verification failed: invalid OTP, email=${email}, attempts=${updatedUser.otpAttempts}/${MAX_OTP_ATTEMPTS}`,
+      );
+
+      // Check if max attempts reached after increment
+      if (updatedUser.otpAttempts >= MAX_OTP_ATTEMPTS) {
+        // Lock the OTP by clearing it
+        await this.usersService.lockOtp(user.id);
+        this.logger.warn(
+          `OTP locked due to max attempts exceeded, email=${email}`,
+        );
+        throw new HttpException(
+          'Too many failed attempts. Please request a new verification code.',
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+
+      throw new BadRequestException(
+        `Invalid verification code. ${remainingAttempts} attempt${remainingAttempts === 1 ? '' : 's'} remaining.`,
+      );
     }
 
     // Mark email as verified and clear OTP

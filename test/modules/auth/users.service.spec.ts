@@ -5,6 +5,7 @@ import { ConflictException } from '@nestjs/common';
 import { mockDeep, DeepMockProxy } from 'jest-mock-extended';
 import { Prisma, UserRole } from '@prisma/client';
 import { User } from '../../../src/modules/auth/entities/user.entity';
+import { extractTimestampFromUuidv7 } from '../../../src/shared/utils/uuid.util';
 
 describe('UsersService', () => {
   let usersService: UsersService;
@@ -47,6 +48,7 @@ describe('UsersService', () => {
         emailVerified: false,
         otpCode: null,
         otpExpiresAt: null,
+        otpAttempts: 0,
         avatarUrl: null,
         provider: null,
         providerId: null,
@@ -66,6 +68,8 @@ describe('UsersService', () => {
       prismaService.user.findUnique.mockResolvedValue(null);
       prismaService.user.create.mockResolvedValue(createdPrismaUser);
 
+      // Capture time before the service call to handle slow test environments
+      const testStartTime = Date.now();
       const result = await usersService.create(userEntity);
 
       expect(prismaService.user.findUnique).toHaveBeenCalledWith({
@@ -81,12 +85,19 @@ describe('UsersService', () => {
           }),
         }),
       );
-      // Verify that a UUIDv7 id was generated (36 chars with dashes)
+      // Verify that a valid UUIDv7 was generated (standard UUID format: 8-4-4-4-12)
       const callArgs = (prismaService.user.create as jest.Mock).mock
         .calls[0][0];
       expect(callArgs.data.id).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
       );
+      // Verify time-ordering property of UUIDv7 by extracting timestamp
+      const extractedTimestamp = extractTimestampFromUuidv7(callArgs.data.id);
+      expect(extractedTimestamp).not.toBeNull();
+      // Timestamp should be between test start and now (with margin for slow environments)
+      const timestampMs = extractedTimestamp?.getTime() ?? 0;
+      expect(timestampMs).toBeGreaterThanOrEqual(testStartTime - 1000);
+      expect(timestampMs).toBeLessThanOrEqual(Date.now() + 1000);
       expect(result).toBeInstanceOf(User);
       expect(result.id).toBe(expectedUserEntity.id);
       expect(result.email).toBe(expectedUserEntity.email);
@@ -105,6 +116,7 @@ describe('UsersService', () => {
         emailVerified: false,
         otpCode: null,
         otpExpiresAt: null,
+        otpAttempts: 0,
         avatarUrl: null,
         provider: null,
         providerId: null,
@@ -156,6 +168,7 @@ describe('UsersService', () => {
         emailVerified: false,
         otpCode: null,
         otpExpiresAt: null,
+        otpAttempts: 0,
         avatarUrl: null,
         provider: null,
         providerId: null,
@@ -231,6 +244,7 @@ describe('UsersService', () => {
         emailVerified: false,
         otpCode: null,
         otpExpiresAt: null,
+        otpAttempts: 0,
         avatarUrl: null,
         provider: null,
         providerId: null,
@@ -274,6 +288,7 @@ describe('UsersService', () => {
         emailVerified: false,
         otpCode: null,
         otpExpiresAt: null,
+        otpAttempts: 0,
         avatarUrl: null,
         provider: null,
         providerId: null,
@@ -322,6 +337,7 @@ describe('UsersService', () => {
         emailVerified: false,
         otpCode: null,
         otpExpiresAt: null,
+        otpAttempts: 0,
         avatarUrl: null,
         provider: null,
         providerId: null,
@@ -362,6 +378,7 @@ describe('UsersService', () => {
         emailVerified: false,
         otpCode: null,
         otpExpiresAt: null,
+        otpAttempts: 0,
         avatarUrl: null,
         provider: null,
         providerId: null,
@@ -384,6 +401,78 @@ describe('UsersService', () => {
       });
       expect(result).toBeInstanceOf(User);
       expect(result.refreshToken).toBe('new-token-only');
+    });
+  });
+
+  describe('saveOtp', () => {
+    it('should save OTP code and expiration for a user', async () => {
+      const userId = '1';
+      const otpCode = '123456';
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+
+      const updatedPrismaUser = {
+        id: userId,
+        email: 'test@example.com',
+        password: 'hashedpassword',
+        name: 'Test User',
+        role: UserRole.REGULAR,
+        refreshToken: null,
+        emailVerified: false,
+        otpCode: otpCode,
+        otpExpiresAt: expiresAt,
+        avatarUrl: null,
+        provider: null,
+        providerId: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      prismaService.user.update.mockResolvedValue(updatedPrismaUser);
+
+      const result = await usersService.saveOtp(userId, otpCode, expiresAt);
+
+      expect(prismaService.user.update).toHaveBeenCalledWith({
+        where: { id: userId },
+        data: {
+          otpCode,
+          otpExpiresAt: expiresAt,
+        },
+      });
+      expect(result).toBeInstanceOf(User);
+      expect(result.otpCode).toBe(otpCode);
+      expect(result.otpExpiresAt).toBe(expiresAt);
+    });
+
+    it('should return User entity with correct OTP values', async () => {
+      const userId = '2';
+      const otpCode = '654321';
+      const expiresAt = new Date('2024-12-31T23:59:59Z');
+
+      const updatedPrismaUser = {
+        id: userId,
+        email: 'user2@example.com',
+        password: 'hashedpassword2',
+        name: 'User Two',
+        role: UserRole.REGULAR,
+        refreshToken: 'some-token',
+        emailVerified: false,
+        otpCode: otpCode,
+        otpExpiresAt: expiresAt,
+        avatarUrl: null,
+        provider: null,
+        providerId: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      prismaService.user.update.mockResolvedValue(updatedPrismaUser);
+
+      const result = await usersService.saveOtp(userId, otpCode, expiresAt);
+
+      expect(result.id).toBe(userId);
+      expect(result.email).toBe('user2@example.com');
+      expect(result.otpCode).toBe(otpCode);
+      expect(result.otpExpiresAt).toEqual(expiresAt);
     });
   });
 });
