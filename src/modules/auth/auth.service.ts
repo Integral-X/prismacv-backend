@@ -303,10 +303,16 @@ export class AuthService {
    * Generate a 6-digit OTP code
    */
   private generateOtpCode(): string {
-    // Generate cryptographically secure random 6-digit OTP
-    const randomBytes = crypto.randomBytes(3);
-    const randomNumber = randomBytes.readUIntBE(0, 3);
-    const otp = (randomNumber % 900000) + 100000; // Ensures 6 digits (100000-999999)
+    // Generate cryptographically secure random 6-digit OTP without modulo bias
+    const MAX = 900000; // number of possible OTP codes
+    const RANGE = 16777216; // 2^24, max random value from 3 bytes
+    const LIMIT = Math.floor(RANGE / MAX) * MAX; // 16_200_000
+    let randomNumber: number;
+    do {
+      const randomBytes = crypto.randomBytes(3);
+      randomNumber = randomBytes.readUIntBE(0, 3);
+    } while (randomNumber >= LIMIT);
+    const otp = (randomNumber % MAX) + 100000; // Ensures 6 digits (100000-999999)
     return otp.toString();
   }
 
