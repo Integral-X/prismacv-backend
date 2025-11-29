@@ -1,5 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, NotFoundException, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+  Logger,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { OtpService } from '../../../src/modules/auth/otp.service';
 import { UsersService } from '../../../src/modules/auth/users.service';
@@ -20,6 +26,7 @@ describe('OtpService', () => {
     emailVerified: false,
     otpCode: '123456',
     otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
+    otpAttempts: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
@@ -30,6 +37,8 @@ describe('OtpService', () => {
       findById: jest.fn(),
       saveOtp: jest.fn(),
       markEmailVerified: jest.fn(),
+      incrementOtpAttempts: jest.fn(),
+      lockOtp: jest.fn(),
     };
 
     const mockEmailService = {
@@ -120,6 +129,7 @@ describe('OtpService', () => {
         emailVerified: true,
         otpCode: null,
         otpExpiresAt: null,
+        otpAttempts: 0,
       };
       usersService.findByEmail.mockResolvedValue(mockUser);
       usersService.markEmailVerified.mockResolvedValue(verifiedUser as User);
@@ -148,7 +158,12 @@ describe('OtpService', () => {
     });
 
     it('should throw BadRequestException if no OTP is found', async () => {
-      const userWithoutOtp = { ...mockUser, otpCode: null, otpExpiresAt: null };
+      const userWithoutOtp = {
+        ...mockUser,
+        otpCode: null,
+        otpExpiresAt: null,
+        otpAttempts: 0,
+      };
       usersService.findByEmail.mockResolvedValue(userWithoutOtp as User);
 
       await expect(
@@ -160,6 +175,7 @@ describe('OtpService', () => {
       const userWithExpiredOtp = {
         ...mockUser,
         otpExpiresAt: new Date(Date.now() - 1000), // Expired 1 second ago
+        otpAttempts: 0,
       };
       usersService.findByEmail.mockResolvedValue(userWithExpiredOtp as User);
 
@@ -168,12 +184,78 @@ describe('OtpService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('should throw BadRequestException if OTP code is invalid', async () => {
-      usersService.findByEmail.mockResolvedValue(mockUser);
+    it('should throw BadRequestException with remaining attempts on invalid OTP', async () => {
+      const userWithAttempts = { ...mockUser, otpAttempts: 0 };
+      usersService.findByEmail.mockResolvedValue(userWithAttempts as User);
+      usersService.incrementOtpAttempts.mockResolvedValue({
+        ...userWithAttempts,
+        otpAttempts: 1,
+      } as User);
 
       await expect(
         otpService.verifyOtp('test@example.com', '654321'),
       ).rejects.toThrow(BadRequestException);
+      expect(usersService.incrementOtpAttempts).toHaveBeenCalledWith(
+        mockUser.id,
+      );
+    });
+
+    it('should throw 429 error when max attempts exceeded on current attempt', async () => {
+      const userWithMaxAttempts = { ...mockUser, otpAttempts: 5 };
+      usersService.findByEmail.mockResolvedValue(userWithMaxAttempts as User);
+
+      await expect(
+        otpService.verifyOtp('test@example.com', '654321'),
+      ).rejects.toThrow(HttpException);
+
+      try {
+        await otpService.verifyOtp('test@example.com', '654321');
+      } catch (error) {
+        expect(error).toBeInstanceOf(HttpException);
+        expect((error as HttpException).getStatus()).toBe(
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+    });
+
+    it('should lock OTP and throw 429 error when max attempts reached after increment', async () => {
+      const userWithFourAttempts = { ...mockUser, otpAttempts: 4 };
+      usersService.findByEmail.mockResolvedValue(userWithFourAttempts as User);
+      usersService.incrementOtpAttempts.mockResolvedValue({
+        ...userWithFourAttempts,
+        otpAttempts: 5,
+      } as User);
+      usersService.lockOtp.mockResolvedValue({
+        ...userWithFourAttempts,
+        otpCode: null,
+        otpExpiresAt: null,
+        otpAttempts: 5,
+      } as User);
+
+      await expect(
+        otpService.verifyOtp('test@example.com', '654321'),
+      ).rejects.toThrow(HttpException);
+
+      expect(usersService.incrementOtpAttempts).toHaveBeenCalledWith(
+        mockUser.id,
+      );
+      expect(usersService.lockOtp).toHaveBeenCalledWith(mockUser.id);
+    });
+
+    it('should show remaining attempts message on invalid OTP', async () => {
+      const userWithThreeAttempts = { ...mockUser, otpAttempts: 0 };
+      usersService.findByEmail.mockResolvedValue(userWithThreeAttempts as User);
+      usersService.incrementOtpAttempts.mockResolvedValue({
+        ...userWithThreeAttempts,
+        otpAttempts: 3,
+      } as User);
+
+      try {
+        await otpService.verifyOtp('test@example.com', '654321');
+      } catch (error) {
+        expect(error).toBeInstanceOf(BadRequestException);
+        expect((error as BadRequestException).message).toContain('2 attempts');
+      }
     });
   });
 

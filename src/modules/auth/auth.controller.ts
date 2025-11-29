@@ -88,7 +88,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Verify email OTP',
     description:
-      "Verifies the OTP sent to the user's email address during registration. Upon successful verification, the email is marked as verified. Requires platform admin JWT.",
+      "Verifies the OTP sent to the user's email address during registration. Upon successful verification, the email is marked as verified. Rate limited to 5 attempts per OTP.",
   })
   @ApiBody({ type: VerifyOtpRequestDto })
   @ApiResponse({
@@ -107,6 +107,11 @@ export class AuthController {
   @ApiResponse({
     status: 404,
     description: 'Not Found - User not found',
+  })
+  @ApiResponse({
+    status: 429,
+    description:
+      'Too Many Requests - Maximum verification attempts (5) exceeded. Request a new OTP.',
   })
   async verifyOtp(
     @Body() verifyOtpRequestDto: VerifyOtpRequestDto,
