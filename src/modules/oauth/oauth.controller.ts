@@ -21,7 +21,7 @@ import { AuthMapper } from '@/modules/auth/mappers/auth.mapper';
 import { User } from '@/modules/auth/entities/user.entity';
 
 @ApiTags('OAuth Authentication')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('oauth')
 export class OAuthController {
   constructor(private readonly authMapper: AuthMapper) {}
@@ -37,6 +37,10 @@ export class OAuthController {
     status: HttpStatus.FOUND,
     description: 'Redirects to LinkedIn OAuth page',
   })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Forbidden - Missing or invalid JWT token',
+  })
   async linkedinAuth() {
     // Passport will handle the redirect
   }
@@ -48,12 +52,11 @@ export class OAuthController {
   @ApiOperation({
     summary: 'LinkedIn OAuth callback',
     description:
-      'Handles the callback from LinkedIn after user authentication. Returns user profile only (no JWT tokens). This endpoint is called by LinkedIn and must be public.',
+      'Handles the callback from LinkedIn after user authentication. Returns user profile.',
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description:
-      'OAuth authentication successful. Returns user profile only (no JWT tokens).',
+    description: 'OAuth authentication successful. Returns user profile.',
     type: OAuthCallbackResponseDto,
   })
   @ApiResponse({
@@ -62,7 +65,6 @@ export class OAuthController {
   })
   async linkedinCallback(@Req() req: Request, @Res() res: Response) {
     // req.user is set by Passport strategy after successful authentication
-    // Type assertion: Passport strategy returns { user }
     const { user } = req.user as { user: User };
 
     // Map user to response DTO
@@ -72,8 +74,6 @@ export class OAuthController {
       user: userResponse,
     };
 
-    // In production, you might want to redirect to frontend
-    // For now, return JSON response
     res.status(HttpStatus.OK).json(response);
   }
 }

@@ -12,32 +12,86 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBody,
-  ApiBearerAuth,
+  ApiSecurity,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { OtpService } from './otp.service';
+import { AdminLoginRequestDto } from './dto/request/admin-login.request.dto';
+import { AdminSignupRequestDto } from './dto/request/admin-signup.request.dto';
 import { RefreshTokenRequestDto } from './dto/request/refresh-token.request.dto';
-import { VerifyOtpRequestDto } from './dto/request/verify-otp.request.dto';
-import { ResendOtpRequestDto } from './dto/request/resend-otp.request.dto';
+import { AdminLoginResponseDto } from './dto/response/admin-login.response.dto';
+import { AdminSignupResponseDto } from './dto/response/admin-signup.response.dto';
 import { AdminAuthResponseDto } from './dto/response/admin-auth.response.dto';
-import { OtpVerificationResponseDto } from './dto/response/otp-verification.response.dto';
-import { OtpResendResponseDto } from './dto/response/otp-resend.response.dto';
 import { AuthMapper } from './mappers/auth.mapper';
 import { Public } from '../../common/decorators/public.decorator';
 
-@ApiTags('Auth Utilities')
-@ApiBearerAuth('JWT-auth')
+@ApiTags('Admin Authentication')
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly otpService: OtpService,
     private readonly authMapper: AuthMapper,
   ) {}
 
   @Public()
+  @Post('admin/login')
+  @HttpCode(HttpStatus.OK)
+  @ApiSecurity({})
+  @ApiOperation({
+    summary: 'Platform admin authentication',
+    description:
+      'Authenticates a platform administrator and returns JWT tokens.',
+  })
+  @ApiBody({ type: AdminLoginRequestDto })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Admin login successful. Response includes JWT tokens (access token and refresh token).',
+    type: AdminLoginResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description:
+      'Unauthorized - Invalid credentials or user is not a platform admin',
+  })
+  async adminLogin(
+    @Body() loginRequestDto: AdminLoginRequestDto,
+  ): Promise<AdminLoginResponseDto> {
+    const credentials =
+      this.authMapper.loginRequestToCredentials(loginRequestDto);
+    const result = await this.authService.adminLogin(credentials);
+    return this.authMapper.tokensToAdminLoginResponse(result.tokens);
+  }
+
+  @Public()
+  @Post('admin/signup')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiSecurity({})
+  @ApiOperation({
+    summary: 'Platform admin registration',
+    description:
+      'Registers a new platform administrator and returns user profile. New admins are assigned PLATFORM_ADMIN role. An OTP will be sent to the email for verification.',
+  })
+  @ApiBody({ type: AdminSignupRequestDto })
+  @ApiResponse({
+    status: 201,
+    description:
+      'Admin registered successfully. Response includes admin profile.',
+    type: AdminSignupResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request - Validation errors' })
+  @ApiResponse({ status: 409, description: 'Conflict - Email already exists' })
+  async adminSignup(
+    @Body() signupRequestDto: AdminSignupRequestDto,
+  ): Promise<AdminSignupResponseDto> {
+    const userEntity = this.authMapper.signupRequestToEntity(signupRequestDto);
+    const result = await this.authService.adminSignup(userEntity);
+    return this.authMapper.userToAdminSignupResponse(result.user);
+  }
+
+  @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
+  @ApiSecurity({})
   @ApiOperation({
     summary: 'Refresh access token',
     description:
@@ -81,85 +135,5 @@ export class AuthController {
       }
       throw error;
     }
-  }
-
-  @Post('verify-otp')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'Verify email OTP',
-    description:
-      "Verifies the OTP sent to the user's email address during registration. Upon successful verification, the email is marked as verified. Rate limited to 5 attempts per OTP.",
-  })
-  @ApiBody({ type: VerifyOtpRequestDto })
-  @ApiResponse({
-    status: 200,
-    description: 'Email verified successfully.',
-    type: OtpVerificationResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Bad Request - Invalid or expired OTP',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Missing or invalid JWT token',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Not Found - User not found',
-  })
-  @ApiResponse({
-    status: 429,
-    description:
-      'Too Many Requests - Maximum verification attempts (5) exceeded. Request a new OTP.',
-  })
-  async verifyOtp(
-    @Body() verifyOtpRequestDto: VerifyOtpRequestDto,
-  ): Promise<OtpVerificationResponseDto> {
-    const user = await this.otpService.verifyOtp(
-      verifyOtpRequestDto.email,
-      verifyOtpRequestDto.otp,
-    );
-
-    return {
-      message: 'Email verified successfully',
-      user: this.authMapper.userToProfileResponse(user),
-    };
-  }
-
-  @Post('resend-otp')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'Resend OTP',
-    description:
-      "Resends a new OTP to the user's email address. Use this when the previous OTP has expired or was not received. Requires platform admin JWT.",
-  })
-  @ApiBody({ type: ResendOtpRequestDto })
-  @ApiResponse({
-    status: 200,
-    description: 'OTP sent successfully.',
-    type: OtpResendResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Bad Request - Email already verified',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Missing or invalid JWT token',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Not Found - User not found',
-  })
-  async resendOtp(
-    @Body() resendOtpRequestDto: ResendOtpRequestDto,
-  ): Promise<OtpResendResponseDto> {
-    const result = await this.otpService.resendOtp(resendOtpRequestDto.email);
-
-    return {
-      message: 'OTP sent successfully',
-      expiresAt: result.expiresAt,
-    };
   }
 }
