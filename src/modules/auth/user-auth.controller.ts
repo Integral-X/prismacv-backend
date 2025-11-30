@@ -37,6 +37,10 @@ export class UserAuthController {
     status: 401,
     description: 'Unauthorized - Invalid credentials',
   })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Missing or invalid JWT token',
+  })
   async login(
     @Body() loginRequestDto: UserLoginRequestDto,
   ): Promise<UserAuthResponseDto> {
@@ -65,8 +69,8 @@ export class UserAuthController {
     description: 'Bad Request - Validation errors',
   })
   @ApiResponse({
-    status: 401,
-    description: 'Unauthorized',
+    status: 403,
+    description: 'Forbidden - Missing or invalid JWT token',
   })
   @ApiResponse({
     status: 409,

@@ -38,8 +38,8 @@ export class OAuthController {
     description: 'Redirects to LinkedIn OAuth page',
   })
   @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description: 'Unauthorized - Missing or invalid JWT token',
+    status: HttpStatus.FORBIDDEN,
+    description: 'Forbidden - Missing or invalid JWT token',
   })
   async linkedinAuth() {
     // Passport will handle the redirect

@@ -40,8 +40,8 @@ export class OtpController {
     description: 'Bad Request - Invalid or expired OTP',
   })
   @ApiResponse({
-    status: 401,
-    description: 'Unauthorized',
+    status: 403,
+    description: 'Forbidden - Missing or invalid JWT token',
   })
   @ApiResponse({
     status: 404,
@@ -84,8 +84,8 @@ export class OtpController {
     description: 'Bad Request - Email already verified',
   })
   @ApiResponse({
-    status: 401,
-    description: 'Unauthorized',
+    status: 403,
+    description: 'Forbidden - Missing or invalid JWT token',
   })
   @ApiResponse({
     status: 404,
