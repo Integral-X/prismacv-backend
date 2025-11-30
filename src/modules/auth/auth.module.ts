@@ -6,7 +6,7 @@ import { WinstonModule } from 'nest-winston';
 import { AuthService } from './auth.service';
 import { OtpService } from './otp.service';
 import { AuthController } from './auth.controller';
-import { AdminAuthController } from './admin-auth.controller';
+import { OtpController } from './otp.controller';
 import { UserAuthController } from './user-auth.controller';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -45,7 +45,7 @@ import { JWT_EXPIRATION } from '@/shared/constants/jwt.constants';
     Logger,
     AuthMapper,
   ],
-  controllers: [AuthController, AdminAuthController, UserAuthController],
+  controllers: [AuthController, OtpController, UserAuthController],
   exports: [AuthService, OtpService],
 })
 export class AuthModule {}
