@@ -46,18 +46,24 @@ export class EmailService {
     }
 
     try {
+      // Port 465 uses implicit SSL (secure: true)
+      // Port 587 uses STARTTLS (secure: false, but TLS will be upgraded)
+      const isImplicitTLS = this.smtpConfig.port === 465;
+
       this.transporter = nodemailer.createTransport({
         host: this.smtpConfig.host,
         port: this.smtpConfig.port,
-        secure: this.smtpConfig.secure,
+        secure: isImplicitTLS, // true for 465, false for 587
         auth: {
           user: this.smtpConfig.auth.user,
           pass: this.smtpConfig.auth.pass,
         },
+        // For port 587, require STARTTLS upgrade
+        requireTLS: !isImplicitTLS,
       });
 
       this.logger.log(
-        `Email transporter initialized with host: ${this.smtpConfig.host}:${this.smtpConfig.port}`,
+        `Email transporter initialized with host: ${this.smtpConfig.host}:${this.smtpConfig.port} (${isImplicitTLS ? 'SSL' : 'STARTTLS'})`,
       );
     } catch (error) {
       this.logger.error('Failed to initialize email transporter', error);
@@ -90,9 +96,10 @@ export class EmailService {
       );
       return true;
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(
-        `Failed to send email: to=${options.to}, subject=${options.subject}`,
-        error,
+        `Failed to send email: to=${options.to}, subject=${options.subject}, error=${errorMessage}`,
       );
       return false;
     }
