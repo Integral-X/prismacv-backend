@@ -27,6 +27,10 @@ import { User } from '@/modules/auth/entities/user.entity';
 export class OAuthController {
   constructor(private readonly authMapper: AuthMapper) {}
 
+  /* ---------------------------
+        LINKEDIN AUTH FLOW
+  ---------------------------- */
+
   @Get('linkedin')
   @UseGuards(LinkedInAuthGuard)
   @ApiOperation({
@@ -39,44 +43,28 @@ export class OAuthController {
     description: 'Redirects to LinkedIn OAuth page',
   })
   async linkedinAuth() {
-    // Passport will handle the redirect
+    // Handled by Passport
   }
 
   @Public()
   @Get('linkedin/callback')
   @UseGuards(LinkedInAuthGuard)
-  @ApiExcludeEndpoint()
-  @ApiOperation({
-    summary: 'LinkedIn OAuth callback',
-    description:
-      'Handles the callback from LinkedIn after user authentication. Returns user profile only (no JWT tokens). This endpoint is called by LinkedIn and must be public.',
-  })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description:
-      'OAuth authentication successful. Returns user profile only (no JWT tokens).',
-    type: OAuthCallbackResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description: 'Unauthorized - OAuth authentication failed',
-  })
+  @ApiExcludeEndpoint() // Keep hidden from Swagger
   async linkedinCallback(@Req() req: Request, @Res() res: Response) {
-    // req.user is set by Passport strategy after successful authentication
-    // Type assertion: Passport strategy returns { user }
     const { user } = req.user as { user: User };
 
-    // Map user to response DTO
     const userResponse = this.authMapper.userToUserAuthResponse(user);
 
     const response: OAuthCallbackResponseDto = {
       user: userResponse,
     };
 
-    // In production, you might want to redirect to frontend
-    // For now, return JSON response
-    res.status(HttpStatus.OK).json(response);
+    return res.status(HttpStatus.OK).json(response);
   }
+
+  /* ---------------------------
+            GOOGLE AUTH FLOW
+  ---------------------------- */
 
   @Get('google')
   @UseGuards(GoogleAuthGuard)
@@ -90,43 +78,22 @@ export class OAuthController {
     description: 'Redirects to Google OAuth page',
   })
   async googleAuth() {
-    // Passport will handle the redirect
+    // Handled by Passport
   }
 
   @Public()
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)
-  @ApiExcludeEndpoint()
-  @ApiOperation({
-    summary: 'Google OAuth callback',
-    description:
-      'Handles the callback from Google after user authentication. Returns user profile only (no JWT tokens). This endpoint is called by Google and must be public.',
-  })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description:
-      'OAuth authentication successful. Returns user profile only (no JWT tokens).',
-    type: OAuthCallbackResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description: 'Unauthorized - OAuth authentication failed',
-  })
+  @ApiExcludeEndpoint() // Keep hidden from Swagger
   async googleCallback(@Req() req: Request, @Res() res: Response) {
-    // req.user is set by Passport strategy after successful authentication
-    // Type assertion: Passport strategy returns { user }
     const { user } = req.user as { user: User };
 
-    // Map user to response DTO
     const userResponse = this.authMapper.userToUserAuthResponse(user);
 
     const response: OAuthCallbackResponseDto = {
       user: userResponse,
     };
 
-    // In production, you might want to redirect to frontend
-    // For now, return JSON response
-    res.status(HttpStatus.OK).json(response);
+    return res.status(HttpStatus.OK).json(response);
   }
-
 }

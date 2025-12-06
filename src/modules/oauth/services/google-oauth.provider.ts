@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { Profile } from 'passport-google-oauth20';
 import {
   IOAuthProvider,
@@ -19,12 +19,12 @@ export class GoogleOAuthProvider implements IOAuthProvider<Profile> {
   validateProfile(profile: Profile): OAuthProfile {
     // Basic validation to ensure Google provided required fields
     if (!profile?.id) {
-      throw new Error('Invalid Google profile: missing id');
+      throw new BadRequestException('Invalid Google profile: missing id');
     }
 
     const email = profile.emails?.[0]?.value;
     if (!email) {
-      throw new Error('Invalid Google profile: missing email');
+      throw new BadRequestException('Invalid Google profile: missing email');
     }
 
     return {
