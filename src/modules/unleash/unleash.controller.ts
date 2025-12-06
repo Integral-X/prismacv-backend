@@ -9,7 +9,7 @@ import {
 } from '@nestjs/swagger';
 
 @ApiTags('Feature Flags')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('features')
 export class UnleashController {
   constructor(private readonly unleashService: UnleashService) {}

@@ -13,7 +13,7 @@ import { UserAuthResponseDto } from './dto/response/user-auth.response.dto';
 import { AuthMapper } from './mappers/auth.mapper';
 
 @ApiTags('User Authentication')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('auth/user')
 export class UserAuthController {
   constructor(
@@ -24,21 +24,22 @@ export class UserAuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Regular user authentication (JWT-protected)',
-    description:
-      'Authenticates a regular user and returns profile data only. This endpoint requires a valid JWT token from an authenticated platform administrator. No JWT tokens are returned in the response.',
+    summary: 'Regular user authentication',
+    description: 'Authenticates a regular user and returns profile data.',
   })
   @ApiBody({ type: UserLoginRequestDto })
   @ApiResponse({
     status: 200,
-    description:
-      'User login successful. Response includes user profile data without JWT tokens.',
+    description: 'User login successful. Response includes user profile data.',
     type: UserAuthResponseDto,
   })
   @ApiResponse({
     status: 401,
-    description:
-      'Unauthorized - Invalid credentials or missing/invalid JWT token',
+    description: 'Unauthorized - Invalid credentials',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Missing or invalid JWT token',
   })
   async login(
     @Body() loginRequestDto: UserLoginRequestDto,
@@ -52,15 +53,15 @@ export class UserAuthController {
   @Post('signup')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
-    summary: 'Regular user registration (JWT-protected)',
+    summary: 'Regular user registration',
     description:
-      'Registers a new regular user with REGULAR role. This endpoint requires a valid JWT token from an authenticated platform administrator. New users receive profile data only, without JWT tokens.',
+      'Registers a new regular user with REGULAR role. New users receive profile data only.',
   })
   @ApiBody({ type: UserSignupRequestDto })
   @ApiResponse({
     status: 201,
     description:
-      'User registered successfully. Response includes user profile data without JWT tokens.',
+      'User registered successfully. Response includes user profile data.',
     type: UserAuthResponseDto,
   })
   @ApiResponse({
@@ -68,8 +69,8 @@ export class UserAuthController {
     description: 'Bad Request - Validation errors',
   })
   @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Missing or invalid JWT token',
+    status: 403,
+    description: 'Forbidden - Missing or invalid JWT token',
   })
   @ApiResponse({
     status: 409,

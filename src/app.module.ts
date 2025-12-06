@@ -15,6 +15,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { OAuthModule } from './modules/oauth/oauth.module';
 import { UnleashModule } from './modules/unleash/unleash.module';
 import { HealthModule } from './modules/health/health.module';
+import { EmailModule } from './modules/email/email.module';
 
 // Guards
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
@@ -43,6 +44,9 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 
     // Database
     DatabaseModule,
+
+    // Email
+    EmailModule,
 
     // Core modules
     AuthModule,

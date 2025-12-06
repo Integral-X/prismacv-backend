@@ -22,7 +22,7 @@ import { AuthMapper } from '@/modules/auth/mappers/auth.mapper';
 import { User } from '@/modules/auth/entities/user.entity';
 
 @ApiTags('OAuth Authentication')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('oauth')
 export class OAuthController {
   constructor(private readonly authMapper: AuthMapper) {}
@@ -41,6 +41,10 @@ export class OAuthController {
   @ApiResponse({
     status: HttpStatus.FOUND,
     description: 'Redirects to LinkedIn OAuth page',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Forbidden - Missing or invalid JWT token',
   })
   async linkedinAuth() {
     // Handled by Passport
