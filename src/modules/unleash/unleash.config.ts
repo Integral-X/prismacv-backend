@@ -8,7 +8,10 @@ export default registerAs('unleash', () => ({
   environment: process.env.NODE_ENV || 'development',
   // Mock mode for development when no real Unleash server
   mock:
-    process.env.NODE_ENV === 'development' && !process.env.UNLEASH_API_TOKEN,
+    process.env.UNLEASH_MOCK === 'true' ||
+    ((process.env.NODE_ENV === 'development' ||
+      process.env.NODE_ENV === 'test') &&
+      !process.env.UNLEASH_API_TOKEN),
   refreshInterval: parseInt(
     process.env.UNLEASH_REFRESH_INTERVAL || '15000',
     10,
