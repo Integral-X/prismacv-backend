@@ -15,6 +15,7 @@ import {
 } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { LinkedInAuthGuard } from './guards/linkedin-auth.guard';
+import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { Public } from '@/common/decorators/public.decorator';
 import { OAuthCallbackResponseDto } from './dto/oauth-callback.response.dto';
 import { AuthMapper } from '@/modules/auth/mappers/auth.mapper';
@@ -25,6 +26,10 @@ import { User } from '@/modules/auth/entities/user.entity';
 @Controller('oauth')
 export class OAuthController {
   constructor(private readonly authMapper: AuthMapper) {}
+
+  /* ---------------------------
+        LINKEDIN AUTH FLOW
+  ---------------------------- */
 
   @Get('linkedin')
   @UseGuards(LinkedInAuthGuard)
@@ -42,38 +47,57 @@ export class OAuthController {
     description: 'Forbidden - Missing or invalid JWT token',
   })
   async linkedinAuth() {
-    // Passport will handle the redirect
+    // Handled by Passport
   }
 
   @Public()
   @Get('linkedin/callback')
   @UseGuards(LinkedInAuthGuard)
-  @ApiExcludeEndpoint()
-  @ApiOperation({
-    summary: 'LinkedIn OAuth callback',
-    description:
-      'Handles the callback from LinkedIn after user authentication. Returns user profile.',
-  })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'OAuth authentication successful. Returns user profile.',
-    type: OAuthCallbackResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description: 'Unauthorized - OAuth authentication failed',
-  })
+  @ApiExcludeEndpoint() // Keep hidden from Swagger
   async linkedinCallback(@Req() req: Request, @Res() res: Response) {
-    // req.user is set by Passport strategy after successful authentication
     const { user } = req.user as { user: User };
 
-    // Map user to response DTO
     const userResponse = this.authMapper.userToUserAuthResponse(user);
 
     const response: OAuthCallbackResponseDto = {
       user: userResponse,
     };
 
-    res.status(HttpStatus.OK).json(response);
+    return res.status(HttpStatus.OK).json(response);
+  }
+
+  /* ---------------------------
+            GOOGLE AUTH FLOW
+  ---------------------------- */
+
+  @Get('google')
+  @UseGuards(GoogleAuthGuard)
+  @ApiOperation({
+    summary: 'Initiate Google OAuth flow',
+    description:
+      'Redirects user to Google for authentication. After successful authentication, user will be redirected to the callback URL.',
+  })
+  @ApiResponse({
+    status: HttpStatus.FOUND,
+    description: 'Redirects to Google OAuth page',
+  })
+  async googleAuth() {
+    // Handled by Passport
+  }
+
+  @Public()
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  @ApiExcludeEndpoint() // Keep hidden from Swagger
+  async googleCallback(@Req() req: Request, @Res() res: Response) {
+    const { user } = req.user as { user: User };
+
+    const userResponse = this.authMapper.userToUserAuthResponse(user);
+
+    const response: OAuthCallbackResponseDto = {
+      user: userResponse,
+    };
+
+    return res.status(HttpStatus.OK).json(response);
   }
 }
