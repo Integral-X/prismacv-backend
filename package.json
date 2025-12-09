@@ -55,7 +55,7 @@
     "rxjs": "^7.8.1",
     "unleash-client": "^6.8.0",
     "uuidv7": "^1.0.3",
-    "winston": "^3.18.3"
+    "winston": "^3.19.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.3",
