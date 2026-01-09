@@ -8,21 +8,23 @@ datasource db {
 }
 
 model User {
-  id            String    @id @db.Uuid
-  email         String    @unique
+  id            String     @id @db.Uuid
+  email         String     @unique
   password      String?
   name          String?
-  role          UserRole  @default(REGULAR)
+  role          UserRole   @default(REGULAR)
   refreshToken  String?
-  emailVerified Boolean   @default(false)
+  emailVerified Boolean    @default(false)
   otpCode       String?
   otpExpiresAt  DateTime?
-  otpAttempts   Int       @default(0)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  otpAttempts   Int        @default(0)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
   avatarUrl     String?
   provider      String?
   providerId    String?
+  otps          Otp[]
+  authTokens    AuthToken[]
 
   @@unique([provider, providerId])
   @@map("users")
@@ -36,4 +38,47 @@ enum OAuthProvider {
 enum UserRole {
   REGULAR
   PLATFORM_ADMIN
+}
+
+enum OtpPurpose {
+  SIGNUP_EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+model Otp {
+  id          String     @id @default(cuid())
+  userId      String     @db.Uuid
+  purpose     OtpPurpose
+  otpHash     String
+  attempts    Int        @default(0)
+  maxAttempts Int        @default(3)
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime   @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+  @@map("otp_tokens")
+}
+
+enum AuthTokenPurpose {
+  PASSWORD_RESET
+  EMAIL_VERIFICATION_LINK
+  ACCOUNT_ACTIVATION
+}
+
+model AuthToken {
+  id        String           @id @default(cuid())
+  userId    String           @db.Uuid
+  purpose   AuthTokenPurpose
+  tokenHash String           @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+  @@map("auth_tokens")
 }
