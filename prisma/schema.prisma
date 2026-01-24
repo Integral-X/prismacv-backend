@@ -13,6 +13,7 @@ model User {
   password      String?
   name          String?
   role          UserRole  @default(REGULAR)
+  isMasterAdmin Boolean   @default(false)
   refreshToken  String?
   emailVerified Boolean   @default(false)
   otpCode       String?
