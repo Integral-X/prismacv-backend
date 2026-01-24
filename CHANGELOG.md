@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/Integral-X/prismacv-backend/compare/v1.2.3...v1.3.0) (2026-01-24)
+
+
+### Features
+
+* **auth:** master admin provisioning and role management ([#108](https://github.com/Integral-X/prismacv-backend/issues/108)) ([50fed08](https://github.com/Integral-X/prismacv-backend/commit/50fed08e1c0c475c736498f13062b42ff6ada096))
+
 ## [1.2.3](https://github.com/Integral-X/prismacv-backend/compare/v1.2.2...v1.2.3) (2025-11-30)
 
 
