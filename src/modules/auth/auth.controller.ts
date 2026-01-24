@@ -4,8 +4,10 @@ import {
   Body,
   UnauthorizedException,
   BadRequestException,
+  ForbiddenException,
   HttpCode,
   HttpStatus,
+  Req,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -13,6 +15,7 @@ import {
   ApiResponse,
   ApiBody,
   ApiSecurity,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { AdminLoginRequestDto } from './dto/request/admin-login.request.dto';
@@ -23,6 +26,7 @@ import { AdminSignupResponseDto } from './dto/response/admin-signup.response.dto
 import { AdminAuthResponseDto } from './dto/response/admin-auth.response.dto';
 import { AuthMapper } from './mappers/auth.mapper';
 import { Public } from '../../common/decorators/public.decorator';
+import { UserRole } from './entities/user.entity';
 
 @ApiTags('Admin Authentication')
 @Controller('auth')
@@ -62,27 +66,40 @@ export class AuthController {
     return this.authMapper.tokensToAdminLoginResponse(result.tokens);
   }
 
-  @Public()
-  @Post('admin/signup')
+  @Post('admin/create')
   @HttpCode(HttpStatus.CREATED)
-  @ApiSecurity({})
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({
-    summary: 'Platform admin registration',
+    summary: 'Create platform admin (master admin only)',
     description:
-      'Registers a new platform administrator and returns user profile. New admins are assigned PLATFORM_ADMIN role. An OTP will be sent to the email for verification.',
+      'Creates a new platform administrator. Only master admins can perform this action. New admins are assigned PLATFORM_ADMIN role and receive an OTP email for verification.',
   })
   @ApiBody({ type: AdminSignupRequestDto })
   @ApiResponse({
     status: 201,
-    description:
-      'Admin registered successfully. Response includes admin profile.',
+    description: 'Admin created successfully. Response includes admin profile.',
     type: AdminSignupResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Only master admins can create platform admins',
   })
   @ApiResponse({ status: 400, description: 'Bad Request - Validation errors' })
   @ApiResponse({ status: 409, description: 'Conflict - Email already exists' })
   async adminSignup(
     @Body() signupRequestDto: AdminSignupRequestDto,
+    @Req() req: { user?: { role?: UserRole; isMasterAdmin?: boolean } },
   ): Promise<AdminSignupResponseDto> {
+    const requester = req.user;
+    if (
+      !requester ||
+      requester.role !== UserRole.PLATFORM_ADMIN ||
+      !requester.isMasterAdmin
+    ) {
+      throw new ForbiddenException(
+        'Only master admins can create platform admins',
+      );
+    }
     const userEntity = this.authMapper.signupRequestToEntity(signupRequestDto);
     const result = await this.authService.adminSignup(userEntity);
     return this.authMapper.userToAdminSignupResponse(result.user);

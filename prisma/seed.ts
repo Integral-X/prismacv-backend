@@ -19,21 +19,40 @@ const prisma = new PrismaClient();
 async function main() {
   logger.info('Starting database seeding...');
 
-  // Create admin user
-  const adminPassword = await bcrypt.hash('admin', 12);
+  const masterAdminEmail = process.env.MASTER_ADMIN_EMAIL?.trim();
+  const masterAdminPassword = process.env.MASTER_ADMIN_PASSWORD;
+  const masterAdminName = process.env.MASTER_ADMIN_NAME?.trim();
+
+  if (!masterAdminEmail || !masterAdminPassword) {
+    logger.warn(
+      'MASTER_ADMIN_EMAIL or MASTER_ADMIN_PASSWORD is not set. Skipping master admin seed.',
+    );
+    logger.info('Database seeding completed!');
+    return;
+  }
+
+  // Create master admin user
+  const hashedPassword = await bcrypt.hash(masterAdminPassword, 12);
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@example.com' },
-    update: {},
+    where: { email: masterAdminEmail },
+    update: {
+      password: hashedPassword,
+      name: masterAdminName || undefined,
+      role: 'PLATFORM_ADMIN',
+      isMasterAdmin: true,
+    },
     create: {
       id: uuidv7(),
-      email: 'admin@example.com',
-      password: adminPassword,
+      email: masterAdminEmail,
+      password: hashedPassword,
+      name: masterAdminName || undefined,
       role: 'PLATFORM_ADMIN',
+      isMasterAdmin: true,
       provider: null,
     },
   });
 
-  logger.info('Created admin user:', admin.email);
+  logger.info(`Created/updated master admin user: ${admin.email}`);
 
   logger.info('Database seeding completed!');
 }
