@@ -16,9 +16,14 @@ describe('Auth Refresh (e2e)', () => {
     await app.init();
 
     // Login to get a refresh token
+    const adminEmail =
+      process.env.MASTER_ADMIN_EMAIL?.trim() ?? 'admin@example.com';
+    const adminPassword = process.env.MASTER_ADMIN_PASSWORD ?? 'admin';
+
     const loginResponse = await request(app.getHttpServer())
       .post('/auth/admin/login')
-      .send({ email: 'admin@example.com', password: 'admin' });
+      .send({ email: adminEmail, password: adminPassword })
+      .expect(200);
 
     refreshToken = loginResponse.body.refreshToken;
   });
