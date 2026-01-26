@@ -8,6 +8,11 @@ import {
   generateOtpEmailPlainText,
   OtpEmailTemplateData,
 } from './templates/otp-email.template';
+import {
+  generatePasswordResetEmailTemplate,
+  generatePasswordResetEmailPlainText,
+  PasswordResetEmailTemplateData,
+} from './templates/password-reset-email.template';
 
 @Injectable()
 export class EmailService {
@@ -134,6 +139,38 @@ export class EmailService {
     };
 
     this.logger.log(`Sending OTP email to: ${email}`);
+    return this.sendEmail(options);
+  }
+
+  /**
+   * Send password reset OTP email
+   */
+  async sendPasswordResetEmail(
+    email: string,
+    otpCode: string,
+    userName?: string,
+  ): Promise<boolean> {
+    const appName = this.configService.get<string>('APP_NAME', 'PrismaCV');
+    const expiryMinutes = this.configService.get<number>(
+      'OTP_EXPIRY_MINUTES',
+      10,
+    );
+
+    const templateData: PasswordResetEmailTemplateData = {
+      appName,
+      otpCode,
+      expiryMinutes,
+      userName,
+    };
+
+    const options: EmailOptions = {
+      to: email,
+      subject: `${appName} Password Reset - ${otpCode}`,
+      html: generatePasswordResetEmailTemplate(templateData),
+      text: generatePasswordResetEmailPlainText(templateData),
+    };
+
+    this.logger.log(`Sending password reset email to: ${email}`);
     return this.sendEmail(options);
   }
 

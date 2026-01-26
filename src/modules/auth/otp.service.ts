@@ -5,12 +5,15 @@ import {
   NotFoundException,
   HttpException,
   HttpStatus,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
 import { EmailService } from '@/modules/email/email.service';
+import { OtpPurpose } from '@prisma/client';
+import { hashOtp, verifyOtp } from '@/shared/utils/otp.util';
 
 // Maximum number of failed OTP verification attempts before locking
 const MAX_OTP_ATTEMPTS = 5;
@@ -42,21 +45,26 @@ export class OtpService {
   }
 
   /**
-   * Generate OTP and send verification email
+   * Generate and send OTP for email verification (signup)
+   * Uses Otp table with SIGNUP_EMAIL_VERIFICATION purpose
    */
   async generateAndSendOtp(user: User): Promise<{ expiresAt: Date }> {
     const otpCode = this.generateOtpCode();
-    const expiryMinutes = this.configService.get<number>(
-      'OTP_EXPIRY_MINUTES',
-      10,
-    );
+    const otpHash = await hashOtp(otpCode);
+    const expiryMinutes = this.configService.get<number>('OTP_EXPIRY_MINUTES', 10);
     const expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
 
-    // Save OTP to database
-    await this.usersService.saveOtp(user.id, otpCode, expiresAt);
+    // Store OTP in Otp table using repository method
+    await this.usersService.createOtp(
+      user.id,
+      OtpPurpose.SIGNUP_EMAIL_VERIFICATION,
+      otpHash,
+      expiresAt,
+      MAX_OTP_ATTEMPTS,
+    );
 
     this.logger.log(
-      `OTP generated for user: email=${user.email}, expiresAt=${expiresAt.toISOString()}`,
+      `Email verification OTP generated for user: email=${user.email}, expiresAt=${expiresAt.toISOString()}`,
     );
 
     // Send OTP email (fire and forget - don't block on email sending)
@@ -80,8 +88,8 @@ export class OtpService {
   }
 
   /**
-   * Verify OTP code for email verification
-   * Includes rate limiting to prevent brute-force attacks
+   * Verify OTP code for email verification (signup)
+   * Uses Otp table with SIGNUP_EMAIL_VERIFICATION purpose
    */
   async verifyOtp(email: string, otpCode: string): Promise<User> {
     const user = await this.usersService.findByEmail(email.toLowerCase());
@@ -100,17 +108,23 @@ export class OtpService {
       throw new BadRequestException('Email is already verified');
     }
 
-    if (!user.otpCode || !user.otpExpiresAt) {
-      this.logger.warn(`OTP verification failed: no OTP found, email=${email}`);
+    // Find valid OTP record using repository method
+    const otpRecord = await this.usersService.findValidOtp(
+      user.id,
+      OtpPurpose.SIGNUP_EMAIL_VERIFICATION,
+    );
+
+    if (!otpRecord) {
+      this.logger.warn(`OTP verification failed: no valid OTP found, email=${email}`);
       throw new BadRequestException(
         'No verification code found. Please request a new one.',
       );
     }
 
-    // Check if max attempts exceeded (OTP was locked)
-    if (user.otpAttempts >= MAX_OTP_ATTEMPTS) {
+    // Check if max attempts exceeded
+    if (otpRecord.attempts >= otpRecord.maxAttempts) {
       this.logger.warn(
-        `OTP verification failed: max attempts exceeded, email=${email}, attempts=${user.otpAttempts}`,
+        `OTP verification failed: max attempts exceeded, email=${email}, attempts=${otpRecord.attempts}`,
       );
       throw new HttpException(
         'Too many failed attempts. Please request a new verification code.',
@@ -118,28 +132,20 @@ export class OtpService {
       );
     }
 
-    // Check if OTP is expired
-    if (new Date() > user.otpExpiresAt) {
-      this.logger.warn(`OTP verification failed: OTP expired, email=${email}`);
-      throw new BadRequestException(
-        'Verification code has expired. Please request a new one.',
-      );
-    }
-
     // Verify OTP code
-    if (user.otpCode !== otpCode) {
-      // Increment failed attempt counter
-      const updatedUser = await this.usersService.incrementOtpAttempts(user.id);
-      const remainingAttempts = MAX_OTP_ATTEMPTS - updatedUser.otpAttempts;
+    const isValidOtp = await verifyOtp(otpCode, otpRecord.otpHash);
+    
+    if (!isValidOtp) {
+      // Increment failed attempt counter using repository method
+      const updatedOtp = await this.usersService.incrementOtpAttempts(otpRecord.id);
+      const remainingAttempts = otpRecord.maxAttempts - updatedOtp.attempts;
 
       this.logger.warn(
-        `OTP verification failed: invalid OTP, email=${email}, attempts=${updatedUser.otpAttempts}/${MAX_OTP_ATTEMPTS}`,
+        `OTP verification failed: invalid OTP, email=${email}, attempts=${updatedOtp.attempts}/${otpRecord.maxAttempts}`,
       );
 
       // Check if max attempts reached after increment
-      if (updatedUser.otpAttempts >= MAX_OTP_ATTEMPTS) {
-        // Lock the OTP by clearing it
-        await this.usersService.lockOtp(user.id);
+      if (updatedOtp.attempts >= otpRecord.maxAttempts) {
         this.logger.warn(
           `OTP locked due to max attempts exceeded, email=${email}`,
         );
@@ -154,7 +160,8 @@ export class OtpService {
       );
     }
 
-    // Mark email as verified and clear OTP
+    // Mark OTP as used and email as verified using repository methods
+    await this.usersService.markOtpAsUsed(otpRecord.id);
     const verifiedUser = await this.usersService.markEmailVerified(user.id);
 
     this.logger.log(
@@ -165,7 +172,8 @@ export class OtpService {
   }
 
   /**
-   * Resend OTP code for email verification
+   * Resend OTP code for email verification (signup)
+   * Uses Otp table with SIGNUP_EMAIL_VERIFICATION purpose
    */
   async resendOtp(email: string): Promise<{ expiresAt: Date }> {
     const user = await this.usersService.findByEmail(email.toLowerCase());
@@ -188,5 +196,106 @@ export class OtpService {
     this.logger.log(`OTP resent to: ${email}`);
 
     return result;
+  }
+
+  /**
+   * Generate and send password reset OTP
+   * Uses Otp table with PASSWORD_RESET purpose
+   */
+  async generatePasswordResetOtp(user: User): Promise<{ expiresAt: Date }> {
+    const otpCode = this.generateOtpCode();
+    const otpHash = await hashOtp(otpCode);
+    const expiryMinutes = this.configService.get<number>('OTP_EXPIRY_MINUTES', 10);
+    const expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
+
+    // Store OTP in Otp table using repository method
+    await this.usersService.createOtp(
+      user.id,
+      OtpPurpose.PASSWORD_RESET,
+      otpHash,
+      expiresAt,
+      3, // Max 3 attempts for password reset
+    );
+
+    this.logger.log(
+      `Password reset OTP generated for user: email=${user.email}, expiresAt=${expiresAt.toISOString()}`,
+    );
+
+    // Send password reset email (fire and forget)
+    this.emailService
+      .sendPasswordResetEmail(user.email, otpCode, user.name)
+      .then(sent => {
+        if (sent) {
+          this.logger.log(`Password reset email sent successfully to: ${user.email}`);
+        } else {
+          this.logger.warn(`Failed to send password reset email to: ${user.email}`);
+        }
+      })
+      .catch(error => {
+        this.logger.error(
+          `Error sending password reset email to ${user.email}:`,
+          error.message,
+        );
+      });
+
+    return { expiresAt };
+  }
+
+  /**
+   * Verify password reset OTP
+   * Uses Otp table with PASSWORD_RESET purpose
+   */
+  async verifyPasswordResetOtp(email: string, otpCode: string): Promise<User> {
+    const user = await this.usersService.findByEmail(email.toLowerCase());
+
+    if (!user) {
+      this.logger.warn(
+        `Password reset OTP verification failed: user not found, email=${email}`,
+      );
+      throw new UnauthorizedException('Invalid OTP');
+    }
+
+    // Find valid OTP record using repository method
+    const otpRecord = await this.usersService.findValidOtp(
+      user.id,
+      OtpPurpose.PASSWORD_RESET,
+    );
+
+    if (!otpRecord) {
+      this.logger.warn(
+        `Password reset OTP verification failed: no valid OTP found, email=${email}`,
+      );
+      throw new UnauthorizedException('Invalid or expired OTP');
+    }
+
+    // Check attempt limit
+    if (otpRecord.attempts >= otpRecord.maxAttempts) {
+      this.logger.warn(
+        `Password reset OTP verification failed: max attempts exceeded, email=${email}`,
+      );
+      throw new UnauthorizedException('Too many failed attempts');
+    }
+
+    // Verify OTP
+    const isValidOtp = await verifyOtp(otpCode, otpRecord.otpHash);
+    
+    if (!isValidOtp) {
+      // Increment attempts using repository method
+      await this.usersService.incrementOtpAttempts(otpRecord.id);
+
+      this.logger.warn(
+        `Password reset OTP verification failed: invalid OTP, email=${email}, attempts=${otpRecord.attempts + 1}/${otpRecord.maxAttempts}`,
+      );
+      throw new UnauthorizedException('Invalid OTP');
+    }
+
+    // Mark OTP as used using repository method
+    await this.usersService.markOtpAsUsed(otpRecord.id);
+
+    this.logger.log(
+      `Password reset OTP verified successfully: email=${email}, userId=${user.id}`,
+    );
+
+    return user;
   }
 }
