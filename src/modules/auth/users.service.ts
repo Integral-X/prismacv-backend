@@ -19,6 +19,7 @@ export class UsersService {
     user.password = prismaUser.password || undefined;
     user.name = prismaUser.name;
     user.role = prismaUser.role as UserRole; // Map Prisma UserRole to entity UserRole
+    user.isMasterAdmin = prismaUser.isMasterAdmin;
     user.refreshToken = prismaUser.refreshToken;
     user.emailVerified = prismaUser.emailVerified;
     user.provider = prismaUser.provider || undefined;
@@ -46,6 +47,7 @@ export class UsersService {
         password: userEntity.password,
         name: userEntity.name,
         role: userEntity.role as any,
+        isMasterAdmin: userEntity.isMasterAdmin,
         refreshToken: userEntity.refreshToken,
         provider: userEntity.provider as any,
         providerId: userEntity.providerId,
@@ -70,6 +72,7 @@ export class UsersService {
           password: userEntity.password,
           name: userEntity.name,
           role: userEntity.role as UserRole, // Persist role to database
+          isMasterAdmin: userEntity.isMasterAdmin ?? false,
         },
       });
 
@@ -121,6 +124,7 @@ export class UsersService {
           provider: profile.provider,
           providerId: profile.providerId,
           role: 'REGULAR', // OAuth users default to REGULAR role
+          isMasterAdmin: false,
         },
       });
       return this.prismaUserToEntity(createdUser);

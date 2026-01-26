@@ -84,7 +84,12 @@ export class AuthService {
     }
 
     // Generate tokens for admin
-    const tokenData = await this.getTokens(user.id, user.email, user.role);
+    const tokenData = await this.getTokens(
+      user.id,
+      user.email,
+      user.role,
+      user.isMasterAdmin,
+    );
     await this.updateRefreshToken(user.id, tokenData.refreshToken);
 
     const tokens = new TokenPair();
@@ -114,6 +119,7 @@ export class AuthService {
       userToCreate.password = hashedPassword;
       userToCreate.name = user.name;
       userToCreate.role = UserRole.PLATFORM_ADMIN;
+      userToCreate.isMasterAdmin = false;
 
       // Create the user
       const createdUser = await this.usersService.create(userToCreate);
@@ -240,7 +246,12 @@ export class AuthService {
 
     // Maintain role-based token generation logic
     // Tokens contain role information from getTokens method
-    const tokenData = await this.getTokens(user.id, user.email, user.role);
+    const tokenData = await this.getTokens(
+      user.id,
+      user.email,
+      user.role,
+      user.isMasterAdmin,
+    );
     await this.updateRefreshToken(user.id, tokenData.refreshToken);
 
     const tokens = new TokenPair();
@@ -254,13 +265,19 @@ export class AuthService {
     return { user, tokens };
   }
 
-  async getTokens(userId: string, email: string, role: string) {
+  async getTokens(
+    userId: string,
+    email: string,
+    role: string,
+    isMasterAdmin: boolean,
+  ) {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
         {
           sub: userId,
           email,
           role,
+          isMasterAdmin,
         },
         {
           secret: process.env.JWT_SECRET,
@@ -272,6 +289,7 @@ export class AuthService {
           sub: userId,
           email,
           role,
+          isMasterAdmin,
         },
         {
           secret: process.env.JWT_REFRESH_SECRET,

@@ -17,6 +17,7 @@ export class User extends BaseEntity {
   password?: string; // Optional for OAuth users
   name?: string;
   role: UserRole;
+  isMasterAdmin: boolean = false;
   refreshToken?: string;
   emailVerified: boolean = false;
   provider?: string; // OAuth provider (e.g., 'LINKEDIN', 'GOOGLE')

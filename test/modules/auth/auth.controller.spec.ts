@@ -25,6 +25,7 @@ describe('AuthController', () => {
     password: 'hashedpassword',
     name: 'Admin User',
     role: UserRole.PLATFORM_ADMIN,
+    isMasterAdmin: true,
     refreshToken: 'refresh-token',
     emailVerified: false,
     createdAt: new Date(),
@@ -170,7 +171,9 @@ describe('AuthController', () => {
         mockAdminSignupResponse,
       );
 
-      const result = await controller.adminSignup(signupDto);
+      const result = await controller.adminSignup(signupDto, {
+        user: { role: UserRole.PLATFORM_ADMIN, isMasterAdmin: true },
+      });
 
       expect(authMapper.signupRequestToEntity).toHaveBeenCalledWith(signupDto);
       expect(authService.adminSignup).toHaveBeenCalledWith(userEntity);
@@ -194,9 +197,11 @@ describe('AuthController', () => {
         throw new BadRequestException('Signup data is required');
       });
 
-      await expect(controller.adminSignup(signupDto)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        controller.adminSignup(signupDto, {
+          user: { role: UserRole.PLATFORM_ADMIN, isMasterAdmin: true },
+        }),
+      ).rejects.toThrow(BadRequestException);
       expect(authMapper.signupRequestToEntity).toHaveBeenCalledWith(signupDto);
       expect(authService.adminSignup).not.toHaveBeenCalled();
     });
