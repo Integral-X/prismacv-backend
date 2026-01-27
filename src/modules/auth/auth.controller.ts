@@ -21,15 +21,9 @@ import { AuthService } from './auth.service';
 import { AdminLoginRequestDto } from './dto/request/admin-login.request.dto';
 import { AdminSignupRequestDto } from './dto/request/admin-signup.request.dto';
 import { RefreshTokenRequestDto } from './dto/request/refresh-token.request.dto';
-import { ForgotPasswordRequestDto } from './dto/request/forgot-password.request.dto';
-import { ResetPasswordRequestDto } from './dto/request/reset-password.request.dto';
-import { VerifyResetOtpRequestDto } from './dto/request/verify-reset-otp.request';
 import { AdminLoginResponseDto } from './dto/response/admin-login.response.dto';
 import { AdminSignupResponseDto } from './dto/response/admin-signup.response.dto';
 import { AdminAuthResponseDto } from './dto/response/admin-auth.response.dto';
-import { ForgotPasswordResponseDto } from './dto/response/forgot-password.response.dto';
-import { ResetPasswordResponseDto } from './dto/response/rese-password.response.dto';
-import { VerifyResetOtpResponseDto } from './dto/response/verify-reset-otp.response.dto';
 import { AuthMapper } from './mappers/auth.mapper';
 import { Public } from '../../common/decorators/public.decorator';
 import { UserRole } from './entities/user.entity';
@@ -158,97 +152,5 @@ export class AuthController {
       }
       throw error;
     }
-  }
-
-  @Public()
-  @Post('forgot-password')
-  @HttpCode(HttpStatus.OK)
-  @ApiSecurity({})
-  @ApiOperation({
-    summary: 'Request password reset',
-    description:
-      'Initiates password reset process by sending OTP to registered email address.',
-  })
-  @ApiBody({ type: ForgotPasswordRequestDto })
-  @ApiResponse({
-    status: 200,
-    description:
-      'Password reset initiated. If email exists, OTP has been sent.',
-    type: ForgotPasswordResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Bad Request - Invalid email format',
-  })
-  async forgotPassword(
-    @Body() forgotPasswordDto: ForgotPasswordRequestDto,
-  ): Promise<ForgotPasswordResponseDto> {
-    return await this.authService.forgotPassword(forgotPasswordDto.email);
-  }
-
-  @Public()
-  @Post('verify-reset-otp')
-  @HttpCode(HttpStatus.OK)
-  @ApiSecurity({})
-  @ApiOperation({
-    summary: 'Verify password reset OTP',
-    description:
-      'Verifies the OTP sent to email and returns a reset token for password reset.',
-  })
-  @ApiBody({ type: VerifyResetOtpRequestDto })
-  @ApiResponse({
-    status: 200,
-    description: 'OTP verified successfully. Reset token provided.',
-    type: VerifyResetOtpResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Bad Request - Invalid OTP format',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or expired OTP, or too many attempts',
-  })
-  async verifyResetOtp(
-    @Body() verifyOtpDto: VerifyResetOtpRequestDto,
-  ): Promise<VerifyResetOtpResponseDto> {
-    return await this.authService.verifyResetOtp(
-      verifyOtpDto.email,
-      verifyOtpDto.otp,
-    );
-  }
-
-  @Public()
-  @Post('reset-password')
-  @HttpCode(HttpStatus.OK)
-  @ApiSecurity({})
-  @ApiOperation({
-    summary: 'Reset password with token',
-    description:
-      'Resets user password using valid reset token obtained from OTP verification.',
-  })
-  @ApiBody({ type: ResetPasswordRequestDto })
-  @ApiResponse({
-    status: 200,
-    description: 'Password reset successfully.',
-    type: ResetPasswordResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description:
-      'Bad Request - Invalid token, passwords do not match, or password policy violation',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or expired reset token',
-  })
-  async resetPassword(
-    @Body() resetPasswordDto: ResetPasswordRequestDto,
-  ): Promise<ResetPasswordResponseDto> {
-    return await this.authService.resetPassword(
-      resetPasswordDto.resetToken,
-      resetPasswordDto.newPassword,
-      resetPasswordDto.confirmPassword,
-    );
   }
 }

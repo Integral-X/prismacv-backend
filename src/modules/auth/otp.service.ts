@@ -242,10 +242,10 @@ export class OtpService {
   }
 
   /**
-   * Verify password reset OTP
-   * Uses Otp table with PASSWORD_RESET purpose
+   * Verify password reset OTP and return user (internal method)
+   * Used by AuthService to verify OTP and generate reset token
    */
-  async verifyPasswordResetOtp(email: string, otpCode: string): Promise<User> {
+  async verifyPasswordResetOtpInternal(email: string, otpCode: string): Promise<User> {
     const user = await this.usersService.findByEmail(email.toLowerCase());
 
     if (!user) {

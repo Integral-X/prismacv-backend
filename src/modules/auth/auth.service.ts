@@ -357,7 +357,7 @@ export class AuthService {
    */
   async verifyResetOtp(email: string, otp: string): Promise<VerifyResetOtpResponseDto> {
     // Verify OTP using OtpService
-    const user = await this.otpService.verifyPasswordResetOtp(email, otp);
+    const user = await this.otpService.verifyPasswordResetOtpInternal(email, otp);
 
     // Generate reset token
     const resetToken = generateResetToken();
@@ -385,6 +385,13 @@ export class AuthService {
 
     this.logger.log(`Reset token generated for user: ${email}`);
     return { resetToken };
+  }
+
+  /**
+   * Verify password reset OTP and return reset token (for OTP controller)
+   */
+  async verifyPasswordResetOtp(email: string, otp: string): Promise<VerifyResetOtpResponseDto> {
+    return await this.verifyResetOtp(email, otp);
   }
 
   /**
