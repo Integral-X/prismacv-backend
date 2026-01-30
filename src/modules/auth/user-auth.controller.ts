@@ -12,9 +12,11 @@ import { UserLoginRequestDto } from './dto/request/user-login.request.dto';
 import { UserSignupRequestDto } from './dto/request/user-signup.request.dto';
 import { ForgotPasswordRequestDto } from './dto/request/forgot-password.request.dto';
 import { ResetPasswordRequestDto } from './dto/request/reset-password.request.dto';
+import { ChangePasswordRequestDto } from './dto/request/change-password.request.dto';
 import { UserAuthResponseDto } from './dto/response/user-auth.response.dto';
 import { ForgotPasswordResponseDto } from './dto/response/forgot-password.response.dto';
 import { ResetPasswordResponseDto } from './dto/response/rese-password.response.dto';
+import { ChangePasswordResponseDto } from './dto/response/change-password.response.dto';
 import { AuthMapper } from './mappers/auth.mapper';
 
 @ApiTags('User Authentication')
@@ -155,6 +157,43 @@ export class UserAuthController {
       resetPasswordDto.resetToken,
       resetPasswordDto.newPassword,
       resetPasswordDto.confirmPassword,
+    );
+  }
+
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Change password for specified user',
+    description:
+      'Changes password for the user identified by userId in request body. Requires current password verification and enforces password policy (minimum 8 characters). All user sessions will be invalidated after successful password change for security.',
+  })
+  @ApiBody({ type: ChangePasswordRequestDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Password changed successfully. All user sessions have been invalidated for security.',
+    type: ChangePasswordResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Bad Request - Passwords do not match, password policy violation (minimum 8 characters), new password same as current, or OAuth user attempting password change',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Current password is incorrect or user not found',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Missing or invalid JWT token',
+  })
+  async changePassword(
+    @Body() changePasswordDto: ChangePasswordRequestDto,
+  ): Promise<ChangePasswordResponseDto> {
+    return await this.authService.changePassword(
+      changePasswordDto.userId,
+      changePasswordDto.currentPassword,
+      changePasswordDto.newPassword,
+      changePasswordDto.confirmPassword,
     );
   }
 }

@@ -44,9 +44,11 @@ export class EmailService {
   private initializeTransporter(): void {
     // Check if SMTP credentials are configured
     if (!this.smtpConfig.auth.user || !this.smtpConfig.auth.pass) {
-      this.logger.warn(
+      this.logger.error(
         'SMTP credentials not configured. Email sending is disabled. Set SMTP_USER and SMTP_PASS environment variables.',
       );
+      this.logger.error(`SMTP_USER: ${this.smtpConfig.auth.user ? 'SET' : 'NOT SET'}`);
+      this.logger.error(`SMTP_PASS: ${this.smtpConfig.auth.pass ? 'SET' : 'NOT SET'}`);
       return;
     }
 
@@ -68,8 +70,12 @@ export class EmailService {
       });
 
       this.logger.log(
-        `Email transporter initialized with host: ${this.smtpConfig.host}:${this.smtpConfig.port} (${isImplicitTLS ? 'SSL' : 'STARTTLS'})`,
+        `Email transporter initialized successfully:`,
       );
+      this.logger.log(`- Host: ${this.smtpConfig.host}:${this.smtpConfig.port}`);
+      this.logger.log(`- Security: ${isImplicitTLS ? 'SSL' : 'STARTTLS'}`);
+      this.logger.log(`- User: ${this.smtpConfig.auth.user}`);
+      this.logger.log(`- From: ${this.smtpConfig.from.name} <${this.smtpConfig.from.email}>`);
     } catch (error) {
       this.logger.error('Failed to initialize email transporter', error);
     }
@@ -80,11 +86,12 @@ export class EmailService {
    */
   async sendEmail(options: EmailOptions): Promise<boolean> {
     if (!this.transporter) {
-      this.logger.warn(
+      this.logger.error(
         `Email not sent (transporter not configured): to=${options.to}, subject=${options.subject}`,
       );
-      // Return true in development to not block registration
-      return true;
+      this.logger.error('Please check SMTP configuration in .env file');
+      // Don't return true in development - this masks real issues
+      return false;
     }
 
     try {
@@ -179,6 +186,7 @@ export class EmailService {
    */
   async verifyConnection(): Promise<boolean> {
     if (!this.transporter) {
+      this.logger.error('SMTP transporter not initialized - check SMTP credentials');
       return false;
     }
 
@@ -190,5 +198,20 @@ export class EmailService {
       this.logger.error('SMTP connection verification failed', error);
       return false;
     }
+  }
+
+  /**
+   * Test email sending (for debugging)
+   */
+  async sendTestEmail(email: string): Promise<boolean> {
+    const options: EmailOptions = {
+      to: email,
+      subject: 'Test Email from PrismaCV',
+      html: '<h1>Test Email</h1><p>If you receive this, email configuration is working!</p>',
+      text: 'Test Email - If you receive this, email configuration is working!',
+    };
+
+    this.logger.log(`Sending test email to: ${email}`);
+    return this.sendEmail(options);
   }
 }
