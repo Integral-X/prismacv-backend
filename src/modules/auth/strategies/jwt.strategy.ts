@@ -21,11 +21,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: any): Promise<User> {
     // Fetch the full user object from database
     const user = await this.usersService.findById(payload.sub);
-    
+
     if (!user) {
       throw new Error('User not found');
     }
-    
+
     return user;
   }
 }

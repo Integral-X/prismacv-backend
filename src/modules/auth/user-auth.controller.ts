@@ -116,7 +116,8 @@ export class UserAuthController {
   })
   @ApiResponse({
     status: 429,
-    description: 'Too Many Requests - Rate limit exceeded (5 attempts per 5 minutes)',
+    description:
+      'Too Many Requests - Rate limit exceeded (5 attempts per 5 minutes)',
   })
   async forgotPassword(
     @Body() forgotPasswordDto: ForgotPasswordRequestDto,
@@ -134,7 +135,8 @@ export class UserAuthController {
   @ApiBody({ type: ResetPasswordRequestDto })
   @ApiResponse({
     status: 200,
-    description: 'Password reset successfully. User can now login with new password.',
+    description:
+      'Password reset successfully. User can now login with new password.',
     type: ResetPasswordResponseDto,
   })
   @ApiResponse({
@@ -170,7 +172,8 @@ export class UserAuthController {
   @ApiBody({ type: ChangePasswordRequestDto })
   @ApiResponse({
     status: 200,
-    description: 'Password changed successfully. All user sessions have been invalidated for security.',
+    description:
+      'Password changed successfully. All user sessions have been invalidated for security.',
     type: ChangePasswordResponseDto,
   })
   @ApiResponse({
@@ -180,7 +183,8 @@ export class UserAuthController {
   })
   @ApiResponse({
     status: 401,
-    description: 'Unauthorized - Current password is incorrect or user not found',
+    description:
+      'Unauthorized - Current password is incorrect or user not found',
   })
   @ApiResponse({
     status: 403,

@@ -47,8 +47,12 @@ export class EmailService {
       this.logger.error(
         'SMTP credentials not configured. Email sending is disabled. Set SMTP_USER and SMTP_PASS environment variables.',
       );
-      this.logger.error(`SMTP_USER: ${this.smtpConfig.auth.user ? 'SET' : 'NOT SET'}`);
-      this.logger.error(`SMTP_PASS: ${this.smtpConfig.auth.pass ? 'SET' : 'NOT SET'}`);
+      this.logger.error(
+        `SMTP_USER: ${this.smtpConfig.auth.user ? 'SET' : 'NOT SET'}`,
+      );
+      this.logger.error(
+        `SMTP_PASS: ${this.smtpConfig.auth.pass ? 'SET' : 'NOT SET'}`,
+      );
       return;
     }
 
@@ -69,13 +73,15 @@ export class EmailService {
         requireTLS: !isImplicitTLS,
       });
 
+      this.logger.log(`Email transporter initialized successfully:`);
       this.logger.log(
-        `Email transporter initialized successfully:`,
+        `- Host: ${this.smtpConfig.host}:${this.smtpConfig.port}`,
       );
-      this.logger.log(`- Host: ${this.smtpConfig.host}:${this.smtpConfig.port}`);
       this.logger.log(`- Security: ${isImplicitTLS ? 'SSL' : 'STARTTLS'}`);
       this.logger.log(`- User: ${this.smtpConfig.auth.user}`);
-      this.logger.log(`- From: ${this.smtpConfig.from.name} <${this.smtpConfig.from.email}>`);
+      this.logger.log(
+        `- From: ${this.smtpConfig.from.name} <${this.smtpConfig.from.email}>`,
+      );
     } catch (error) {
       this.logger.error('Failed to initialize email transporter', error);
     }
@@ -186,7 +192,9 @@ export class EmailService {
    */
   async verifyConnection(): Promise<boolean> {
     if (!this.transporter) {
-      this.logger.error('SMTP transporter not initialized - check SMTP credentials');
+      this.logger.error(
+        'SMTP transporter not initialized - check SMTP credentials',
+      );
       return false;
     }
 

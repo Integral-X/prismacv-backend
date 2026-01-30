@@ -1,6 +1,10 @@
 import { Injectable, ConflictException } from '@nestjs/common';
 import { PrismaService } from '@/config/prisma.service';
-import { User as PrismaUser, Otp as PrismaOtp, OtpPurpose } from '@prisma/client';
+import {
+  User as PrismaUser,
+  Otp as PrismaOtp,
+  OtpPurpose,
+} from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { User, UserRole } from './entities/user.entity';
 import { generateUuidv7 } from '@/shared/utils/uuid.util';

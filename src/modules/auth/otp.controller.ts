@@ -40,12 +40,14 @@ export class OtpController {
   @ApiBody({ type: VerifyOtpRequestDto })
   @ApiResponse({
     status: 200,
-    description: 'Email verified successfully. User account is now active and email is confirmed.',
+    description:
+      'Email verified successfully. User account is now active and email is confirmed.',
     type: OtpVerificationResponseDto,
   })
   @ApiResponse({
     status: 400,
-    description: 'Bad Request - Invalid OTP code, expired OTP, or email already verified',
+    description:
+      'Bad Request - Invalid OTP code, expired OTP, or email already verified',
   })
   @ApiResponse({
     status: 403,
@@ -85,7 +87,8 @@ export class OtpController {
   @ApiBody({ type: ResendOtpRequestDto })
   @ApiResponse({
     status: 200,
-    description: 'New OTP sent successfully to the email address. Check email for verification code.',
+    description:
+      'New OTP sent successfully to the email address. Check email for verification code.',
     type: OtpResendResponseDto,
   })
   @ApiResponse({
@@ -102,7 +105,8 @@ export class OtpController {
   })
   @ApiResponse({
     status: 429,
-    description: 'Too Many Requests - Rate limit exceeded (5 attempts per 5 minutes)',
+    description:
+      'Too Many Requests - Rate limit exceeded (5 attempts per 5 minutes)',
   })
   async resendSignupOtp(
     @Body() resendOtpRequestDto: ResendOtpRequestDto,
@@ -126,7 +130,8 @@ export class OtpController {
   @ApiBody({ type: VerifyResetOtpRequestDto })
   @ApiResponse({
     status: 200,
-    description: 'Password reset OTP verified successfully. Reset token provided for password change.',
+    description:
+      'Password reset OTP verified successfully. Reset token provided for password change.',
     type: VerifyResetOtpResponseDto,
   })
   @ApiResponse({
@@ -135,7 +140,8 @@ export class OtpController {
   })
   @ApiResponse({
     status: 401,
-    description: 'Unauthorized - Invalid OTP code, expired OTP, or maximum attempts exceeded',
+    description:
+      'Unauthorized - Invalid OTP code, expired OTP, or maximum attempts exceeded',
   })
   @ApiResponse({
     status: 403,
@@ -143,7 +149,8 @@ export class OtpController {
   })
   @ApiResponse({
     status: 429,
-    description: 'Too Many Requests - Rate limit exceeded (5 attempts per 5 minutes)',
+    description:
+      'Too Many Requests - Rate limit exceeded (5 attempts per 5 minutes)',
   })
   async verifyResetOtp(
     @Body() verifyResetOtpDto: VerifyResetOtpRequestDto,
@@ -169,13 +176,18 @@ export class OtpController {
     status: 500,
     description: 'Failed to send test email - check SMTP configuration',
   })
-  async testEmail(@Body() body: { email: string }): Promise<{ message: string }> {
+  async testEmail(
+    @Body() body: { email: string },
+  ): Promise<{ message: string }> {
     const success = await this.emailService.sendTestEmail(body.email);
-    
+
     if (success) {
       return { message: 'Test email sent successfully' };
     } else {
-      return { message: 'Failed to send test email - check logs and SMTP configuration' };
+      return {
+        message:
+          'Failed to send test email - check logs and SMTP configuration',
+      };
     }
   }
 }
