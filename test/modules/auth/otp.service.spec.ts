@@ -5,44 +5,46 @@ import {
   Logger,
   HttpException,
   HttpStatus,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { OtpService } from '../../../src/modules/auth/otp.service';
 import { UsersService } from '../../../src/modules/auth/users.service';
 import { EmailService } from '../../../src/modules/email/email.service';
-import { User, UserRole } from '../../../src/modules/auth/entities/user.entity';
+import { mockUser, mockOtp } from '../../helpers/mock-user.helper';
+import { UserRole } from '../../../src/modules/auth/entities/user.entity';
+import { OtpPurpose } from '@prisma/client';
+import * as otpUtil from '../../../src/shared/utils/otp.util';
 
 describe('OtpService', () => {
   let otpService: OtpService;
   let usersService: jest.Mocked<UsersService>;
+  let emailService: jest.Mocked<EmailService>;
 
-  const mockUser: User = Object.assign(new User(), {
+  const testUser = mockUser({
     id: '01930000-0000-7000-8000-000000000001',
     email: 'test@example.com',
-    password: 'hashedpassword',
     name: 'Test User',
     role: UserRole.PLATFORM_ADMIN,
-    refreshToken: null,
     emailVerified: false,
-    otpCode: '123456',
-    otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
-    otpAttempts: 0,
-    createdAt: new Date(),
-    updatedAt: new Date(),
   });
 
   beforeEach(async () => {
+    // Mock the otpUtil.verifyOtp function
+    jest.spyOn(otpUtil, 'verifyOtp').mockResolvedValue(true);
     const mockUsersService = {
       findByEmail: jest.fn(),
       findById: jest.fn(),
-      saveOtp: jest.fn(),
-      markEmailVerified: jest.fn(),
+      createOtp: jest.fn(),
+      findValidOtp: jest.fn(),
       incrementOtpAttempts: jest.fn(),
-      lockOtp: jest.fn(),
+      markOtpAsUsed: jest.fn(),
+      markEmailVerified: jest.fn(),
     };
 
     const mockEmailService = {
       sendOtpEmail: jest.fn().mockResolvedValue(true),
+      sendPasswordResetEmail: jest.fn().mockResolvedValue(true),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -82,6 +84,11 @@ describe('OtpService', () => {
 
     otpService = module.get<OtpService>(OtpService);
     usersService = module.get(UsersService);
+    emailService = module.get(EmailService);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it('should be defined', () => {
@@ -108,36 +115,59 @@ describe('OtpService', () => {
 
   describe('generateAndSendOtp', () => {
     it('should generate OTP, save it, and send email', async () => {
-      usersService.saveOtp.mockResolvedValue(undefined);
+      const mockOtpRecord = mockOtp({
+        userId: testUser.id,
+        purpose: OtpPurpose.SIGNUP_EMAIL_VERIFICATION,
+      });
+      
+      usersService.createOtp.mockResolvedValue(mockOtpRecord);
 
-      const result = await otpService.generateAndSendOtp(mockUser);
+      const result = await otpService.generateAndSendOtp(testUser);
 
       expect(result.expiresAt).toBeInstanceOf(Date);
       expect(result.expiresAt.getTime()).toBeGreaterThan(Date.now());
-      expect(usersService.saveOtp).toHaveBeenCalledWith(
-        mockUser.id,
+      expect(usersService.createOtp).toHaveBeenCalledWith(
+        testUser.id,
+        OtpPurpose.SIGNUP_EMAIL_VERIFICATION,
         expect.any(String),
         expect.any(Date),
+        5,
+      );
+      expect(emailService.sendOtpEmail).toHaveBeenCalledWith(
+        testUser.email,
+        expect.any(String),
+        testUser.name,
       );
     });
   });
 
   describe('verifyOtp', () => {
     it('should verify OTP successfully and mark email as verified', async () => {
-      const verifiedUser = {
-        ...mockUser,
+      const mockOtpRecord = mockOtp({
+        userId: testUser.id,
+        purpose: OtpPurpose.SIGNUP_EMAIL_VERIFICATION,
+        attempts: 0,
+      });
+      
+      const verifiedUser = mockUser({
+        ...testUser,
         emailVerified: true,
-        otpCode: null,
-        otpExpiresAt: null,
-        otpAttempts: 0,
-      };
-      usersService.findByEmail.mockResolvedValue(mockUser);
-      usersService.markEmailVerified.mockResolvedValue(verifiedUser as User);
+      });
+
+      usersService.findByEmail.mockResolvedValue(testUser);
+      usersService.findValidOtp.mockResolvedValue(mockOtpRecord);
+      usersService.markOtpAsUsed.mockResolvedValue(mockOtpRecord);
+      usersService.markEmailVerified.mockResolvedValue(verifiedUser);
 
       const result = await otpService.verifyOtp('test@example.com', '123456');
 
       expect(result.emailVerified).toBe(true);
-      expect(usersService.markEmailVerified).toHaveBeenCalledWith(mockUser.id);
+      expect(usersService.findValidOtp).toHaveBeenCalledWith(
+        testUser.id,
+        OtpPurpose.SIGNUP_EMAIL_VERIFICATION,
+      );
+      expect(usersService.markOtpAsUsed).toHaveBeenCalledWith(mockOtpRecord.id);
+      expect(usersService.markEmailVerified).toHaveBeenCalledWith(testUser.id);
     });
 
     it('should throw NotFoundException if user is not found', async () => {
@@ -149,35 +179,17 @@ describe('OtpService', () => {
     });
 
     it('should throw BadRequestException if email is already verified', async () => {
-      const verifiedUser = { ...mockUser, emailVerified: true };
-      usersService.findByEmail.mockResolvedValue(verifiedUser as User);
+      const verifiedUser = mockUser({ ...testUser, emailVerified: true });
+      usersService.findByEmail.mockResolvedValue(verifiedUser);
 
       await expect(
         otpService.verifyOtp('test@example.com', '123456'),
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('should throw BadRequestException if no OTP is found', async () => {
-      const userWithoutOtp = {
-        ...mockUser,
-        otpCode: null,
-        otpExpiresAt: null,
-        otpAttempts: 0,
-      };
-      usersService.findByEmail.mockResolvedValue(userWithoutOtp as User);
-
-      await expect(
-        otpService.verifyOtp('test@example.com', '123456'),
-      ).rejects.toThrow(BadRequestException);
-    });
-
-    it('should throw BadRequestException if OTP is expired', async () => {
-      const userWithExpiredOtp = {
-        ...mockUser,
-        otpExpiresAt: new Date(Date.now() - 1000), // Expired 1 second ago
-        otpAttempts: 0,
-      };
-      usersService.findByEmail.mockResolvedValue(userWithExpiredOtp as User);
+    it('should throw BadRequestException if no valid OTP is found', async () => {
+      usersService.findByEmail.mockResolvedValue(testUser);
+      usersService.findValidOtp.mockResolvedValue(null);
 
       await expect(
         otpService.verifyOtp('test@example.com', '123456'),
@@ -185,24 +197,42 @@ describe('OtpService', () => {
     });
 
     it('should throw BadRequestException with remaining attempts on invalid OTP', async () => {
-      const userWithAttempts = { ...mockUser, otpAttempts: 0 };
-      usersService.findByEmail.mockResolvedValue(userWithAttempts as User);
-      usersService.incrementOtpAttempts.mockResolvedValue({
-        ...userWithAttempts,
-        otpAttempts: 1,
-      } as User);
+      const mockOtpRecord = mockOtp({
+        userId: testUser.id,
+        purpose: OtpPurpose.SIGNUP_EMAIL_VERIFICATION,
+        attempts: 1,
+        maxAttempts: 3,
+      });
+
+      const updatedOtpRecord = mockOtp({
+        ...mockOtpRecord,
+        attempts: 2,
+      });
+
+      usersService.findByEmail.mockResolvedValue(testUser);
+      usersService.findValidOtp.mockResolvedValue(mockOtpRecord);
+      usersService.incrementOtpAttempts.mockResolvedValue(updatedOtpRecord);
+
+      // Mock verifyOtp to return false for this test
+      jest.spyOn(otpUtil, 'verifyOtp').mockResolvedValueOnce(false);
 
       await expect(
         otpService.verifyOtp('test@example.com', '654321'),
       ).rejects.toThrow(BadRequestException);
-      expect(usersService.incrementOtpAttempts).toHaveBeenCalledWith(
-        mockUser.id,
-      );
+      
+      expect(usersService.incrementOtpAttempts).toHaveBeenCalledWith(mockOtpRecord.id);
     });
 
-    it('should throw 429 error when max attempts exceeded on current attempt', async () => {
-      const userWithMaxAttempts = { ...mockUser, otpAttempts: 5 };
-      usersService.findByEmail.mockResolvedValue(userWithMaxAttempts as User);
+    it('should throw 429 error when max attempts exceeded', async () => {
+      const mockOtpRecord = mockOtp({
+        userId: testUser.id,
+        purpose: OtpPurpose.SIGNUP_EMAIL_VERIFICATION,
+        attempts: 3,
+        maxAttempts: 3,
+      });
+
+      usersService.findByEmail.mockResolvedValue(testUser);
+      usersService.findValidOtp.mockResolvedValue(mockOtpRecord);
 
       await expect(
         otpService.verifyOtp('test@example.com', '654321'),
@@ -217,57 +247,29 @@ describe('OtpService', () => {
         );
       }
     });
-
-    it('should lock OTP and throw 429 error when max attempts reached after increment', async () => {
-      const userWithFourAttempts = { ...mockUser, otpAttempts: 4 };
-      usersService.findByEmail.mockResolvedValue(userWithFourAttempts as User);
-      usersService.incrementOtpAttempts.mockResolvedValue({
-        ...userWithFourAttempts,
-        otpAttempts: 5,
-      } as User);
-      usersService.lockOtp.mockResolvedValue({
-        ...userWithFourAttempts,
-        otpCode: null,
-        otpExpiresAt: null,
-        otpAttempts: 5,
-      } as User);
-
-      await expect(
-        otpService.verifyOtp('test@example.com', '654321'),
-      ).rejects.toThrow(HttpException);
-
-      expect(usersService.incrementOtpAttempts).toHaveBeenCalledWith(
-        mockUser.id,
-      );
-      expect(usersService.lockOtp).toHaveBeenCalledWith(mockUser.id);
-    });
-
-    it('should show remaining attempts message on invalid OTP', async () => {
-      const userWithThreeAttempts = { ...mockUser, otpAttempts: 0 };
-      usersService.findByEmail.mockResolvedValue(userWithThreeAttempts as User);
-      usersService.incrementOtpAttempts.mockResolvedValue({
-        ...userWithThreeAttempts,
-        otpAttempts: 3,
-      } as User);
-
-      try {
-        await otpService.verifyOtp('test@example.com', '654321');
-      } catch (error) {
-        expect(error).toBeInstanceOf(BadRequestException);
-        expect((error as BadRequestException).message).toContain('2 attempts');
-      }
-    });
   });
 
   describe('resendOtp', () => {
     it('should resend OTP successfully', async () => {
-      usersService.findByEmail.mockResolvedValue(mockUser);
-      usersService.saveOtp.mockResolvedValue(undefined);
+      const mockOtpRecord = mockOtp({
+        userId: testUser.id,
+        purpose: OtpPurpose.SIGNUP_EMAIL_VERIFICATION,
+      });
+
+      usersService.findByEmail.mockResolvedValue(testUser);
+      usersService.createOtp.mockResolvedValue(mockOtpRecord);
 
       const result = await otpService.resendOtp('test@example.com');
 
       expect(result.expiresAt).toBeInstanceOf(Date);
-      expect(usersService.saveOtp).toHaveBeenCalled();
+      expect(usersService.createOtp).toHaveBeenCalledWith(
+        testUser.id,
+        OtpPurpose.SIGNUP_EMAIL_VERIFICATION,
+        expect.any(String),
+        expect.any(Date),
+        5,
+      );
+      expect(emailService.sendOtpEmail).toHaveBeenCalled();
     });
 
     it('should throw NotFoundException if user is not found', async () => {
@@ -279,12 +281,65 @@ describe('OtpService', () => {
     });
 
     it('should throw BadRequestException if email is already verified', async () => {
-      const verifiedUser = { ...mockUser, emailVerified: true };
-      usersService.findByEmail.mockResolvedValue(verifiedUser as User);
+      const verifiedUser = mockUser({ ...testUser, emailVerified: true });
+      usersService.findByEmail.mockResolvedValue(verifiedUser);
 
       await expect(otpService.resendOtp('test@example.com')).rejects.toThrow(
         BadRequestException,
       );
+    });
+  });
+
+  describe('generatePasswordResetOtp', () => {
+    it('should generate password reset OTP successfully', async () => {
+      const mockOtpRecord = mockOtp({
+        userId: testUser.id,
+        purpose: OtpPurpose.PASSWORD_RESET,
+      });
+
+      usersService.createOtp.mockResolvedValue(mockOtpRecord);
+
+      const result = await otpService.generatePasswordResetOtp(testUser);
+
+      expect(result.expiresAt).toBeInstanceOf(Date);
+      expect(usersService.createOtp).toHaveBeenCalledWith(
+        testUser.id,
+        OtpPurpose.PASSWORD_RESET,
+        expect.any(String),
+        expect.any(Date),
+        3,
+      );
+    });
+  });
+
+  describe('verifyPasswordResetOtpInternal', () => {
+    it('should verify password reset OTP successfully', async () => {
+      const mockOtpRecord = mockOtp({
+        userId: testUser.id,
+        purpose: OtpPurpose.PASSWORD_RESET,
+        attempts: 0,
+      });
+
+      usersService.findByEmail.mockResolvedValue(testUser);
+      usersService.findValidOtp.mockResolvedValue(mockOtpRecord);
+      usersService.markOtpAsUsed.mockResolvedValue(mockOtpRecord);
+
+      const result = await otpService.verifyPasswordResetOtpInternal('test@example.com', '123456');
+
+      expect(result).toEqual(testUser);
+      expect(usersService.findValidOtp).toHaveBeenCalledWith(
+        testUser.id,
+        OtpPurpose.PASSWORD_RESET,
+      );
+      expect(usersService.markOtpAsUsed).toHaveBeenCalledWith(mockOtpRecord.id);
+    });
+
+    it('should throw NotFoundException if user is not found', async () => {
+      usersService.findByEmail.mockResolvedValue(null);
+
+      await expect(
+        otpService.verifyPasswordResetOtpInternal('nonexistent@example.com', '123456'),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 });

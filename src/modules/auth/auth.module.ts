@@ -14,6 +14,7 @@ import { UsersService } from './users.service';
 import { PrismaService } from '@/config/prisma.service';
 import { AuthMapper } from './mappers/auth.mapper';
 import { JWT_EXPIRATION } from '@/shared/constants/jwt.constants';
+import { EmailModule } from '@/modules/email/email.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { JWT_EXPIRATION } from '@/shared/constants/jwt.constants';
       inject: [ConfigService],
     }),
     WinstonModule,
+    EmailModule,
   ],
   providers: [
     AuthService,
