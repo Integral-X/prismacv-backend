@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/Integral-X/prismacv-backend/compare/v1.3.0...v1.3.1) (2026-02-17)
+
+
+### Bug Fixes
+
+* remove duplicate v1 in API paths ([#129](https://github.com/Integral-X/prismacv-backend/issues/129)) ([b9b3afe](https://github.com/Integral-X/prismacv-backend/commit/b9b3afe8d52256a3920d35e5a4db24dfc5d999a7))
+
 # [1.3.0](https://github.com/Integral-X/prismacv-backend/compare/v1.2.3...v1.3.0) (2026-01-24)
 
 
