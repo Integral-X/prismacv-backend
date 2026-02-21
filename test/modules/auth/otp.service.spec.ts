@@ -30,8 +30,8 @@ describe('OtpService', () => {
   });
 
   beforeEach(async () => {
-    // Mock the otpUtil.verifyOtp function
-    jest.spyOn(otpUtil, 'verifyOtp').mockResolvedValue(true);
+    // Mock the otpUtil.verifyOtpHash function
+    jest.spyOn(otpUtil, 'verifyOtpHash').mockResolvedValue(true);
     const mockUsersService = {
       findByEmail: jest.fn(),
       findById: jest.fn(),
@@ -119,7 +119,7 @@ describe('OtpService', () => {
         userId: testUser.id,
         purpose: OtpPurpose.SIGNUP_EMAIL_VERIFICATION,
       });
-      
+
       usersService.createOtp.mockResolvedValue(mockOtpRecord);
 
       const result = await otpService.generateAndSendOtp(testUser);
@@ -148,7 +148,7 @@ describe('OtpService', () => {
         purpose: OtpPurpose.SIGNUP_EMAIL_VERIFICATION,
         attempts: 0,
       });
-      
+
       const verifiedUser = mockUser({
         ...testUser,
         emailVerified: true,
@@ -213,14 +213,16 @@ describe('OtpService', () => {
       usersService.findValidOtp.mockResolvedValue(mockOtpRecord);
       usersService.incrementOtpAttempts.mockResolvedValue(updatedOtpRecord);
 
-      // Mock verifyOtp to return false for this test
-      jest.spyOn(otpUtil, 'verifyOtp').mockResolvedValueOnce(false);
+      // Mock verifyOtpHash to return false for this test
+      jest.spyOn(otpUtil, 'verifyOtpHash').mockResolvedValueOnce(false);
 
       await expect(
         otpService.verifyOtp('test@example.com', '654321'),
       ).rejects.toThrow(BadRequestException);
-      
-      expect(usersService.incrementOtpAttempts).toHaveBeenCalledWith(mockOtpRecord.id);
+
+      expect(usersService.incrementOtpAttempts).toHaveBeenCalledWith(
+        mockOtpRecord.id,
+      );
     });
 
     it('should throw 429 error when max attempts exceeded', async () => {
@@ -290,7 +292,7 @@ describe('OtpService', () => {
     });
   });
 
-  describe('generatePasswordResetOtp', () => {
+  describe('password reset purpose', () => {
     it('should generate password reset OTP successfully', async () => {
       const mockOtpRecord = mockOtp({
         userId: testUser.id,
@@ -299,7 +301,10 @@ describe('OtpService', () => {
 
       usersService.createOtp.mockResolvedValue(mockOtpRecord);
 
-      const result = await otpService.generatePasswordResetOtp(testUser);
+      const result = await otpService.generateAndSendOtp(
+        testUser,
+        OtpPurpose.PASSWORD_RESET,
+      );
 
       expect(result.expiresAt).toBeInstanceOf(Date);
       expect(usersService.createOtp).toHaveBeenCalledWith(
@@ -309,10 +314,13 @@ describe('OtpService', () => {
         expect.any(Date),
         3,
       );
+      expect(emailService.sendPasswordResetEmail).toHaveBeenCalledWith(
+        testUser.email,
+        expect.any(String),
+        testUser.name,
+      );
     });
-  });
 
-  describe('verifyPasswordResetOtpInternal', () => {
     it('should verify password reset OTP successfully', async () => {
       const mockOtpRecord = mockOtp({
         userId: testUser.id,
@@ -324,7 +332,11 @@ describe('OtpService', () => {
       usersService.findValidOtp.mockResolvedValue(mockOtpRecord);
       usersService.markOtpAsUsed.mockResolvedValue(mockOtpRecord);
 
-      const result = await otpService.verifyPasswordResetOtpInternal('test@example.com', '123456');
+      const result = await otpService.verifyOtp(
+        'test@example.com',
+        '123456',
+        OtpPurpose.PASSWORD_RESET,
+      );
 
       expect(result).toEqual(testUser);
       expect(usersService.findValidOtp).toHaveBeenCalledWith(
@@ -332,13 +344,18 @@ describe('OtpService', () => {
         OtpPurpose.PASSWORD_RESET,
       );
       expect(usersService.markOtpAsUsed).toHaveBeenCalledWith(mockOtpRecord.id);
+      expect(usersService.markEmailVerified).not.toHaveBeenCalled();
     });
 
-    it('should throw NotFoundException if user is not found', async () => {
+    it('should throw UnauthorizedException if user is not found', async () => {
       usersService.findByEmail.mockResolvedValue(null);
 
       await expect(
-        otpService.verifyPasswordResetOtpInternal('nonexistent@example.com', '123456'),
+        otpService.verifyOtp(
+          'nonexistent@example.com',
+          '123456',
+          OtpPurpose.PASSWORD_RESET,
+        ),
       ).rejects.toThrow(UnauthorizedException);
     });
   });

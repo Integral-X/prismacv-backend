@@ -7,7 +7,7 @@ import { User, UserRole } from '@/modules/auth/entities/user.entity';
  */
 export function mockUser(overrides: Partial<User> = {}): User {
   const user = new User();
-  
+
   // Set default values
   user.id = overrides.id || '01234567-89ab-cdef-0123-456789abcdef';
   user.email = overrides.email || 'test@example.com';

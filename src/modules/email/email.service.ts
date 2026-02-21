@@ -96,7 +96,6 @@ export class EmailService {
         `Email not sent (transporter not configured): to=${options.to}, subject=${options.subject}`,
       );
       this.logger.error('Please check SMTP configuration in .env file');
-      // Don't return true in development - this masks real issues
       return false;
     }
 

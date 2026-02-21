@@ -25,7 +25,7 @@ import {
   verifyResetToken,
 } from '@/shared/utils/token.util';
 import { PrismaService } from '@/config/prisma.service';
-import { AuthTokenPurpose } from '@prisma/client';
+import { AuthTokenPurpose, OtpPurpose } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -338,7 +338,10 @@ export class AuthService {
 
       if (user) {
         // Generate and send password reset OTP using OtpService
-        await this.otpService.generatePasswordResetOtp(user);
+        await this.otpService.generateAndSendOtp(
+          user,
+          OtpPurpose.PASSWORD_RESET,
+        );
         this.logger.log(`Password reset OTP sent to: ${email}`);
       } else {
         this.logger.warn(
@@ -367,9 +370,10 @@ export class AuthService {
     otp: string,
   ): Promise<VerifyResetOtpResponseDto> {
     // Verify OTP using OtpService
-    const user = await this.otpService.verifyPasswordResetOtpInternal(
+    const user = await this.otpService.verifyOtp(
       email,
       otp,
+      OtpPurpose.PASSWORD_RESET,
     );
 
     // Generate reset token

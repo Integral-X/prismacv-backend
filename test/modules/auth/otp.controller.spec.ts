@@ -245,7 +245,8 @@ describe('OtpController', () => {
       const result = await controller.testEmail(emailDto);
 
       expect(result).toEqual({
-        message: 'Failed to send test email - check logs and SMTP configuration',
+        message:
+          'Failed to send test email - check logs and SMTP configuration',
       });
     });
   });
