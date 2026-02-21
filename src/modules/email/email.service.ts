@@ -207,18 +207,4 @@ export class EmailService {
     }
   }
 
-  /**
-   * Test email sending (for debugging)
-   */
-  async sendTestEmail(email: string): Promise<boolean> {
-    const options: EmailOptions = {
-      to: email,
-      subject: 'Test Email from PrismaCV',
-      html: '<h1>Test Email</h1><p>If you receive this, email configuration is working!</p>',
-      text: 'Test Email - If you receive this, email configuration is working!',
-    };
-
-    this.logger.log(`Sending test email to: ${email}`);
-    return this.sendEmail(options);
-  }
 }
