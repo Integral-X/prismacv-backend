@@ -2,27 +2,27 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { OtpController } from '../../../src/modules/auth/otp.controller';
 import { OtpService } from '../../../src/modules/auth/otp.service';
+import { AuthService } from '../../../src/modules/auth/auth.service';
 import { AuthMapper } from '../../../src/modules/auth/mappers/auth.mapper';
 import { VerifyOtpRequestDto } from '../../../src/modules/auth/dto/request/verify-otp.request.dto';
 import { ResendOtpRequestDto } from '../../../src/modules/auth/dto/request/resend-otp.request.dto';
+import { VerifyResetOtpRequestDto } from '../../../src/modules/auth/dto/request/verify-reset-otp.request';
 import { UserProfileResponseDto } from '../../../src/modules/auth/dto/response/user-profile.response.dto';
-import { User, UserRole } from '../../../src/modules/auth/entities/user.entity';
+import { mockUser } from '../../helpers/mock-user.helper';
+import { UserRole } from '../../../src/modules/auth/entities/user.entity';
 
 describe('OtpController', () => {
   let controller: OtpController;
   let otpService: jest.Mocked<OtpService>;
+  let authService: jest.Mocked<AuthService>;
   let authMapper: jest.Mocked<AuthMapper>;
 
-  const mockUser: User = Object.assign(new User(), {
+  const testUser = mockUser({
     id: '1',
     email: 'user@example.com',
-    password: 'hashedpassword',
     name: 'Test User',
     role: UserRole.REGULAR,
-    refreshToken: null,
     emailVerified: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
   });
 
   const mockUserProfile: UserProfileResponseDto = {
@@ -41,6 +41,10 @@ describe('OtpController', () => {
       resendOtp: jest.fn(),
     };
 
+    const mockAuthService = {
+      verifyPasswordResetOtp: jest.fn(),
+    };
+
     const mockAuthMapper = {
       userToProfileResponse: jest.fn(),
     };
@@ -53,6 +57,10 @@ describe('OtpController', () => {
           useValue: mockOtpService,
         },
         {
+          provide: AuthService,
+          useValue: mockAuthService,
+        },
+        {
           provide: AuthMapper,
           useValue: mockAuthMapper,
         },
@@ -61,26 +69,27 @@ describe('OtpController', () => {
 
     controller = module.get<OtpController>(OtpController);
     otpService = module.get(OtpService);
+    authService = module.get(AuthService);
     authMapper = module.get(AuthMapper);
   });
 
-  describe('verifyOtp', () => {
-    it('should verify OTP successfully', async () => {
+  describe('verifySignupOtp', () => {
+    it('should verify signup OTP successfully', async () => {
       const verifyOtpDto: VerifyOtpRequestDto = {
         email: 'user@example.com',
         otp: '123456',
       };
 
-      otpService.verifyOtp.mockResolvedValue(mockUser);
+      otpService.verifyOtp.mockResolvedValue(testUser);
       authMapper.userToProfileResponse.mockReturnValue(mockUserProfile);
 
-      const result = await controller.verifyOtp(verifyOtpDto);
+      const result = await controller.verifySignupOtp(verifyOtpDto);
 
       expect(otpService.verifyOtp).toHaveBeenCalledWith(
         verifyOtpDto.email,
         verifyOtpDto.otp,
       );
-      expect(authMapper.userToProfileResponse).toHaveBeenCalledWith(mockUser);
+      expect(authMapper.userToProfileResponse).toHaveBeenCalledWith(testUser);
       expect(result).toEqual({
         message: 'Email verified successfully',
         user: mockUserProfile,
@@ -97,7 +106,7 @@ describe('OtpController', () => {
         new BadRequestException('Invalid OTP code'),
       );
 
-      await expect(controller.verifyOtp(verifyOtpDto)).rejects.toThrow(
+      await expect(controller.verifySignupOtp(verifyOtpDto)).rejects.toThrow(
         BadRequestException,
       );
       expect(otpService.verifyOtp).toHaveBeenCalledWith(
@@ -117,7 +126,7 @@ describe('OtpController', () => {
         new BadRequestException('OTP code has expired'),
       );
 
-      await expect(controller.verifyOtp(verifyOtpDto)).rejects.toThrow(
+      await expect(controller.verifySignupOtp(verifyOtpDto)).rejects.toThrow(
         BadRequestException,
       );
     });
@@ -132,23 +141,23 @@ describe('OtpController', () => {
         new NotFoundException('User not found'),
       );
 
-      await expect(controller.verifyOtp(verifyOtpDto)).rejects.toThrow(
+      await expect(controller.verifySignupOtp(verifyOtpDto)).rejects.toThrow(
         NotFoundException,
       );
     });
   });
 
-  describe('resendOtp', () => {
+  describe('resendSignupOtp', () => {
     const mockExpiresAt = new Date();
 
-    it('should resend OTP successfully', async () => {
+    it('should resend signup OTP successfully', async () => {
       const resendOtpDto: ResendOtpRequestDto = {
         email: 'user@example.com',
       };
 
       otpService.resendOtp.mockResolvedValue({ expiresAt: mockExpiresAt });
 
-      const result = await controller.resendOtp(resendOtpDto);
+      const result = await controller.resendSignupOtp(resendOtpDto);
 
       expect(otpService.resendOtp).toHaveBeenCalledWith(resendOtpDto.email);
       expect(result).toEqual({
@@ -166,7 +175,7 @@ describe('OtpController', () => {
         new NotFoundException('User not found'),
       );
 
-      await expect(controller.resendOtp(resendOtpDto)).rejects.toThrow(
+      await expect(controller.resendSignupOtp(resendOtpDto)).rejects.toThrow(
         NotFoundException,
       );
       expect(otpService.resendOtp).toHaveBeenCalledWith(resendOtpDto.email);
@@ -181,9 +190,29 @@ describe('OtpController', () => {
         new BadRequestException('Email is already verified'),
       );
 
-      await expect(controller.resendOtp(resendOtpDto)).rejects.toThrow(
+      await expect(controller.resendSignupOtp(resendOtpDto)).rejects.toThrow(
         BadRequestException,
       );
+    });
+  });
+
+  describe('verifyResetOtp', () => {
+    it('should verify reset OTP successfully', async () => {
+      const verifyResetOtpDto: VerifyResetOtpRequestDto = {
+        email: 'user@example.com',
+        otp: '123456',
+      };
+
+      const mockResetToken = { resetToken: 'reset-token-123' };
+      authService.verifyPasswordResetOtp.mockResolvedValue(mockResetToken);
+
+      const result = await controller.verifyResetOtp(verifyResetOtpDto);
+
+      expect(authService.verifyPasswordResetOtp).toHaveBeenCalledWith(
+        verifyResetOtpDto.email,
+        verifyResetOtpDto.otp,
+      );
+      expect(result).toEqual(mockResetToken);
     });
   });
 });
