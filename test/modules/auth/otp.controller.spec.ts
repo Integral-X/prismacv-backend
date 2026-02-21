@@ -3,7 +3,6 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { OtpController } from '../../../src/modules/auth/otp.controller';
 import { OtpService } from '../../../src/modules/auth/otp.service';
 import { AuthService } from '../../../src/modules/auth/auth.service';
-import { EmailService } from '../../../src/modules/email/email.service';
 import { AuthMapper } from '../../../src/modules/auth/mappers/auth.mapper';
 import { VerifyOtpRequestDto } from '../../../src/modules/auth/dto/request/verify-otp.request.dto';
 import { ResendOtpRequestDto } from '../../../src/modules/auth/dto/request/resend-otp.request.dto';
@@ -16,7 +15,6 @@ describe('OtpController', () => {
   let controller: OtpController;
   let otpService: jest.Mocked<OtpService>;
   let authService: jest.Mocked<AuthService>;
-  let emailService: jest.Mocked<EmailService>;
   let authMapper: jest.Mocked<AuthMapper>;
 
   const testUser = mockUser({
@@ -47,10 +45,6 @@ describe('OtpController', () => {
       verifyPasswordResetOtp: jest.fn(),
     };
 
-    const mockEmailService = {
-      sendTestEmail: jest.fn(),
-    };
-
     const mockAuthMapper = {
       userToProfileResponse: jest.fn(),
     };
@@ -67,10 +61,6 @@ describe('OtpController', () => {
           useValue: mockAuthService,
         },
         {
-          provide: EmailService,
-          useValue: mockEmailService,
-        },
-        {
           provide: AuthMapper,
           useValue: mockAuthMapper,
         },
@@ -80,7 +70,6 @@ describe('OtpController', () => {
     controller = module.get<OtpController>(OtpController);
     otpService = module.get(OtpService);
     authService = module.get(AuthService);
-    emailService = module.get(EmailService);
     authMapper = module.get(AuthMapper);
   });
 
@@ -224,30 +213,6 @@ describe('OtpController', () => {
         verifyResetOtpDto.otp,
       );
       expect(result).toEqual(mockResetToken);
-    });
-  });
-
-  describe('testEmail', () => {
-    it('should send test email successfully', async () => {
-      const emailDto = { email: 'test@example.com' };
-      emailService.sendTestEmail.mockResolvedValue(true);
-
-      const result = await controller.testEmail(emailDto);
-
-      expect(emailService.sendTestEmail).toHaveBeenCalledWith(emailDto.email);
-      expect(result).toEqual({ message: 'Test email sent successfully' });
-    });
-
-    it('should handle failed test email', async () => {
-      const emailDto = { email: 'test@example.com' };
-      emailService.sendTestEmail.mockResolvedValue(false);
-
-      const result = await controller.testEmail(emailDto);
-
-      expect(result).toEqual({
-        message:
-          'Failed to send test email - check logs and SMTP configuration',
-      });
     });
   });
 });

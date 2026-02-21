@@ -9,7 +9,6 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { OtpService } from './otp.service';
 import { AuthService } from './auth.service';
-import { EmailService } from '@/modules/email/email.service';
 import { VerifyOtpRequestDto } from './dto/request/verify-otp.request.dto';
 import { ResendOtpRequestDto } from './dto/request/resend-otp.request.dto';
 import { VerifyResetOtpRequestDto } from './dto/request/verify-reset-otp.request';
@@ -25,7 +24,6 @@ export class OtpController {
   constructor(
     private readonly otpService: OtpService,
     private readonly authService: AuthService,
-    private readonly emailService: EmailService,
     private readonly authMapper: AuthMapper,
   ) {}
 
@@ -159,35 +157,5 @@ export class OtpController {
       verifyResetOtpDto.email,
       verifyResetOtpDto.otp,
     );
-  }
-
-  @Post('test-email')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'Test email configuration (Development only)',
-    description:
-      'Sends a test email to verify SMTP configuration is working. Use this endpoint to debug email issues.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Test email sent successfully',
-  })
-  @ApiResponse({
-    status: 500,
-    description: 'Failed to send test email - check SMTP configuration',
-  })
-  async testEmail(
-    @Body() body: { email: string },
-  ): Promise<{ message: string }> {
-    const success = await this.emailService.sendTestEmail(body.email);
-
-    if (success) {
-      return { message: 'Test email sent successfully' };
-    } else {
-      return {
-        message:
-          'Failed to send test email - check logs and SMTP configuration',
-      };
-    }
   }
 }
