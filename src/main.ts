@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, VersioningType, Logger } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
@@ -40,14 +40,11 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // API versioning
-  app.enableVersioning({
-    type: VersioningType.URI,
-    defaultVersion: '1',
-  });
-
-  // Global prefix
+  // Global prefix (already includes version: api/v1)
   app.setGlobalPrefix(apiPrefix);
+
+  // Note: Versioning disabled since prefix already includes v1
+  // If you need versioning, change API_PREFIX to 'api' and enable versioning
 
   // Global pipes
   app.useGlobalPipes(
@@ -96,7 +93,7 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup(apiPrefix + '/v1/docs', app, document, {
+  SwaggerModule.setup(apiPrefix + '/docs', app, document, {
     swaggerOptions: {
       persistAuthorization: true,
     },
@@ -120,9 +117,7 @@ async function bootstrap() {
   await app.listen(port, host);
   logger.log(`Listening on ${host}:${port}`);
   logger.log(`${appName} running on port ${port}`);
-  logger.log(
-    `API Documentation: http://localhost:${port}/${apiPrefix}/v1/docs`,
-  );
+  logger.log(`API Documentation: http://localhost:${port}/${apiPrefix}/docs`);
 }
 
 bootstrap().catch(err => {
