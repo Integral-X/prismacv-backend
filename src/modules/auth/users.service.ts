@@ -25,8 +25,12 @@ export class UsersService {
     user.otpCode = prismaUser.otpCode || undefined;
     user.otpExpiresAt = prismaUser.otpExpiresAt || undefined;
     user.otpAttempts = prismaUser.otpAttempts;
+    user.avatarUrl = prismaUser.avatarUrl || undefined;
     user.provider = prismaUser.provider || undefined;
     user.providerId = prismaUser.providerId || undefined;
+    user.oauthAccessToken = prismaUser.oauthAccessToken || undefined;
+    user.oauthRefreshToken = prismaUser.oauthRefreshToken || undefined;
+    user.oauthTokenExpiresAt = prismaUser.oauthTokenExpiresAt || undefined;
     user.createdAt = prismaUser.createdAt;
     user.updatedAt = prismaUser.updatedAt;
     return user;
@@ -54,6 +58,10 @@ export class UsersService {
         refreshToken: userEntity.refreshToken,
         provider: userEntity.provider as any,
         providerId: userEntity.providerId,
+        avatarUrl: userEntity.avatarUrl,
+        oauthAccessToken: userEntity.oauthAccessToken,
+        oauthRefreshToken: userEntity.oauthRefreshToken,
+        oauthTokenExpiresAt: userEntity.oauthTokenExpiresAt,
       },
     });
     return this.prismaUserToEntity(updatedUser);
@@ -117,6 +125,10 @@ export class UsersService {
     providerId: string;
     email: string;
     name?: string;
+    avatarUrl?: string;
+    oauthAccessToken?: string;
+    oauthRefreshToken?: string;
+    oauthTokenExpiresAt?: Date;
   }): Promise<User> {
     try {
       const createdUser = await this.prisma.user.create({
@@ -124,8 +136,12 @@ export class UsersService {
           id: generateUuidv7(),
           email: profile.email,
           name: profile.name,
+          avatarUrl: profile.avatarUrl,
           provider: profile.provider,
           providerId: profile.providerId,
+          oauthAccessToken: profile.oauthAccessToken,
+          oauthRefreshToken: profile.oauthRefreshToken,
+          oauthTokenExpiresAt: profile.oauthTokenExpiresAt,
           role: 'REGULAR', // OAuth users default to REGULAR role
           isMasterAdmin: false,
         },
@@ -150,6 +166,12 @@ export class UsersService {
     userId: string,
     provider: string,
     providerId: string,
+    oauthData?: {
+      avatarUrl?: string;
+      oauthAccessToken?: string;
+      oauthRefreshToken?: string;
+      oauthTokenExpiresAt?: Date;
+    },
   ): Promise<User> {
     try {
       const updatedUser = await this.prisma.user.update({
@@ -157,6 +179,10 @@ export class UsersService {
         data: {
           provider: provider as any,
           providerId,
+          avatarUrl: oauthData?.avatarUrl,
+          oauthAccessToken: oauthData?.oauthAccessToken,
+          oauthRefreshToken: oauthData?.oauthRefreshToken,
+          oauthTokenExpiresAt: oauthData?.oauthTokenExpiresAt,
         },
       });
       return this.prismaUserToEntity(updatedUser);
@@ -252,6 +278,31 @@ export class UsersService {
         otpExpiresAt: null,
       },
     });
+    return this.prismaUserToEntity(updatedUser);
+  }
+
+  /**
+   * Update OAuth metadata for a user after successful OAuth login
+   */
+  async updateOAuthMetadata(
+    userId: string,
+    oauthData: {
+      avatarUrl?: string;
+      oauthAccessToken?: string;
+      oauthRefreshToken?: string;
+      oauthTokenExpiresAt?: Date;
+    },
+  ): Promise<User> {
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        avatarUrl: oauthData.avatarUrl,
+        oauthAccessToken: oauthData.oauthAccessToken,
+        oauthRefreshToken: oauthData.oauthRefreshToken,
+        oauthTokenExpiresAt: oauthData.oauthTokenExpiresAt,
+      },
+    });
+
     return this.prismaUserToEntity(updatedUser);
   }
 }

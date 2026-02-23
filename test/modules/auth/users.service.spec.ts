@@ -53,6 +53,9 @@ describe('UsersService', () => {
         avatarUrl: null,
         provider: null,
         providerId: null,
+        oauthAccessToken: null,
+        oauthRefreshToken: null,
+        oauthTokenExpiresAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -122,6 +125,9 @@ describe('UsersService', () => {
         avatarUrl: null,
         provider: null,
         providerId: null,
+        oauthAccessToken: null,
+        oauthRefreshToken: null,
+        oauthTokenExpiresAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -175,6 +181,9 @@ describe('UsersService', () => {
         avatarUrl: null,
         provider: null,
         providerId: null,
+        oauthAccessToken: null,
+        oauthRefreshToken: null,
+        oauthTokenExpiresAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -252,6 +261,9 @@ describe('UsersService', () => {
         avatarUrl: null,
         provider: null,
         providerId: null,
+        oauthAccessToken: null,
+        oauthRefreshToken: null,
+        oauthTokenExpiresAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -297,6 +309,9 @@ describe('UsersService', () => {
         avatarUrl: null,
         provider: null,
         providerId: null,
+        oauthAccessToken: null,
+        oauthRefreshToken: null,
+        oauthTokenExpiresAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -347,6 +362,9 @@ describe('UsersService', () => {
         avatarUrl: null,
         provider: null,
         providerId: null,
+        oauthAccessToken: null,
+        oauthRefreshToken: null,
+        oauthTokenExpiresAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -366,6 +384,10 @@ describe('UsersService', () => {
           refreshToken: userEntityUpdate.refreshToken,
           provider: userEntityUpdate.provider,
           providerId: userEntityUpdate.providerId,
+          avatarUrl: userEntityUpdate.avatarUrl,
+          oauthAccessToken: userEntityUpdate.oauthAccessToken,
+          oauthRefreshToken: userEntityUpdate.oauthRefreshToken,
+          oauthTokenExpiresAt: userEntityUpdate.oauthTokenExpiresAt,
         },
       });
       expect(result).toBeInstanceOf(User);
@@ -393,6 +415,9 @@ describe('UsersService', () => {
         avatarUrl: null,
         provider: null,
         providerId: null,
+        oauthAccessToken: null,
+        oauthRefreshToken: null,
+        oauthTokenExpiresAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -412,6 +437,10 @@ describe('UsersService', () => {
           refreshToken: 'new-token-only',
           provider: undefined,
           providerId: undefined,
+          avatarUrl: undefined,
+          oauthAccessToken: undefined,
+          oauthRefreshToken: undefined,
+          oauthTokenExpiresAt: undefined,
         },
       });
       expect(result).toBeInstanceOf(User);
@@ -440,6 +469,9 @@ describe('UsersService', () => {
         avatarUrl: null,
         provider: null,
         providerId: null,
+        oauthAccessToken: null,
+        oauthRefreshToken: null,
+        oauthTokenExpiresAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -481,6 +513,9 @@ describe('UsersService', () => {
         avatarUrl: null,
         provider: null,
         providerId: null,
+        oauthAccessToken: null,
+        oauthRefreshToken: null,
+        oauthTokenExpiresAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
