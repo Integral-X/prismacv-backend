@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/Integral-X/prismacv-backend/compare/v1.3.1...v1.4.0) (2026-02-25)
+
+
+### Features
+
+* implement LinkedIn CV import functionality ([#134](https://github.com/Integral-X/prismacv-backend/issues/134)) ([8956f2f](https://github.com/Integral-X/prismacv-backend/commit/8956f2fc09e4c11850bc9f40e578db5db6a8470c))
+
 ## [1.3.1](https://github.com/Integral-X/prismacv-backend/compare/v1.3.0...v1.3.1) (2026-02-17)
 
 
