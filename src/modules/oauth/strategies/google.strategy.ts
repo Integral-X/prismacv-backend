@@ -21,13 +21,19 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     });
   }
 
-  async validate(profile: Profile): Promise<{ user: User }> {
+  async validate(
+    accessToken: string,
+    refreshToken: string,
+    profile: Profile,
+  ): Promise<{ user: User }> {
     // Transform Google profile → our internal format
     const oauthProfile = this.googleProvider.validateProfile(profile);
 
     // Let oauth service handle DB user creation / login
     const result = await this.oauthService.authenticate({
       profile: oauthProfile,
+      accessToken,
+      refreshToken,
     });
 
     return result;
