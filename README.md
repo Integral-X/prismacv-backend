@@ -60,7 +60,7 @@ npm run test:cov
 
 ## API Documentation
 
-API documentation is available via Swagger-UI at: [https://api.prismacv.com/api/v1/docs](https://api.prismacv.com/api/v1/docs)
+API documentation is available via Swagger-UI at: [https://api.prismacv.com/api/docs](https://api.prismacv.com/api/docs)
 
 ## Contributing
 
@@ -68,4 +68,4 @@ Contributions are welcome! Please open an issue or submit a pull request.
 
 ## License
 
-Copyright (c) 2025 PrismaCV.
+Copyright (c) 2026 PrismaCV.
