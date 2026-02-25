@@ -36,6 +36,7 @@ describe('AuthService', () => {
               const config: Record<string, any> = {
                 OTP_EXPIRY_MINUTES: 10,
                 APP_NAME: 'PrismaCV',
+                'security.encryptionKey': '01234567890123456789012345678901',
               };
               return config[key] ?? defaultValue;
             }),
