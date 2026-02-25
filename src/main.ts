@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { ValidationPipe, Logger, VersioningType } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
@@ -40,11 +40,14 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // Global prefix (already includes version: api/v1)
+  // Global prefix
   app.setGlobalPrefix(apiPrefix);
 
-  // Note: Versioning disabled since prefix already includes v1
-  // If you need versioning, change API_PREFIX to 'api' and enable versioning
+  // Enable URI versioning
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: '1',
+  });
 
   // Global pipes
   app.useGlobalPipes(
