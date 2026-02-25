@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../../../src/modules/auth/users.service';
 import { PrismaService } from '../../../src/config/prisma.service';
 import { ConflictException } from '@nestjs/common';
@@ -10,17 +11,27 @@ import { extractTimestampFromUuidv7 } from '../../../src/shared/utils/uuid.util'
 describe('UsersService', () => {
   let usersService: UsersService;
   let prismaService: DeepMockProxy<PrismaService>;
+  let configService: DeepMockProxy<ConfigService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,
         { provide: PrismaService, useValue: mockDeep<PrismaService>() },
+        { provide: ConfigService, useValue: mockDeep<ConfigService>() },
       ],
     }).compile();
 
     usersService = module.get<UsersService>(UsersService);
     prismaService = module.get(PrismaService);
+    configService = module.get(ConfigService);
+
+    // Mock the encryption key getter
+    configService.get.mockImplementation(key => {
+      if (key === 'security.encryptionKey')
+        return '01234567890123456789012345678901';
+      return null;
+    });
   });
 
   it('should be defined', () => {

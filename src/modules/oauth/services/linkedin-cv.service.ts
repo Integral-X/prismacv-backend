@@ -457,7 +457,11 @@ export class LinkedInCvService {
         throw new BadRequestException('Invalid LinkedIn URL');
       }
 
-      if (!parsedUrl.hostname.toLowerCase().endsWith('linkedin.com')) {
+      const host = parsedUrl.hostname.toLowerCase();
+      // Fix for CodeQL: Incomplete URL substring sanitization
+      // Ensure it is exactly linkedin.com or ends with .linkedin.com
+      // (prevents attacks from malicious-linkedin.com)
+      if (host !== 'linkedin.com' && !host.endsWith('.linkedin.com')) {
         throw new BadRequestException('Invalid LinkedIn URL');
       }
 

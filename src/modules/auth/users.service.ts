@@ -1,13 +1,18 @@
 import { Injectable, ConflictException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@/config/prisma.service';
 import { User as PrismaUser } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { User, UserRole } from './entities/user.entity';
 import { generateUuidv7 } from '@/shared/utils/uuid.util';
+import { EncryptionUtil } from '@/shared/utils/encryption.util';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {}
 
   /**
    * Converts Prisma User to User entity
@@ -28,8 +33,15 @@ export class UsersService {
     user.avatarUrl = prismaUser.avatarUrl || undefined;
     user.provider = prismaUser.provider || undefined;
     user.providerId = prismaUser.providerId || undefined;
-    user.oauthAccessToken = prismaUser.oauthAccessToken || undefined;
-    user.oauthRefreshToken = prismaUser.oauthRefreshToken || undefined;
+
+    const key = this.configService.get<string>('security.encryptionKey') || '';
+    user.oauthAccessToken = prismaUser.oauthAccessToken
+      ? EncryptionUtil.decrypt(prismaUser.oauthAccessToken, key)
+      : undefined;
+    user.oauthRefreshToken = prismaUser.oauthRefreshToken
+      ? EncryptionUtil.decrypt(prismaUser.oauthRefreshToken, key)
+      : undefined;
+
     user.oauthTokenExpiresAt = prismaUser.oauthTokenExpiresAt || undefined;
     user.createdAt = prismaUser.createdAt;
     user.updatedAt = prismaUser.updatedAt;
@@ -47,6 +59,8 @@ export class UsersService {
   }
 
   async update(id: string, userEntity: Partial<User>): Promise<User> {
+    const key = this.configService.get<string>('security.encryptionKey') || '';
+
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data: {
@@ -59,8 +73,12 @@ export class UsersService {
         provider: userEntity.provider as any,
         providerId: userEntity.providerId,
         avatarUrl: userEntity.avatarUrl,
-        oauthAccessToken: userEntity.oauthAccessToken,
-        oauthRefreshToken: userEntity.oauthRefreshToken,
+        oauthAccessToken: userEntity.oauthAccessToken
+          ? EncryptionUtil.encrypt(userEntity.oauthAccessToken, key)
+          : undefined,
+        oauthRefreshToken: userEntity.oauthRefreshToken
+          ? EncryptionUtil.encrypt(userEntity.oauthRefreshToken, key)
+          : undefined,
         oauthTokenExpiresAt: userEntity.oauthTokenExpiresAt,
       },
     });
@@ -131,6 +149,9 @@ export class UsersService {
     oauthTokenExpiresAt?: Date;
   }): Promise<User> {
     try {
+      const key =
+        this.configService.get<string>('security.encryptionKey') || '';
+
       const createdUser = await this.prisma.user.create({
         data: {
           id: generateUuidv7(),
@@ -139,8 +160,12 @@ export class UsersService {
           avatarUrl: profile.avatarUrl,
           provider: profile.provider,
           providerId: profile.providerId,
-          oauthAccessToken: profile.oauthAccessToken,
-          oauthRefreshToken: profile.oauthRefreshToken,
+          oauthAccessToken: profile.oauthAccessToken
+            ? EncryptionUtil.encrypt(profile.oauthAccessToken, key)
+            : undefined,
+          oauthRefreshToken: profile.oauthRefreshToken
+            ? EncryptionUtil.encrypt(profile.oauthRefreshToken, key)
+            : undefined,
           oauthTokenExpiresAt: profile.oauthTokenExpiresAt,
           role: 'REGULAR', // OAuth users default to REGULAR role
           isMasterAdmin: false,
@@ -174,14 +199,21 @@ export class UsersService {
     },
   ): Promise<User> {
     try {
+      const key =
+        this.configService.get<string>('security.encryptionKey') || '';
+
       const updatedUser = await this.prisma.user.update({
         where: { id: userId },
         data: {
           provider: provider as any,
           providerId,
           avatarUrl: oauthData?.avatarUrl,
-          oauthAccessToken: oauthData?.oauthAccessToken,
-          oauthRefreshToken: oauthData?.oauthRefreshToken,
+          oauthAccessToken: oauthData?.oauthAccessToken
+            ? EncryptionUtil.encrypt(oauthData.oauthAccessToken, key)
+            : undefined,
+          oauthRefreshToken: oauthData?.oauthRefreshToken
+            ? EncryptionUtil.encrypt(oauthData.oauthRefreshToken, key)
+            : undefined,
           oauthTokenExpiresAt: oauthData?.oauthTokenExpiresAt,
         },
       });
@@ -293,12 +325,18 @@ export class UsersService {
       oauthTokenExpiresAt?: Date;
     },
   ): Promise<User> {
+    const key = this.configService.get<string>('security.encryptionKey') || '';
+
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: {
         avatarUrl: oauthData.avatarUrl,
-        oauthAccessToken: oauthData.oauthAccessToken,
-        oauthRefreshToken: oauthData.oauthRefreshToken,
+        oauthAccessToken: oauthData.oauthAccessToken
+          ? EncryptionUtil.encrypt(oauthData.oauthAccessToken, key)
+          : undefined,
+        oauthRefreshToken: oauthData.oauthRefreshToken
+          ? EncryptionUtil.encrypt(oauthData.oauthRefreshToken, key)
+          : undefined,
         oauthTokenExpiresAt: oauthData.oauthTokenExpiresAt,
       },
     });

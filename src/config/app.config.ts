@@ -91,4 +91,7 @@ export const AppConfig = () => ({
   unleash: {
     mock: process.env.UNLEASH_MOCK === 'true',
   },
+  security: {
+    encryptionKey: process.env.ENCRYPTION_KEY,
+  },
 });
