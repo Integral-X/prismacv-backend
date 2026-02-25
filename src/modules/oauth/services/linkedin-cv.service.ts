@@ -446,29 +446,25 @@ export class LinkedInCvService {
       throw new BadRequestException('LinkedIn handle or URL is required');
     }
 
-    const lowerTrimmed = trimmed.toLowerCase();
-    const isUrlMode =
-      lowerTrimmed.startsWith('http://') ||
-      lowerTrimmed.startsWith('https://') ||
-      lowerTrimmed.startsWith('www.linkedin.com') ||
-      lowerTrimmed.startsWith('linkedin.com') ||
-      trimmed.includes('/');
+    // Attempt to parse as a URL first (prepend scheme if missing so new URL() can handle it)
+    const withScheme = /^https?:\/\//i.test(trimmed)
+      ? trimmed
+      : `https://${trimmed}`;
 
-    if (isUrlMode) {
-      const withScheme = lowerTrimmed.startsWith('http')
-        ? trimmed
-        : `https://${trimmed}`;
-      let parsedUrl: URL;
-      try {
-        parsedUrl = new URL(withScheme);
-      } catch {
-        throw new BadRequestException('Invalid LinkedIn URL');
-      }
+    let parsedUrl: URL | null = null;
+    try {
+      parsedUrl = new URL(withScheme);
+    } catch {
+      // Not a valid URL — treat as a bare handle below.
+    }
 
+    // Only enter URL-mode when the URL has a real path
+    const hasPath =
+      parsedUrl !== null && parsedUrl.pathname.replace(/\/+$/, '').length > 0;
+
+    if (parsedUrl !== null && hasPath) {
+      // Validate hostname strictly: must be exactly "linkedin.com" or a subdomain thereof.
       const host = parsedUrl.hostname.toLowerCase();
-      // Fix for CodeQL: Incomplete URL substring sanitization
-      // Ensure it is exactly linkedin.com or ends with .linkedin.com
-      // (prevents attacks from malicious-linkedin.com)
       if (host !== 'linkedin.com' && !host.endsWith('.linkedin.com')) {
         throw new BadRequestException('Invalid LinkedIn URL');
       }
@@ -486,6 +482,7 @@ export class LinkedInCvService {
       return { handle, url };
     }
 
+    // Bare handle path: strip optional leading "@" and validate characters.
     const handle = trimmed.replace(/^@/, '');
     if (!/^[a-zA-Z0-9-_%]+$/.test(handle)) {
       throw new BadRequestException('Invalid LinkedIn handle');
