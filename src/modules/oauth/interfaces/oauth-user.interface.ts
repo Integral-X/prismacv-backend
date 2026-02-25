@@ -5,4 +5,7 @@ import { OAuthProfile } from './oauth-provider.interface';
  */
 export interface OAuthUserData {
   profile: OAuthProfile;
+  accessToken?: string;
+  refreshToken?: string;
+  expiresAt?: Date;
 }
