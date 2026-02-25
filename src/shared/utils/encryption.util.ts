@@ -26,7 +26,7 @@ export class EncryptionUtil {
 
     const key = crypto.pbkdf2Sync(secretKey, salt, 100000, 32, 'sha512');
 
-    const cipher = crypto.createCipheriv(this.ALGORITHM, iv, key);
+    const cipher = crypto.createCipheriv(this.ALGORITHM, key, iv);
     const encrypted = Buffer.concat([
       cipher.update(plaintext, 'utf8'),
       cipher.final(),
@@ -58,7 +58,7 @@ export class EncryptionUtil {
 
       const key = crypto.pbkdf2Sync(secretKey, salt, 100000, 32, 'sha512');
 
-      const decipher = crypto.createDecipheriv(this.ALGORITHM, iv, key);
+      const decipher = crypto.createDecipheriv(this.ALGORITHM, key, iv);
       decipher.setAuthTag(tag);
 
       return decipher.update(encrypted) + decipher.final('utf8');

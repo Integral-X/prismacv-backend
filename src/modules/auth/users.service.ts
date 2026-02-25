@@ -1,4 +1,8 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@/config/prisma.service';
 import { User as PrismaUser } from '@prisma/client';
@@ -13,6 +17,21 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
   ) {}
+
+  /**
+   * Returns the encryption key from config, failing fast with a clear error
+   * if it is not configured.
+   */
+  private getEncryptionKey(): string {
+    const key = this.configService.get<string>('security.encryptionKey');
+    if (!key || key.length < 32) {
+      throw new InternalServerErrorException(
+        'ENCRYPTION_KEY is not configured or is too short (must be at least 32 characters). ' +
+          'Set the ENCRYPTION_KEY environment variable.',
+      );
+    }
+    return key;
+  }
 
   /**
    * Converts Prisma User to User entity
@@ -34,7 +53,7 @@ export class UsersService {
     user.provider = prismaUser.provider || undefined;
     user.providerId = prismaUser.providerId || undefined;
 
-    const key = this.configService.get<string>('security.encryptionKey') || '';
+    const key = this.getEncryptionKey();
     user.oauthAccessToken = prismaUser.oauthAccessToken
       ? EncryptionUtil.decrypt(prismaUser.oauthAccessToken, key)
       : undefined;
@@ -59,7 +78,7 @@ export class UsersService {
   }
 
   async update(id: string, userEntity: Partial<User>): Promise<User> {
-    const key = this.configService.get<string>('security.encryptionKey') || '';
+    const key = this.getEncryptionKey();
 
     const updatedUser = await this.prisma.user.update({
       where: { id },
@@ -149,8 +168,7 @@ export class UsersService {
     oauthTokenExpiresAt?: Date;
   }): Promise<User> {
     try {
-      const key =
-        this.configService.get<string>('security.encryptionKey') || '';
+      const key = this.getEncryptionKey();
 
       const createdUser = await this.prisma.user.create({
         data: {
@@ -199,8 +217,7 @@ export class UsersService {
     },
   ): Promise<User> {
     try {
-      const key =
-        this.configService.get<string>('security.encryptionKey') || '';
+      const key = this.getEncryptionKey();
 
       const updatedUser = await this.prisma.user.update({
         where: { id: userId },
@@ -325,7 +342,7 @@ export class UsersService {
       oauthTokenExpiresAt?: Date;
     },
   ): Promise<User> {
-    const key = this.configService.get<string>('security.encryptionKey') || '';
+    const key = this.getEncryptionKey();
 
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
