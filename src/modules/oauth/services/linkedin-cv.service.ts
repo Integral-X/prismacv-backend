@@ -446,8 +446,16 @@ export class LinkedInCvService {
       throw new BadRequestException('LinkedIn handle or URL is required');
     }
 
-    if (trimmed.toLowerCase().includes('linkedin.com')) {
-      const withScheme = trimmed.startsWith('http')
+    const lowerTrimmed = trimmed.toLowerCase();
+    const isUrlMode =
+      lowerTrimmed.startsWith('http://') ||
+      lowerTrimmed.startsWith('https://') ||
+      lowerTrimmed.startsWith('www.linkedin.com') ||
+      lowerTrimmed.startsWith('linkedin.com') ||
+      trimmed.includes('/');
+
+    if (isUrlMode) {
+      const withScheme = lowerTrimmed.startsWith('http')
         ? trimmed
         : `https://${trimmed}`;
       let parsedUrl: URL;

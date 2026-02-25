@@ -158,7 +158,7 @@ describe('LinkedInCvService', () => {
 
     await expect(
       service.importForUser('user-id', 'https://example.com/in/john-doe'),
-    ).rejects.toThrow('Invalid LinkedIn handle');
+    ).rejects.toThrow('Invalid LinkedIn URL');
   });
 
   it('should reject invalid LinkedIn handle', async () => {
