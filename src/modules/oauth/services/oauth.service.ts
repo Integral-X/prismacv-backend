@@ -15,7 +15,13 @@ export class OAuthService {
    * OAuth users are REGULAR users and don't receive JWT tokens
    */
   async authenticate(oauthData: OAuthUserData): Promise<{ user: User }> {
-    const { profile } = oauthData;
+    const { profile, accessToken, refreshToken, expiresAt } = oauthData;
+    const oauthMetadata = {
+      avatarUrl: profile.picture,
+      oauthAccessToken: accessToken,
+      oauthRefreshToken: refreshToken,
+      oauthTokenExpiresAt: expiresAt,
+    };
 
     // Try to find existing user by provider + providerId
     let user = await this.usersService.findByProvider(
@@ -42,6 +48,7 @@ export class OAuthService {
             existingUser.id,
             profile.provider,
             profile.providerId,
+            oauthMetadata,
           );
         }
       } else {
@@ -52,6 +59,8 @@ export class OAuthService {
         user = await this.usersService.createOAuthUser(profile);
       }
     }
+
+    user = await this.usersService.updateOAuthMetadata(user.id, oauthMetadata);
 
     this.logger.log(
       `OAuth authentication successful: email=${user.email}, userId=${user.id}, provider=${profile.provider}`,

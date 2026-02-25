@@ -1,13 +1,37 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  InternalServerErrorException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@/config/prisma.service';
 import { User as PrismaUser } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { User, UserRole } from './entities/user.entity';
 import { generateUuidv7 } from '@/shared/utils/uuid.util';
+import { EncryptionUtil } from '@/shared/utils/encryption.util';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {}
+
+  /**
+   * Returns the encryption key from config, failing fast with a clear error
+   * if it is not configured.
+   */
+  private getEncryptionKey(): string {
+    const key = this.configService.get<string>('security.encryptionKey');
+    if (!key || key.length < 32) {
+      throw new InternalServerErrorException(
+        'ENCRYPTION_KEY is not configured or is too short (must be at least 32 characters). ' +
+          'Set the ENCRYPTION_KEY environment variable.',
+      );
+    }
+    return key;
+  }
 
   /**
    * Converts Prisma User to User entity
@@ -25,8 +49,24 @@ export class UsersService {
     user.otpCode = prismaUser.otpCode || undefined;
     user.otpExpiresAt = prismaUser.otpExpiresAt || undefined;
     user.otpAttempts = prismaUser.otpAttempts;
+    user.avatarUrl = prismaUser.avatarUrl || undefined;
     user.provider = prismaUser.provider || undefined;
     user.providerId = prismaUser.providerId || undefined;
+
+    user.oauthAccessToken = prismaUser.oauthAccessToken
+      ? EncryptionUtil.decrypt(
+          prismaUser.oauthAccessToken,
+          this.getEncryptionKey(),
+        )
+      : undefined;
+    user.oauthRefreshToken = prismaUser.oauthRefreshToken
+      ? EncryptionUtil.decrypt(
+          prismaUser.oauthRefreshToken,
+          this.getEncryptionKey(),
+        )
+      : undefined;
+
+    user.oauthTokenExpiresAt = prismaUser.oauthTokenExpiresAt || undefined;
     user.createdAt = prismaUser.createdAt;
     user.updatedAt = prismaUser.updatedAt;
     return user;
@@ -54,6 +94,20 @@ export class UsersService {
         refreshToken: userEntity.refreshToken,
         provider: userEntity.provider as any,
         providerId: userEntity.providerId,
+        avatarUrl: userEntity.avatarUrl,
+        oauthAccessToken: userEntity.oauthAccessToken
+          ? EncryptionUtil.encrypt(
+              userEntity.oauthAccessToken,
+              this.getEncryptionKey(),
+            )
+          : undefined,
+        oauthRefreshToken: userEntity.oauthRefreshToken
+          ? EncryptionUtil.encrypt(
+              userEntity.oauthRefreshToken,
+              this.getEncryptionKey(),
+            )
+          : undefined,
+        oauthTokenExpiresAt: userEntity.oauthTokenExpiresAt,
       },
     });
     return this.prismaUserToEntity(updatedUser);
@@ -117,6 +171,10 @@ export class UsersService {
     providerId: string;
     email: string;
     name?: string;
+    avatarUrl?: string;
+    oauthAccessToken?: string;
+    oauthRefreshToken?: string;
+    oauthTokenExpiresAt?: Date;
   }): Promise<User> {
     try {
       const createdUser = await this.prisma.user.create({
@@ -124,8 +182,22 @@ export class UsersService {
           id: generateUuidv7(),
           email: profile.email,
           name: profile.name,
+          avatarUrl: profile.avatarUrl,
           provider: profile.provider,
           providerId: profile.providerId,
+          oauthAccessToken: profile.oauthAccessToken
+            ? EncryptionUtil.encrypt(
+                profile.oauthAccessToken,
+                this.getEncryptionKey(),
+              )
+            : undefined,
+          oauthRefreshToken: profile.oauthRefreshToken
+            ? EncryptionUtil.encrypt(
+                profile.oauthRefreshToken,
+                this.getEncryptionKey(),
+              )
+            : undefined,
+          oauthTokenExpiresAt: profile.oauthTokenExpiresAt,
           role: 'REGULAR', // OAuth users default to REGULAR role
           isMasterAdmin: false,
         },
@@ -150,6 +222,12 @@ export class UsersService {
     userId: string,
     provider: string,
     providerId: string,
+    oauthData?: {
+      avatarUrl?: string;
+      oauthAccessToken?: string;
+      oauthRefreshToken?: string;
+      oauthTokenExpiresAt?: Date;
+    },
   ): Promise<User> {
     try {
       const updatedUser = await this.prisma.user.update({
@@ -157,6 +235,20 @@ export class UsersService {
         data: {
           provider: provider as any,
           providerId,
+          avatarUrl: oauthData?.avatarUrl,
+          oauthAccessToken: oauthData?.oauthAccessToken
+            ? EncryptionUtil.encrypt(
+                oauthData.oauthAccessToken,
+                this.getEncryptionKey(),
+              )
+            : undefined,
+          oauthRefreshToken: oauthData?.oauthRefreshToken
+            ? EncryptionUtil.encrypt(
+                oauthData.oauthRefreshToken,
+                this.getEncryptionKey(),
+              )
+            : undefined,
+          oauthTokenExpiresAt: oauthData?.oauthTokenExpiresAt,
         },
       });
       return this.prismaUserToEntity(updatedUser);
@@ -252,6 +344,41 @@ export class UsersService {
         otpExpiresAt: null,
       },
     });
+    return this.prismaUserToEntity(updatedUser);
+  }
+
+  /**
+   * Update OAuth metadata for a user after successful OAuth login
+   */
+  async updateOAuthMetadata(
+    userId: string,
+    oauthData: {
+      avatarUrl?: string;
+      oauthAccessToken?: string;
+      oauthRefreshToken?: string;
+      oauthTokenExpiresAt?: Date;
+    },
+  ): Promise<User> {
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        avatarUrl: oauthData.avatarUrl,
+        oauthAccessToken: oauthData.oauthAccessToken
+          ? EncryptionUtil.encrypt(
+              oauthData.oauthAccessToken,
+              this.getEncryptionKey(),
+            )
+          : undefined,
+        oauthRefreshToken: oauthData.oauthRefreshToken
+          ? EncryptionUtil.encrypt(
+              oauthData.oauthRefreshToken,
+              this.getEncryptionKey(),
+            )
+          : undefined,
+        oauthTokenExpiresAt: oauthData.oauthTokenExpiresAt,
+      },
+    });
+
     return this.prismaUserToEntity(updatedUser);
   }
 }
