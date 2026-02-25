@@ -53,12 +53,17 @@ export class UsersService {
     user.provider = prismaUser.provider || undefined;
     user.providerId = prismaUser.providerId || undefined;
 
-    const key = this.getEncryptionKey();
     user.oauthAccessToken = prismaUser.oauthAccessToken
-      ? EncryptionUtil.decrypt(prismaUser.oauthAccessToken, key)
+      ? EncryptionUtil.decrypt(
+          prismaUser.oauthAccessToken,
+          this.getEncryptionKey(),
+        )
       : undefined;
     user.oauthRefreshToken = prismaUser.oauthRefreshToken
-      ? EncryptionUtil.decrypt(prismaUser.oauthRefreshToken, key)
+      ? EncryptionUtil.decrypt(
+          prismaUser.oauthRefreshToken,
+          this.getEncryptionKey(),
+        )
       : undefined;
 
     user.oauthTokenExpiresAt = prismaUser.oauthTokenExpiresAt || undefined;
@@ -78,8 +83,6 @@ export class UsersService {
   }
 
   async update(id: string, userEntity: Partial<User>): Promise<User> {
-    const key = this.getEncryptionKey();
-
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data: {
@@ -93,10 +96,16 @@ export class UsersService {
         providerId: userEntity.providerId,
         avatarUrl: userEntity.avatarUrl,
         oauthAccessToken: userEntity.oauthAccessToken
-          ? EncryptionUtil.encrypt(userEntity.oauthAccessToken, key)
+          ? EncryptionUtil.encrypt(
+              userEntity.oauthAccessToken,
+              this.getEncryptionKey(),
+            )
           : undefined,
         oauthRefreshToken: userEntity.oauthRefreshToken
-          ? EncryptionUtil.encrypt(userEntity.oauthRefreshToken, key)
+          ? EncryptionUtil.encrypt(
+              userEntity.oauthRefreshToken,
+              this.getEncryptionKey(),
+            )
           : undefined,
         oauthTokenExpiresAt: userEntity.oauthTokenExpiresAt,
       },
@@ -168,8 +177,6 @@ export class UsersService {
     oauthTokenExpiresAt?: Date;
   }): Promise<User> {
     try {
-      const key = this.getEncryptionKey();
-
       const createdUser = await this.prisma.user.create({
         data: {
           id: generateUuidv7(),
@@ -179,10 +186,16 @@ export class UsersService {
           provider: profile.provider,
           providerId: profile.providerId,
           oauthAccessToken: profile.oauthAccessToken
-            ? EncryptionUtil.encrypt(profile.oauthAccessToken, key)
+            ? EncryptionUtil.encrypt(
+                profile.oauthAccessToken,
+                this.getEncryptionKey(),
+              )
             : undefined,
           oauthRefreshToken: profile.oauthRefreshToken
-            ? EncryptionUtil.encrypt(profile.oauthRefreshToken, key)
+            ? EncryptionUtil.encrypt(
+                profile.oauthRefreshToken,
+                this.getEncryptionKey(),
+              )
             : undefined,
           oauthTokenExpiresAt: profile.oauthTokenExpiresAt,
           role: 'REGULAR', // OAuth users default to REGULAR role
@@ -217,8 +230,6 @@ export class UsersService {
     },
   ): Promise<User> {
     try {
-      const key = this.getEncryptionKey();
-
       const updatedUser = await this.prisma.user.update({
         where: { id: userId },
         data: {
@@ -226,10 +237,16 @@ export class UsersService {
           providerId,
           avatarUrl: oauthData?.avatarUrl,
           oauthAccessToken: oauthData?.oauthAccessToken
-            ? EncryptionUtil.encrypt(oauthData.oauthAccessToken, key)
+            ? EncryptionUtil.encrypt(
+                oauthData.oauthAccessToken,
+                this.getEncryptionKey(),
+              )
             : undefined,
           oauthRefreshToken: oauthData?.oauthRefreshToken
-            ? EncryptionUtil.encrypt(oauthData.oauthRefreshToken, key)
+            ? EncryptionUtil.encrypt(
+                oauthData.oauthRefreshToken,
+                this.getEncryptionKey(),
+              )
             : undefined,
           oauthTokenExpiresAt: oauthData?.oauthTokenExpiresAt,
         },
@@ -342,17 +359,21 @@ export class UsersService {
       oauthTokenExpiresAt?: Date;
     },
   ): Promise<User> {
-    const key = this.getEncryptionKey();
-
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: {
         avatarUrl: oauthData.avatarUrl,
         oauthAccessToken: oauthData.oauthAccessToken
-          ? EncryptionUtil.encrypt(oauthData.oauthAccessToken, key)
+          ? EncryptionUtil.encrypt(
+              oauthData.oauthAccessToken,
+              this.getEncryptionKey(),
+            )
           : undefined,
         oauthRefreshToken: oauthData.oauthRefreshToken
-          ? EncryptionUtil.encrypt(oauthData.oauthRefreshToken, key)
+          ? EncryptionUtil.encrypt(
+              oauthData.oauthRefreshToken,
+              this.getEncryptionKey(),
+            )
           : undefined,
         oauthTokenExpiresAt: oauthData.oauthTokenExpiresAt,
       },
