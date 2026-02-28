@@ -3,16 +3,29 @@ import {
   UnauthorizedException,
   Logger,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import { UsersService } from './users.service';
 import { OtpService } from './otp.service';
+import { EmailService } from '@/modules/email/email.service';
 import { User, UserRole } from './entities/user.entity';
 import { AuthCredentials } from './entities/auth-credentials.entity';
 import { TokenPair } from './entities/token-pair.entity';
+import { ForgotPasswordResponseDto } from './dto/response/forgot-password.response.dto';
+import { ResetPasswordResponseDto } from './dto/response/rese-password.response.dto';
+import { ChangePasswordResponseDto } from './dto/response/change-password.response.dto';
+import { VerifyResetOtpResponseDto } from './dto/response/verify-reset-otp.response.dto';
 import { JWT_EXPIRATION } from '@/shared/constants/jwt.constants';
+import {
+  generateResetToken,
+  hashResetToken,
+  verifyResetToken,
+} from '@/shared/utils/token.util';
+import { PrismaService } from '@/config/prisma.service';
+import { AuthTokenPurpose, OtpPurpose } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -21,6 +34,8 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly otpService: OtpService,
+    private readonly emailService: EmailService,
+    private readonly prisma: PrismaService,
     private readonly logger: Logger = new Logger(AuthService.name),
   ) {}
 
@@ -310,5 +325,265 @@ export class AuthService {
       this.logger.warn('Token verification failed: invalid or expired token');
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
+  }
+
+  /**
+   * Initiate password reset process
+   * Generates OTP and sends email (always returns success for security)
+   */
+  async forgotPassword(email: string): Promise<ForgotPasswordResponseDto> {
+    try {
+      // Find user by email
+      const user = await this.usersService.findByEmail(email);
+
+      if (user) {
+        // Generate and send password reset OTP using OtpService
+        await this.otpService.generateAndSendOtp(
+          user,
+          OtpPurpose.PASSWORD_RESET,
+        );
+        this.logger.log(`Password reset OTP sent to: ${email}`);
+      } else {
+        this.logger.warn(
+          `Password reset requested for non-existent email: ${email}`,
+        );
+      }
+
+      // Always return the same response for security (don't reveal if email exists)
+      return {
+        message: 'If the email exists, an OTP has been sent.',
+      };
+    } catch (error) {
+      this.logger.error('Error in forgotPassword:', error);
+      // Still return success message to not reveal errors
+      return {
+        message: 'If the email exists, an OTP has been sent.',
+      };
+    }
+  }
+
+  /**
+   * Verify OTP and generate reset token
+   */
+  async verifyResetOtp(
+    email: string,
+    otp: string,
+  ): Promise<VerifyResetOtpResponseDto> {
+    // Verify OTP using OtpService
+    const user = await this.otpService.verifyOtp(
+      email,
+      otp,
+      OtpPurpose.PASSWORD_RESET,
+    );
+
+    // Generate reset token
+    const resetToken = generateResetToken();
+    const tokenHash = await hashResetToken(resetToken);
+    const tokenExpiryMinutes = 15; // 15 minutes for reset token
+    const tokenExpiresAt = new Date(
+      Date.now() + tokenExpiryMinutes * 60 * 1000,
+    );
+
+    // Clean up any existing reset tokens
+    await this.prisma.authToken.deleteMany({
+      where: {
+        userId: user.id,
+        purpose: AuthTokenPurpose.PASSWORD_RESET,
+      },
+    });
+
+    // Store reset token
+    await this.prisma.authToken.create({
+      data: {
+        userId: user.id,
+        purpose: AuthTokenPurpose.PASSWORD_RESET,
+        tokenHash,
+        expiresAt: tokenExpiresAt,
+      },
+    });
+
+    this.logger.log(`Reset token generated for user: ${email}`);
+    this.logger.log(
+      `Reset token (first 8 chars): ${resetToken.substring(0, 8)}...`,
+    );
+    return { resetToken };
+  }
+
+  /**
+   * Verify password reset OTP and return reset token (for OTP controller)
+   */
+  async verifyPasswordResetOtp(
+    email: string,
+    otp: string,
+  ): Promise<VerifyResetOtpResponseDto> {
+    return await this.verifyResetOtp(email, otp);
+  }
+
+  /**
+   * Reset password using reset token
+   */
+  async resetPassword(
+    resetToken: string,
+    newPassword: string,
+    confirmPassword: string,
+  ): Promise<ResetPasswordResponseDto> {
+    this.logger.log(
+      `Password reset attempt with token (first 8 chars): ${resetToken.substring(0, 8)}...`,
+    );
+
+    // Validate passwords match
+    if (newPassword !== confirmPassword) {
+      throw new BadRequestException('Passwords do not match');
+    }
+
+    // Validate password policy
+    if (newPassword.length < 8) {
+      throw new BadRequestException(
+        'Password must be at least 8 characters long',
+      );
+    }
+
+    // Find valid reset token by searching all tokens and verifying each one
+    const tokenRecords = await this.prisma.authToken.findMany({
+      where: {
+        purpose: AuthTokenPurpose.PASSWORD_RESET,
+        usedAt: null,
+        expiresAt: {
+          gt: new Date(),
+        },
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    this.logger.log(`Found ${tokenRecords.length} valid reset tokens to check`);
+
+    // Find the matching token by verifying against each stored hash
+    let validTokenRecord = null;
+    for (const record of tokenRecords) {
+      const isValidToken = await verifyResetToken(resetToken, record.tokenHash);
+      if (isValidToken) {
+        validTokenRecord = record;
+        break;
+      }
+    }
+
+    if (!validTokenRecord) {
+      this.logger.warn(`Password reset failed: invalid or expired reset token`);
+      throw new UnauthorizedException('Invalid or expired reset token');
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update user password
+    await this.usersService.update(validTokenRecord.userId, {
+      password: hashedPassword,
+      refreshToken: null, // Invalidate all sessions
+    });
+
+    // Mark token as used
+    await this.prisma.authToken.update({
+      where: { id: validTokenRecord.id },
+      data: { usedAt: new Date() },
+    });
+
+    // Clean up all reset tokens for this user
+    await this.prisma.authToken.deleteMany({
+      where: {
+        userId: validTokenRecord.userId,
+        purpose: AuthTokenPurpose.PASSWORD_RESET,
+      },
+    });
+
+    this.logger.log(
+      `Password reset successful for user: ${validTokenRecord.user.email}`,
+    );
+
+    return {
+      message: 'Password reset successfully',
+    };
+  }
+
+  /**
+   * Change password for authenticated user
+   * Verifies current password and updates to new password
+   */
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+    confirmPassword: string,
+  ): Promise<ChangePasswordResponseDto> {
+    this.logger.log(`Password change attempt for user: ${userId}`);
+
+    // Validate passwords match
+    if (newPassword !== confirmPassword) {
+      throw new BadRequestException(
+        'New password and confirm password do not match',
+      );
+    }
+
+    // Validate password policy
+    if (newPassword.length < 8) {
+      throw new BadRequestException(
+        'New password must be at least 8 characters long',
+      );
+    }
+
+    // Find user
+    const user = await this.usersService.findById(userId);
+    if (!user) {
+      this.logger.warn(
+        `Password change failed: user not found, userId=${userId}`,
+      );
+      throw new UnauthorizedException('User not found');
+    }
+
+    // Check if user has a password (OAuth users might not have one)
+    if (!user.password) {
+      this.logger.warn(
+        `Password change failed: user has no password (OAuth user), userId=${userId}`,
+      );
+      throw new BadRequestException('Cannot change password for OAuth users');
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.password,
+    );
+    if (!isCurrentPasswordValid) {
+      this.logger.warn(
+        `Password change failed: invalid current password, userId=${userId}`,
+      );
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    // Check if new password is different from current password
+    const isSamePassword = await bcrypt.compare(newPassword, user.password);
+    if (isSamePassword) {
+      throw new BadRequestException(
+        'New password must be different from current password',
+      );
+    }
+
+    // Hash new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update user password
+    await this.usersService.update(userId, {
+      password: hashedNewPassword,
+      refreshToken: null, // Invalidate all sessions for security
+    });
+
+    this.logger.log(
+      `Password changed successfully for user: ${user.email}, userId=${userId}`,
+    );
+
+    return {
+      message: 'Password changed successfully',
+    };
   }
 }
