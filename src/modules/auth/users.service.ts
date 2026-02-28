@@ -50,9 +50,6 @@ export class UsersService {
     user.isMasterAdmin = prismaUser.isMasterAdmin;
     user.refreshToken = prismaUser.refreshToken;
     user.emailVerified = prismaUser.emailVerified;
-    user.otpCode = prismaUser.otpCode || undefined;
-    user.otpExpiresAt = prismaUser.otpExpiresAt || undefined;
-    user.otpAttempts = prismaUser.otpAttempts;
     user.avatarUrl = prismaUser.avatarUrl || undefined;
     user.provider = prismaUser.provider || undefined;
     user.providerId = prismaUser.providerId || undefined;
