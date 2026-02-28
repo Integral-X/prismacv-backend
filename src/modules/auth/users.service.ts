@@ -264,18 +264,4 @@ export class UsersService {
     });
     return this.prismaUserToEntity(updatedUser);
   }
-
-  /**
-   * Clean up expired OTPs (maintenance method)
-   */
-  async cleanupExpiredOtps(): Promise<number> {
-    const result = await this.prisma.otp.deleteMany({
-      where: {
-        expiresAt: {
-          lt: new Date(),
-        },
-      },
-    });
-    return result.count;
-  }
 }
