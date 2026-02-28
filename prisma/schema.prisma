@@ -23,9 +23,42 @@ model User {
   providerId    String?
   otps          Otp[]
   authTokens    AuthToken[]
+  oauthAccessToken String?
+  oauthRefreshToken String?
+  oauthTokenExpiresAt DateTime?
+  linkedinCvImports LinkedinCvImport[]
 
   @@unique([provider, providerId])
   @@map("users")
+}
+
+model LinkedinCvImport {
+  id             String   @id @db.Uuid
+  userId         String   @db.Uuid
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider       String   @default("LINKEDIN")
+  linkedinHandle String?
+  linkedinUrl    String
+  fetchedAt      DateTime @default(now())
+  dataScope      Json
+  warnings       Json?
+  profile        Json
+  experience     Json
+  education      Json
+  skills         Json
+  certifications Json
+  projects       Json
+  publications   Json
+  volunteer      Json
+  honors         Json
+  languages      Json
+  courses        Json
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([userId, linkedinUrl])
+  @@index([userId, fetchedAt])
+  @@map("linkedin_cv_imports")
 }
 
 enum OAuthProvider {

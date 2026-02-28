@@ -20,8 +20,15 @@ export class User extends BaseEntity {
   isMasterAdmin: boolean = false;
   refreshToken?: string;
   emailVerified: boolean = false;
+  otpCode?: string;
+  otpExpiresAt?: Date;
+  otpAttempts: number = 0; // Track failed OTP verification attempts
+  avatarUrl?: string;
   provider?: string; // OAuth provider (e.g., 'LINKEDIN', 'GOOGLE')
   providerId?: string; // OAuth provider user ID
+  oauthAccessToken?: string;
+  oauthRefreshToken?: string;
+  oauthTokenExpiresAt?: Date;
 
   constructor() {
     super();

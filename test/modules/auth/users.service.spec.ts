@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../../../src/modules/auth/users.service';
 import { PrismaService } from '../../../src/config/prisma.service';
 import { ConflictException } from '@nestjs/common';
@@ -10,17 +11,27 @@ import { extractTimestampFromUuidv7 } from '../../../src/shared/utils/uuid.util'
 describe('UsersService', () => {
   let usersService: UsersService;
   let prismaService: DeepMockProxy<PrismaService>;
+  let configService: DeepMockProxy<ConfigService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,
         { provide: PrismaService, useValue: mockDeep<PrismaService>() },
+        { provide: ConfigService, useValue: mockDeep<ConfigService>() },
       ],
     }).compile();
 
     usersService = module.get<UsersService>(UsersService);
     prismaService = module.get(PrismaService);
+    configService = module.get(ConfigService);
+
+    // Mock the encryption key getter
+    configService.get.mockImplementation(key => {
+      if (key === 'security.encryptionKey')
+        return '01234567890123456789012345678901';
+      return null;
+    });
   });
 
   it('should be defined', () => {
@@ -53,6 +64,9 @@ describe('UsersService', () => {
         avatarUrl: null,
         provider: null,
         providerId: null,
+        oauthAccessToken: null,
+        oauthRefreshToken: null,
+        oauthTokenExpiresAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -122,6 +136,9 @@ describe('UsersService', () => {
         avatarUrl: null,
         provider: null,
         providerId: null,
+        oauthAccessToken: null,
+        oauthRefreshToken: null,
+        oauthTokenExpiresAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -175,6 +192,9 @@ describe('UsersService', () => {
         avatarUrl: null,
         provider: null,
         providerId: null,
+        oauthAccessToken: null,
+        oauthRefreshToken: null,
+        oauthTokenExpiresAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -252,6 +272,9 @@ describe('UsersService', () => {
         avatarUrl: null,
         provider: null,
         providerId: null,
+        oauthAccessToken: null,
+        oauthRefreshToken: null,
+        oauthTokenExpiresAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -297,6 +320,9 @@ describe('UsersService', () => {
         avatarUrl: null,
         provider: null,
         providerId: null,
+        oauthAccessToken: null,
+        oauthRefreshToken: null,
+        oauthTokenExpiresAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -347,6 +373,9 @@ describe('UsersService', () => {
         avatarUrl: null,
         provider: null,
         providerId: null,
+        oauthAccessToken: null,
+        oauthRefreshToken: null,
+        oauthTokenExpiresAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -366,6 +395,10 @@ describe('UsersService', () => {
           refreshToken: userEntityUpdate.refreshToken,
           provider: userEntityUpdate.provider,
           providerId: userEntityUpdate.providerId,
+          avatarUrl: userEntityUpdate.avatarUrl,
+          oauthAccessToken: userEntityUpdate.oauthAccessToken,
+          oauthRefreshToken: userEntityUpdate.oauthRefreshToken,
+          oauthTokenExpiresAt: userEntityUpdate.oauthTokenExpiresAt,
         },
       });
       expect(result).toBeInstanceOf(User);
@@ -393,6 +426,9 @@ describe('UsersService', () => {
         avatarUrl: null,
         provider: null,
         providerId: null,
+        oauthAccessToken: null,
+        oauthRefreshToken: null,
+        oauthTokenExpiresAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -412,10 +448,97 @@ describe('UsersService', () => {
           refreshToken: 'new-token-only',
           provider: undefined,
           providerId: undefined,
+          avatarUrl: undefined,
+          oauthAccessToken: undefined,
+          oauthRefreshToken: undefined,
+          oauthTokenExpiresAt: undefined,
         },
       });
       expect(result).toBeInstanceOf(User);
       expect(result.refreshToken).toBe('new-token-only');
+    });
+  });
+
+  describe('saveOtp', () => {
+    it('should save OTP code and expiration for a user', async () => {
+      const userId = '1';
+      const otpCode = '123456';
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+
+      const updatedPrismaUser = {
+        id: userId,
+        email: 'test@example.com',
+        password: 'hashedpassword',
+        name: 'Test User',
+        role: UserRole.REGULAR,
+        isMasterAdmin: false,
+        refreshToken: null,
+        emailVerified: false,
+        otpCode: otpCode,
+        otpExpiresAt: expiresAt,
+        otpAttempts: 0,
+        avatarUrl: null,
+        provider: null,
+        providerId: null,
+        oauthAccessToken: null,
+        oauthRefreshToken: null,
+        oauthTokenExpiresAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      prismaService.user.update.mockResolvedValue(updatedPrismaUser);
+
+      const result = await usersService.saveOtp(userId, otpCode, expiresAt);
+
+      expect(prismaService.user.update).toHaveBeenCalledWith({
+        where: { id: userId },
+        data: {
+          otpCode,
+          otpExpiresAt: expiresAt,
+          otpAttempts: 0,
+        },
+      });
+      expect(result).toBeInstanceOf(User);
+      expect(result.otpCode).toBe(otpCode);
+      expect(result.otpExpiresAt).toBe(expiresAt);
+    });
+
+    it('should return User entity with correct OTP values', async () => {
+      const userId = '2';
+      const otpCode = '654321';
+      const expiresAt = new Date('2024-12-31T23:59:59Z');
+
+      const updatedPrismaUser = {
+        id: userId,
+        email: 'user2@example.com',
+        password: 'hashedpassword2',
+        name: 'User Two',
+        role: UserRole.REGULAR,
+        isMasterAdmin: false,
+        refreshToken: 'some-token',
+        emailVerified: false,
+        otpCode: otpCode,
+        otpExpiresAt: expiresAt,
+        otpAttempts: 0,
+        avatarUrl: null,
+        provider: null,
+        providerId: null,
+        oauthAccessToken: null,
+        oauthRefreshToken: null,
+        oauthTokenExpiresAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      prismaService.user.update.mockResolvedValue(updatedPrismaUser);
+
+      const result = await usersService.saveOtp(userId, otpCode, expiresAt);
+
+      expect(result.id).toBe(userId);
+      expect(result.email).toBe('user2@example.com');
+      expect(result.otpCode).toBe(otpCode);
+      expect(result.otpExpiresAt).toEqual(expiresAt);
     });
   });
 });

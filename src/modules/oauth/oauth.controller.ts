@@ -4,6 +4,9 @@ import {
   UseGuards,
   Req,
   Res,
+  Post,
+  Body,
+  BadRequestException,
   HttpStatus,
 } from '@nestjs/common';
 import {
@@ -18,14 +21,20 @@ import { LinkedInAuthGuard } from './guards/linkedin-auth.guard';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { Public } from '@/common/decorators/public.decorator';
 import { OAuthCallbackResponseDto } from './dto/oauth-callback.response.dto';
+import { LinkedinImportRequestDto } from './dto/linkedin-import.request.dto';
+import { LinkedinCvResponseDto } from './dto/linkedin-cv.response.dto';
 import { AuthMapper } from '@/modules/auth/mappers/auth.mapper';
 import { User } from '@/modules/auth/entities/user.entity';
+import { LinkedInCvService } from './services/linkedin-cv.service';
 
 @ApiTags('OAuth Authentication')
 @ApiBearerAuth('JWT-auth')
 @Controller('oauth')
 export class OAuthController {
-  constructor(private readonly authMapper: AuthMapper) {}
+  constructor(
+    private readonly authMapper: AuthMapper,
+    private readonly linkedInCvService: LinkedInCvService,
+  ) {}
 
   /* ---------------------------
         LINKEDIN AUTH FLOW
@@ -99,5 +108,40 @@ export class OAuthController {
     };
 
     return res.status(HttpStatus.OK).json(response);
+  }
+
+  /* ---------------------------
+        LINKEDIN CV IMPORT
+  ---------------------------- */
+
+  @Post('linkedin/import')
+  @ApiOperation({
+    summary: 'Import LinkedIn profile data for CV generation',
+    description:
+      "Accepts a LinkedIn handle or profile URL and returns a CV-ready profile payload based on the authenticated user's own LinkedIn data. Requires the user to have connected LinkedIn via OAuth.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'LinkedIn profile imported successfully.',
+    type: LinkedinCvResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid LinkedIn handle or URL',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Conflict - LinkedIn account not connected or missing token',
+  })
+  async importLinkedInProfile(
+    @Req() req: Request,
+    @Body() body: LinkedinImportRequestDto,
+  ): Promise<LinkedinCvResponseDto> {
+    const authUser = (req.user as { userId?: string })?.userId;
+    if (!authUser) {
+      throw new BadRequestException('Authenticated user is required');
+    }
+
+    return this.linkedInCvService.importForUser(authUser, body.handleOrUrl);
   }
 }
