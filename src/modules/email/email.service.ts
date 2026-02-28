@@ -47,12 +47,6 @@ export class EmailService {
       this.logger.error(
         'SMTP credentials not configured. Email sending is disabled. Set SMTP_USER and SMTP_PASS environment variables.',
       );
-      this.logger.error(
-        `SMTP_USER: ${this.smtpConfig.auth.user ? 'SET' : 'NOT SET'}`,
-      );
-      this.logger.error(
-        `SMTP_PASS: ${this.smtpConfig.auth.pass ? 'SET' : 'NOT SET'}`,
-      );
       return;
     }
 
