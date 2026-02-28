@@ -14,8 +14,8 @@ import { EmailService } from '@/modules/email/email.service';
 import { OtpPurpose } from '@prisma/client';
 import { hashOtp, verifyOtpHash } from '@/shared/utils/otp.util';
 
-// Maximum number of failed OTP verification attempts before locking
-const MAX_OTP_ATTEMPTS = 5;
+const DEFAULT_OTP_MAX_ATTEMPTS_SIGNUP = 5;
+const DEFAULT_OTP_MAX_ATTEMPTS_PASSWORD_RESET = 3;
 
 @Injectable()
 export class OtpService {
@@ -57,9 +57,19 @@ export class OtpService {
       'OTP_EXPIRY_MINUTES',
       10,
     );
+    const signupMaxAttempts = this.configService.get<number>(
+      'OTP_MAX_ATTEMPTS_SIGNUP',
+      DEFAULT_OTP_MAX_ATTEMPTS_SIGNUP,
+    );
+    const passwordResetMaxAttempts = this.configService.get<number>(
+      'OTP_MAX_ATTEMPTS_PASSWORD_RESET',
+      DEFAULT_OTP_MAX_ATTEMPTS_PASSWORD_RESET,
+    );
     const expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
     const maxAttempts =
-      otpPurpose === OtpPurpose.PASSWORD_RESET ? 3 : MAX_OTP_ATTEMPTS;
+      otpPurpose === OtpPurpose.PASSWORD_RESET
+        ? passwordResetMaxAttempts
+        : signupMaxAttempts;
     const isPasswordReset = otpPurpose === OtpPurpose.PASSWORD_RESET;
 
     // Store OTP in Otp table using repository method

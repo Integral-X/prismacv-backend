@@ -5,7 +5,6 @@ import {
   Logger,
   HttpException,
   HttpStatus,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { OtpService } from '../../../src/modules/auth/otp.service';
@@ -60,6 +59,8 @@ describe('OtpService', () => {
             get: jest.fn((key: string, defaultValue?: any) => {
               const config: Record<string, any> = {
                 OTP_EXPIRY_MINUTES: 10,
+                OTP_MAX_ATTEMPTS_SIGNUP: 5,
+                OTP_MAX_ATTEMPTS_PASSWORD_RESET: 3,
               };
               return config[key] ?? defaultValue;
             }),
@@ -347,7 +348,7 @@ describe('OtpService', () => {
       expect(usersService.markEmailVerified).not.toHaveBeenCalled();
     });
 
-    it('should throw UnauthorizedException if user is not found', async () => {
+    it('should throw BadRequestException if user is not found', async () => {
       usersService.findByEmail.mockResolvedValue(null);
 
       await expect(
@@ -356,7 +357,7 @@ describe('OtpService', () => {
           '123456',
           OtpPurpose.PASSWORD_RESET,
         ),
-      ).rejects.toThrow(UnauthorizedException);
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });
