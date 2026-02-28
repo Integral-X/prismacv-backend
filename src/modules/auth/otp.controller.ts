@@ -134,12 +134,8 @@ export class OtpController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Bad Request - Invalid OTP format or validation errors',
-  })
-  @ApiResponse({
-    status: 401,
     description:
-      'Unauthorized - Invalid OTP code, expired OTP, or maximum attempts exceeded',
+      'Bad Request - Invalid OTP format, invalid OTP code, expired OTP, or maximum attempts exceeded',
   })
   @ApiResponse({
     status: 403,

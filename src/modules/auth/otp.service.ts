@@ -161,13 +161,10 @@ export class OtpService {
       this.logger.warn(
         `OTP verification failed: max attempts exceeded, email=${email}, attempts=${otpRecord.attempts}`,
       );
-      if (isPasswordReset) {
-        throw new BadRequestException('Too many failed attempts');
-      }
-      throw new HttpException(
-        'Too many failed attempts. Please request a new verification code.',
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
+      const message = isPasswordReset
+        ? 'Too many failed attempts. Please request a new password reset.'
+        : 'Too many failed attempts. Please request a new verification code.';
+      throw new HttpException(message, HttpStatus.TOO_MANY_REQUESTS);
     }
 
     // Verify OTP code
