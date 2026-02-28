@@ -5,7 +5,11 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@/config/prisma.service';
-import { User as PrismaUser } from '@prisma/client';
+import {
+  User as PrismaUser,
+  Otp as PrismaOtp,
+  OtpPurpose,
+} from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { User, UserRole } from './entities/user.entity';
 import { generateUuidv7 } from '@/shared/utils/uuid.util';
@@ -46,9 +50,6 @@ export class UsersService {
     user.isMasterAdmin = prismaUser.isMasterAdmin;
     user.refreshToken = prismaUser.refreshToken;
     user.emailVerified = prismaUser.emailVerified;
-    user.otpCode = prismaUser.otpCode || undefined;
-    user.otpExpiresAt = prismaUser.otpExpiresAt || undefined;
-    user.otpAttempts = prismaUser.otpAttempts;
     user.avatarUrl = prismaUser.avatarUrl || undefined;
     user.provider = prismaUser.provider || undefined;
     user.providerId = prismaUser.providerId || undefined;
@@ -264,84 +265,93 @@ export class UsersService {
     }
   }
 
+  // ===================================
+  // OTP REPOSITORY METHODS
+  // ===================================
+
   /**
-   * Save OTP code and expiration for a user
-   * Resets attempt counter when generating new OTP
+   * Create OTP record in Otp table
    */
-  async saveOtp(
+  async createOtp(
     userId: string,
-    otpCode: string,
+    purpose: OtpPurpose,
+    otpHash: string,
     expiresAt: Date,
-  ): Promise<User> {
-    const updatedUser = await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        otpCode,
-        otpExpiresAt: expiresAt,
-        otpAttempts: 0,
+    maxAttempts: number = 3,
+  ): Promise<PrismaOtp> {
+    // Clean up any existing OTPs for this user and purpose
+    await this.prisma.otp.deleteMany({
+      where: {
+        userId,
+        purpose,
       },
     });
-    return this.prismaUserToEntity(updatedUser);
+
+    // Create new OTP record
+    return await this.prisma.otp.create({
+      data: {
+        userId,
+        purpose,
+        otpHash,
+        expiresAt,
+        maxAttempts,
+      },
+    });
   }
 
   /**
-   * Clear OTP code for a user
-   * Also resets attempt counter
+   * Find valid OTP record (not used, not expired)
    */
-  async clearOtp(userId: string): Promise<User> {
-    const updatedUser = await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        otpCode: null,
-        otpExpiresAt: null,
-        otpAttempts: 0,
+  async findValidOtp(
+    userId: string,
+    purpose: OtpPurpose,
+  ): Promise<PrismaOtp | null> {
+    return await this.prisma.otp.findFirst({
+      where: {
+        userId,
+        purpose,
+        usedAt: null,
+        expiresAt: {
+          gt: new Date(),
+        },
       },
     });
-    return this.prismaUserToEntity(updatedUser);
+  }
+
+  /**
+   * Increment OTP attempt count
+   */
+  async incrementOtpAttempts(otpId: string): Promise<PrismaOtp> {
+    return await this.prisma.otp.update({
+      where: { id: otpId },
+      data: {
+        attempts: {
+          increment: 1,
+        },
+      },
+    });
+  }
+
+  /**
+   * Mark OTP as used
+   */
+  async markOtpAsUsed(otpId: string): Promise<PrismaOtp> {
+    return await this.prisma.otp.update({
+      where: { id: otpId },
+      data: {
+        usedAt: new Date(),
+      },
+    });
   }
 
   /**
    * Mark user email as verified
-   * Clears OTP data and resets attempt counter
    */
   async markEmailVerified(userId: string): Promise<User> {
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: {
         emailVerified: true,
-        otpCode: null,
-        otpExpiresAt: null,
-        otpAttempts: 0,
-      },
-    });
-    return this.prismaUserToEntity(updatedUser);
-  }
-
-  /**
-   * Increment OTP verification attempts for a user
-   */
-  async incrementOtpAttempts(userId: string): Promise<User> {
-    const updatedUser = await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        otpAttempts: {
-          increment: 1,
-        },
-      },
-    });
-    return this.prismaUserToEntity(updatedUser);
-  }
-
-  /**
-   * Clear OTP and lock it (used when max attempts exceeded)
-   * Clears OTP code but keeps attempt count for logging purposes
-   */
-  async lockOtp(userId: string): Promise<User> {
-    const updatedUser = await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        otpCode: null,
-        otpExpiresAt: null,
       },
     });
     return this.prismaUserToEntity(updatedUser);

@@ -137,7 +137,13 @@ export class OAuthController {
     @Req() req: Request,
     @Body() body: LinkedinImportRequestDto,
   ): Promise<LinkedinCvResponseDto> {
-    const authUser = (req.user as { userId?: string })?.userId;
+    const authUser = (
+      req.user as { id?: string; userId?: string; sub?: string } | undefined
+    )?.id
+      ?? (req.user as { id?: string; userId?: string; sub?: string } | undefined)
+        ?.userId
+      ?? (req.user as { id?: string; userId?: string; sub?: string } | undefined)
+        ?.sub;
     if (!authUser) {
       throw new BadRequestException('Authenticated user is required');
     }
