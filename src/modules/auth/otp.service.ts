@@ -5,7 +5,6 @@ import {
   NotFoundException,
   HttpException,
   HttpStatus,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
@@ -120,7 +119,7 @@ export class OtpService {
         `OTP verification failed: user not found, email=${email}`,
       );
       if (isPasswordReset) {
-        throw new UnauthorizedException('Invalid OTP');
+        throw new BadRequestException('Invalid OTP');
       }
       throw new NotFoundException('User not found');
     }
@@ -140,7 +139,7 @@ export class OtpService {
         `OTP verification failed: no valid OTP found, email=${email}`,
       );
       if (isPasswordReset) {
-        throw new UnauthorizedException('Invalid or expired OTP');
+        throw new BadRequestException('Invalid or expired OTP');
       }
       throw new BadRequestException(
         'No verification code found. Please request a new one.',
@@ -153,7 +152,7 @@ export class OtpService {
         `OTP verification failed: max attempts exceeded, email=${email}, attempts=${otpRecord.attempts}`,
       );
       if (isPasswordReset) {
-        throw new UnauthorizedException('Too many failed attempts');
+        throw new BadRequestException('Too many failed attempts');
       }
       throw new HttpException(
         'Too many failed attempts. Please request a new verification code.',
@@ -175,7 +174,7 @@ export class OtpService {
         `OTP verification failed: invalid OTP, email=${email}, attempts=${updatedOtp.attempts}/${otpRecord.maxAttempts}`,
       );
       if (isPasswordReset) {
-        throw new UnauthorizedException('Invalid OTP');
+        throw new BadRequestException('Invalid OTP');
       }
 
       // Check if max attempts reached after increment
