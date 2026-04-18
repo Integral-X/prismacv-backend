@@ -268,7 +268,7 @@ export class AuthService implements OnModuleInit {
   async refreshToken(
     refreshToken: string,
     expectedAudience: 'platform-admin' | 'user',
-  ): Promise<{ user: User; tokens?: TokenPair | undefined }> {
+  ): Promise<{ user: User; tokens: TokenPair }> {
     const decoded = await this.decodeRefreshToken(
       refreshToken,
       expectedAudience,
@@ -277,6 +277,17 @@ export class AuthService implements OnModuleInit {
     if (!user || !user.refreshToken) {
       this.logger.warn(
         `Token refresh failed: user not found or no refresh token, userId=${decoded.sub}`,
+      );
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    const expectedRole =
+      expectedAudience === 'platform-admin'
+        ? UserRole.PLATFORM_ADMIN
+        : UserRole.REGULAR;
+    if (user.role !== expectedRole) {
+      this.logger.warn(
+        `Token refresh failed: role/audience mismatch, userId=${user.id}, role=${user.role}, expectedAudience=${expectedAudience}`,
       );
       throw new UnauthorizedException('Invalid or expired refresh token');
     }

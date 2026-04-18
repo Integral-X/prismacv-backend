@@ -242,7 +242,7 @@ export class UserAuthController {
       );
       return this.authMapper.userToUserLoginResponse(
         result.user,
-        result.tokens!,
+        result.tokens,
       );
     } catch (error) {
       if (error instanceof UnauthorizedException) {

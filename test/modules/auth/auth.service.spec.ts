@@ -170,6 +170,7 @@ describe('AuthService', () => {
       user.email = 'test@example.com';
       user.password = 'hashedpassword';
       user.name = null;
+      user.role = UserRole.PLATFORM_ADMIN;
       user.refreshToken = 'hashed-token';
       user.createdAt = new Date();
       user.updatedAt = new Date();
@@ -182,12 +183,30 @@ describe('AuthService', () => {
       ).rejects.toThrow(UnauthorizedException);
     });
 
+    it('should throw UnauthorizedException if role does not match audience', async () => {
+      const user = new User();
+      user.id = '1';
+      user.email = 'test@example.com';
+      user.password = 'hashedpassword';
+      user.role = UserRole.REGULAR;
+      user.refreshToken = 'hashed-token';
+      user.createdAt = new Date();
+      user.updatedAt = new Date();
+
+      jest.spyOn(usersService, 'findById').mockResolvedValue(user);
+
+      await expect(
+        authService.refreshToken('some-refresh-token', 'platform-admin'),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
     it('should return user entity and new tokens if refresh is successful', async () => {
       const user = new User();
       user.id = '1';
       user.email = 'test@example.com';
       user.password = 'hashedpassword';
       user.name = null;
+      user.role = UserRole.PLATFORM_ADMIN;
       user.refreshToken = 'hashed-token';
       user.createdAt = new Date();
       user.updatedAt = new Date();

@@ -39,6 +39,12 @@ export class OAuthService {
       const existingUser = await this.usersService.findByEmail(profile.email);
 
       if (existingUser) {
+        if (existingUser.role !== UserRole.REGULAR) {
+          throw new UnauthorizedException(
+            'OAuth authentication is only available for regular users',
+          );
+        }
+
         if (existingUser.provider) {
           throw new ConflictException(
             `An account with this email already exists using ${existingUser.provider} authentication`,
@@ -62,13 +68,13 @@ export class OAuthService {
       }
     }
 
-    user = await this.usersService.updateOAuthMetadata(user.id, oauthMetadata);
-
     if (user.role !== UserRole.REGULAR) {
       throw new UnauthorizedException(
         'OAuth authentication is only available for regular users',
       );
     }
+
+    user = await this.usersService.updateOAuthMetadata(user.id, oauthMetadata);
 
     const tokenData = await this.authService.getTokens(
       user.id,

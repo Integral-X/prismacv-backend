@@ -156,7 +156,7 @@ describe('OAuthService', () => {
       );
     });
 
-    it('should throw UnauthorizedException for non-REGULAR users', async () => {
+    it('should throw UnauthorizedException for existing provider user with non-REGULAR role', async () => {
       const adminUser = mockUser({
         id: '5',
         email: 'admin@example.com',
@@ -164,12 +164,30 @@ describe('OAuthService', () => {
       });
 
       usersService.findByProvider.mockResolvedValue(adminUser);
-      usersService.updateOAuthMetadata.mockResolvedValue(adminUser);
 
       await expect(oauthService.authenticate(baseOAuthData)).rejects.toThrow(
         UnauthorizedException,
       );
+      expect(usersService.updateOAuthMetadata).not.toHaveBeenCalled();
       expect(authService.getTokens).not.toHaveBeenCalled();
+    });
+
+    it('should throw UnauthorizedException before linking if existing email user is non-REGULAR', async () => {
+      const adminUser = mockUser({
+        id: '6',
+        email: 'admin@example.com',
+        role: UserRole.PLATFORM_ADMIN,
+        provider: null,
+      });
+
+      usersService.findByProvider.mockResolvedValue(null);
+      usersService.findByEmail.mockResolvedValue(adminUser);
+
+      await expect(oauthService.authenticate(baseOAuthData)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(usersService.linkOAuthAccount).not.toHaveBeenCalled();
+      expect(usersService.updateOAuthMetadata).not.toHaveBeenCalled();
     });
   });
 });

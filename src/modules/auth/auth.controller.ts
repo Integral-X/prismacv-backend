@@ -141,7 +141,7 @@ export class AuthController {
       );
       return this.authMapper.userToAdminAuthResponse(
         result.user,
-        result.tokens!,
+        result.tokens,
       );
     } catch (error) {
       if (error instanceof UnauthorizedException) {

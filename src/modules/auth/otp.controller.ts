@@ -59,12 +59,14 @@ export class OtpController {
       verifyOtpRequestDto.otp,
     );
 
+    const audience = user.role === 'PLATFORM_ADMIN' ? 'platform-admin' : 'user';
+
     const tokenData = await this.authService.getTokens(
       user.id,
       user.email,
       user.role,
       user.isMasterAdmin,
-      'user',
+      audience,
     );
     await this.authService.updateRefreshToken(user.id, tokenData.refreshToken);
 
