@@ -157,7 +157,7 @@ describe('AuthService', () => {
     it('should throw UnauthorizedException if user is not found', async () => {
       jest.spyOn(usersService, 'findById').mockResolvedValue(null);
       await expect(
-        authService.refreshToken('some-refresh-token'),
+        authService.refreshToken('some-refresh-token', 'platform-admin'),
       ).rejects.toThrow(UnauthorizedException);
     });
 
@@ -175,7 +175,7 @@ describe('AuthService', () => {
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(false as never);
 
       await expect(
-        authService.refreshToken('some-refresh-token'),
+        authService.refreshToken('some-refresh-token', 'platform-admin'),
       ).rejects.toThrow(UnauthorizedException);
     });
 
@@ -200,7 +200,10 @@ describe('AuthService', () => {
         .spyOn(authService, 'updateRefreshToken')
         .mockResolvedValue(undefined);
 
-      const result = await authService.refreshToken('some-refresh-token');
+      const result = await authService.refreshToken(
+        'some-refresh-token',
+        'platform-admin',
+      );
 
       expect(result.user).toEqual(user);
       expect(result.tokens).toBeInstanceOf(TokenPair);

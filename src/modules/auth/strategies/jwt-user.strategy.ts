@@ -31,6 +31,10 @@ export class JwtUserStrategy extends PassportStrategy(Strategy, 'jwt-user') {
       throw new UnauthorizedException('User not found');
     }
 
+    if (user.role !== UserRole.REGULAR) {
+      throw new UnauthorizedException('Insufficient permissions');
+    }
+
     return user;
   }
 }

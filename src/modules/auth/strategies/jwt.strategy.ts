@@ -31,6 +31,10 @@ export class JwtAdminStrategy extends PassportStrategy(Strategy, 'jwt-admin') {
       throw new UnauthorizedException('User not found');
     }
 
+    if (user.role !== UserRole.PLATFORM_ADMIN) {
+      throw new UnauthorizedException('Insufficient permissions');
+    }
+
     return user;
   }
 }

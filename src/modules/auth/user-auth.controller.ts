@@ -14,7 +14,6 @@ import {
   ApiResponse,
   ApiBody,
   ApiBearerAuth,
-  ApiSecurity,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../../common/decorators/public.decorator';
@@ -32,7 +31,6 @@ import { UserAuthResponseDto } from './dto/response/user-auth.response.dto';
 import { ForgotPasswordResponseDto } from './dto/response/forgot-password.response.dto';
 import { ResetPasswordResponseDto } from './dto/response/rese-password.response.dto';
 import { ChangePasswordResponseDto } from './dto/response/change-password.response.dto';
-import { AdminAuthResponseDto } from './dto/response/admin-auth.response.dto';
 import { AuthMapper } from './mappers/auth.mapper';
 import { User } from './entities/user.entity';
 
@@ -47,7 +45,6 @@ export class UserAuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @ApiSecurity({})
   @ApiOperation({
     summary: 'Regular user authentication',
     description:
@@ -62,8 +59,7 @@ export class UserAuthController {
   })
   @ApiResponse({
     status: 401,
-    description:
-      'Unauthorized - Invalid credentials or email not verified',
+    description: 'Unauthorized - Invalid credentials or email not verified',
   })
   async login(
     @Body() loginRequestDto: UserLoginRequestDto,
@@ -77,7 +73,6 @@ export class UserAuthController {
   @Public()
   @Post('signup')
   @HttpCode(HttpStatus.CREATED)
-  @ApiSecurity({})
   @ApiOperation({
     summary: 'Regular user registration',
     description:
@@ -109,7 +104,6 @@ export class UserAuthController {
   @Public()
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
-  @ApiSecurity({})
   @Throttle({ default: { limit: 5, ttl: 300000 } })
   @ApiOperation({
     summary: 'Request password reset for user',
@@ -141,7 +135,6 @@ export class UserAuthController {
   @Public()
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
-  @ApiSecurity({})
   @ApiOperation({
     summary: 'Reset user password with token',
     description:
@@ -173,6 +166,7 @@ export class UserAuthController {
     );
   }
 
+  @Public()
   @UseGuards(JwtUserAuthGuard)
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
@@ -214,7 +208,6 @@ export class UserAuthController {
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  @ApiSecurity({})
   @ApiOperation({
     summary: 'Refresh user access token',
     description:
@@ -225,7 +218,7 @@ export class UserAuthController {
     status: 200,
     description:
       'Token refreshed successfully. Response includes user profile and new JWT tokens.',
-    type: AdminAuthResponseDto,
+    type: UserLoginResponseDto,
   })
   @ApiResponse({
     status: 401,
@@ -237,7 +230,7 @@ export class UserAuthController {
   })
   async refresh(
     @Body() refreshTokenRequestDto: RefreshTokenRequestDto,
-  ): Promise<AdminAuthResponseDto> {
+  ): Promise<UserLoginResponseDto> {
     if (!refreshTokenRequestDto?.refreshToken) {
       throw new BadRequestException('Refresh token is required');
     }
@@ -245,8 +238,9 @@ export class UserAuthController {
     try {
       const result = await this.authService.refreshToken(
         refreshTokenRequestDto.refreshToken,
+        'user',
       );
-      return this.authMapper.userToAdminAuthResponse(
+      return this.authMapper.userToUserLoginResponse(
         result.user,
         result.tokens!,
       );

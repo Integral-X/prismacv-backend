@@ -8,7 +8,6 @@ import { LinkedInStrategy } from './strategies/linkedin.strategy';
 import { GoogleOAuthProvider } from './services/google-oauth.provider';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { AuthModule } from '@/modules/auth/auth.module';
-import { PrismaService } from '@/config/prisma.service';
 import { AuthMapper } from '@/modules/auth/mappers/auth.mapper';
 
 @Module({
@@ -21,7 +20,6 @@ import { AuthMapper } from '@/modules/auth/mappers/auth.mapper';
     LinkedInStrategy,
     GoogleOAuthProvider,
     GoogleStrategy,
-    PrismaService,
     AuthMapper,
   ],
   exports: [OAuthService],

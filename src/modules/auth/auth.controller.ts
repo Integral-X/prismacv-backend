@@ -14,7 +14,6 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBody,
-  ApiSecurity,
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
@@ -39,7 +38,6 @@ export class AuthController {
   @Public()
   @Post('admin/login')
   @HttpCode(HttpStatus.OK)
-  @ApiSecurity({})
   @ApiOperation({
     summary: 'Platform admin authentication',
     description:
@@ -108,7 +106,6 @@ export class AuthController {
   @Public()
   @Post('admin/refresh')
   @HttpCode(HttpStatus.OK)
-  @ApiSecurity({})
   @ApiOperation({
     summary: 'Refresh admin access token',
     description:
@@ -138,9 +135,9 @@ export class AuthController {
     }
 
     try {
-      // Call service with refresh token and convert result to response DTO
       const result = await this.authService.refreshToken(
         refreshTokenRequestDto.refreshToken,
+        'platform-admin',
       );
       return this.authMapper.userToAdminAuthResponse(
         result.user,

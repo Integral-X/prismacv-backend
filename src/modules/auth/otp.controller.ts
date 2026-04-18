@@ -1,11 +1,5 @@
 import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBody,
-  ApiSecurity,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../../common/decorators/public.decorator';
 import { OtpService } from './otp.service';
@@ -30,28 +24,23 @@ export class OtpController {
   @Public()
   @Post('verify-signup')
   @HttpCode(HttpStatus.OK)
-  @ApiSecurity({})
-  @Throttle({ default: { limit: 5, ttl: 300000 } }) // 5 attempts per 5 minutes
+  @Throttle({ default: { limit: 5, ttl: 300000 } })
   @ApiOperation({
     summary: 'Verify email OTP for user signup',
     description:
-      'Verifies the OTP sent to user email address during registration process. Upon successful verification, the email is marked as verified and user account is activated. Rate limited to 5 attempts per 5 minutes to prevent brute force attacks.',
+      'Verifies the OTP sent to user email address during registration process. Upon successful verification, the email is marked as verified, user account is activated, and JWT tokens are issued.',
   })
   @ApiBody({ type: VerifyOtpRequestDto })
   @ApiResponse({
     status: 200,
     description:
-      'Email verified successfully. User account is now active and email is confirmed.',
+      'Email verified successfully. User account is now active and JWT tokens are returned.',
     type: OtpVerificationResponseDto,
   })
   @ApiResponse({
     status: 400,
     description:
       'Bad Request - Invalid OTP code, expired OTP, or email already verified',
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Forbidden - Missing or invalid JWT token',
   })
   @ApiResponse({
     status: 404,
@@ -90,8 +79,7 @@ export class OtpController {
   @Public()
   @Post('resend-signup')
   @HttpCode(HttpStatus.OK)
-  @ApiSecurity({})
-  @Throttle({ default: { limit: 5, ttl: 300000 } }) // 5 attempts per 5 minutes
+  @Throttle({ default: { limit: 5, ttl: 300000 } })
   @ApiOperation({
     summary: 'Resend signup email verification OTP',
     description:
@@ -107,10 +95,6 @@ export class OtpController {
   @ApiResponse({
     status: 400,
     description: 'Bad Request - Email already verified or invalid email format',
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Forbidden - Missing or invalid JWT token',
   })
   @ApiResponse({
     status: 404,
@@ -135,8 +119,7 @@ export class OtpController {
   @Public()
   @Post('verify-reset')
   @HttpCode(HttpStatus.OK)
-  @ApiSecurity({})
-  @Throttle({ default: { limit: 5, ttl: 300000 } }) // 5 attempts per 5 minutes
+  @Throttle({ default: { limit: 5, ttl: 300000 } })
   @ApiOperation({
     summary: 'Verify password reset OTP',
     description:
@@ -153,10 +136,6 @@ export class OtpController {
     status: 400,
     description:
       'Bad Request - Invalid OTP format, invalid OTP code, expired OTP, or maximum attempts exceeded',
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Forbidden - Missing or invalid JWT token',
   })
   @ApiResponse({
     status: 429,

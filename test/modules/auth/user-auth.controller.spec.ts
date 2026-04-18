@@ -6,8 +6,10 @@ import { AuthMapper } from '../../../src/modules/auth/mappers/auth.mapper';
 import { UserLoginRequestDto } from '../../../src/modules/auth/dto/request/user-login.request.dto';
 import { UserSignupRequestDto } from '../../../src/modules/auth/dto/request/user-signup.request.dto';
 import { UserAuthResponseDto } from '../../../src/modules/auth/dto/response/user-auth.response.dto';
+import { UserLoginResponseDto } from '../../../src/modules/auth/dto/response/user-login.response.dto';
 import { UserProfileResponseDto } from '../../../src/modules/auth/dto/response/user-profile.response.dto';
 import { User, UserRole } from '../../../src/modules/auth/entities/user.entity';
+import { TokenPair } from '../../../src/modules/auth/entities/token-pair.entity';
 import { AuthCredentials } from '../../../src/modules/auth/entities/auth-credentials.entity';
 
 describe('UserAuthController', () => {
@@ -22,7 +24,7 @@ describe('UserAuthController', () => {
     name: 'Regular User',
     role: UserRole.REGULAR,
     refreshToken: null,
-    emailVerified: false,
+    emailVerified: true,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
@@ -32,13 +34,24 @@ describe('UserAuthController', () => {
     email: 'user@example.com',
     name: 'Regular User',
     role: UserRole.REGULAR,
-    emailVerified: false,
+    emailVerified: true,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 
+  const mockTokens: TokenPair = Object.assign(new TokenPair(), {
+    accessToken: 'mock-access-token',
+    refreshToken: 'mock-refresh-token',
+  });
+
   const mockUserAuthResponse: UserAuthResponseDto = {
     user: mockUserProfile,
+  };
+
+  const mockUserLoginResponse: UserLoginResponseDto = {
+    user: mockUserProfile,
+    accessToken: 'mock-access-token',
+    refreshToken: 'mock-refresh-token',
   };
 
   beforeEach(async () => {
@@ -51,6 +64,7 @@ describe('UserAuthController', () => {
       signupRequestToEntity: jest.fn(),
       loginRequestToCredentials: jest.fn(),
       userToUserAuthResponse: jest.fn(),
+      userToUserLoginResponse: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -73,7 +87,7 @@ describe('UserAuthController', () => {
   });
 
   describe('login', () => {
-    it('should login user successfully with DTOs and mapper', async () => {
+    it('should login user successfully and return tokens', async () => {
       const loginDto: UserLoginRequestDto = {
         email: 'user@example.com',
         password: 'user123',
@@ -86,8 +100,9 @@ describe('UserAuthController', () => {
       authMapper.loginRequestToCredentials.mockReturnValue(credentials);
       authService.userLogin.mockResolvedValue({
         user: mockRegularUser,
+        tokens: mockTokens,
       });
-      authMapper.userToUserAuthResponse.mockReturnValue(mockUserAuthResponse);
+      authMapper.userToUserLoginResponse.mockReturnValue(mockUserLoginResponse);
 
       const result = await controller.login(loginDto);
 
@@ -95,10 +110,13 @@ describe('UserAuthController', () => {
         loginDto,
       );
       expect(authService.userLogin).toHaveBeenCalledWith(credentials);
-      expect(authMapper.userToUserAuthResponse).toHaveBeenCalledWith(
+      expect(authMapper.userToUserLoginResponse).toHaveBeenCalledWith(
         mockRegularUser,
+        mockTokens,
       );
-      expect(result).toEqual(mockUserAuthResponse);
+      expect(result).toEqual(mockUserLoginResponse);
+      expect(result.accessToken).toBeDefined();
+      expect(result.refreshToken).toBeDefined();
     });
 
     it('should handle mapper error during user login', async () => {

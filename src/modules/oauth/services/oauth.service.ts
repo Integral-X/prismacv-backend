@@ -1,7 +1,12 @@
-import { Injectable, Logger, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ConflictException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UsersService } from '@/modules/auth/users.service';
 import { AuthService } from '@/modules/auth/auth.service';
-import { User } from '@/modules/auth/entities/user.entity';
+import { User, UserRole } from '@/modules/auth/entities/user.entity';
 import { TokenPair } from '@/modules/auth/entities/token-pair.entity';
 import { OAuthUserData } from '../interfaces/oauth-user.interface';
 
@@ -58,6 +63,12 @@ export class OAuthService {
     }
 
     user = await this.usersService.updateOAuthMetadata(user.id, oauthMetadata);
+
+    if (user.role !== UserRole.REGULAR) {
+      throw new UnauthorizedException(
+        'OAuth authentication is only available for regular users',
+      );
+    }
 
     const tokenData = await this.authService.getTokens(
       user.id,

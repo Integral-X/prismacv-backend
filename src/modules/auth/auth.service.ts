@@ -172,8 +172,7 @@ export class AuthService implements OnModuleInit {
   }
 
   /**
-   * User login - validates credentials and ensures REGULAR role
-   * Returns user profile only (no tokens)
+   * User login - validates credentials, enforces email verification, and issues JWT tokens
    */
   async userLogin(
     credentials: AuthCredentials,
@@ -268,8 +267,12 @@ export class AuthService implements OnModuleInit {
 
   async refreshToken(
     refreshToken: string,
+    expectedAudience: 'platform-admin' | 'user',
   ): Promise<{ user: User; tokens?: TokenPair | undefined }> {
-    const decoded = await this.decodeRefreshToken(refreshToken);
+    const decoded = await this.decodeRefreshToken(
+      refreshToken,
+      expectedAudience,
+    );
     const user = await this.usersService.findById(decoded.sub);
     if (!user || !user.refreshToken) {
       this.logger.warn(
@@ -290,15 +293,12 @@ export class AuthService implements OnModuleInit {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
-    const audience =
-      user.role === UserRole.PLATFORM_ADMIN ? 'platform-admin' : 'user';
-
     const tokenData = await this.getTokens(
       user.id,
       user.email,
       user.role,
       user.isMasterAdmin,
-      audience,
+      expectedAudience,
     );
     await this.updateRefreshToken(user.id, tokenData.refreshToken);
 
@@ -322,7 +322,8 @@ export class AuthService implements OnModuleInit {
   ) {
     const issuer = this.configService.get<string>('app.name', 'PrismaCV');
     const jwtSecret = this.configService.get<string>('JWT_SECRET');
-    const jwtRefreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
+    const jwtRefreshSecret =
+      this.configService.get<string>('JWT_REFRESH_SECRET');
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
@@ -369,10 +370,16 @@ export class AuthService implements OnModuleInit {
     });
   }
 
-  async decodeRefreshToken(token: string) {
+  async decodeRefreshToken(
+    token: string,
+    expectedAudience: 'platform-admin' | 'user',
+  ) {
     try {
       return await this.jwtService.verifyAsync(token, {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+        audience: expectedAudience,
+        issuer: this.configService.get<string>('app.name', 'PrismaCV'),
+        algorithms: ['HS256'],
       });
     } catch {
       this.logger.warn('Token verification failed: invalid or expired token');
