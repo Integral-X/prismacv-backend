@@ -20,7 +20,10 @@ import { ForgotPasswordResponseDto } from './dto/response/forgot-password.respon
 import { ResetPasswordResponseDto } from './dto/response/rese-password.response.dto';
 import { ChangePasswordResponseDto } from './dto/response/change-password.response.dto';
 import { VerifyResetOtpResponseDto } from './dto/response/verify-reset-otp.response.dto';
-import { JWT_EXPIRATION } from '@/shared/constants/jwt.constants';
+import {
+  JWT_EXPIRATION,
+  JWT_MIN_SECRET_LENGTH,
+} from '@/shared/constants/jwt.constants';
 import {
   generateResetToken,
   hashResetToken,
@@ -45,12 +48,12 @@ export class AuthService implements OnModuleInit {
     const secret = this.configService.get<string>('JWT_SECRET');
     const refreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
 
-    if (!secret || secret.length < 32) {
+    if (!secret || secret.length < JWT_MIN_SECRET_LENGTH) {
       throw new Error(
         'JWT_SECRET is not set or too short (minimum 32 characters).',
       );
     }
-    if (!refreshSecret || refreshSecret.length < 32) {
+    if (!refreshSecret || refreshSecret.length < JWT_MIN_SECRET_LENGTH) {
       throw new Error(
         'JWT_REFRESH_SECRET is not set or too short (minimum 32 characters).',
       );
