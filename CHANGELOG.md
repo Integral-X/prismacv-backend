@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/Integral-X/prismacv-backend/compare/v1.4.0...v1.5.0) (2026-04-18)
+
+
+### Features
+
+* **auth:** JWT architecture overhaul — dual-audience tokens + user auth flow ([#149](https://github.com/Integral-X/prismacv-backend/issues/149)) ([fa71f28](https://github.com/Integral-X/prismacv-backend/commit/fa71f280dc4e8980ac37a88e61f3aebb5b8798df))
+
 # [1.4.0](https://github.com/Integral-X/prismacv-backend/compare/v1.3.1...v1.4.0) (2026-02-25)
 
 
