@@ -10,7 +10,6 @@ import { Throttle } from '@nestjs/throttler';
 import { Public } from '../../common/decorators/public.decorator';
 import { OtpService } from './otp.service';
 import { AuthService } from './auth.service';
-import { TokenPair } from './entities/token-pair.entity';
 import { VerifyOtpRequestDto } from './dto/request/verify-otp.request.dto';
 import { ResendOtpRequestDto } from './dto/request/resend-otp.request.dto';
 import { VerifyResetOtpRequestDto } from './dto/request/verify-reset-otp.request';
