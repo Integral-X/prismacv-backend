@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { UserAuthController } from '../../../src/modules/auth/user-auth.controller';
 import { AuthService } from '../../../src/modules/auth/auth.service';
 import { AuthMapper } from '../../../src/modules/auth/mappers/auth.mapper';
@@ -58,6 +58,10 @@ describe('UserAuthController', () => {
     const mockAuthService = {
       userLogin: jest.fn(),
       userSignup: jest.fn(),
+      forgotPassword: jest.fn(),
+      resetPassword: jest.fn(),
+      changePassword: jest.fn(),
+      refreshToken: jest.fn(),
     };
 
     const mockAuthMapper = {
@@ -184,6 +188,114 @@ describe('UserAuthController', () => {
       );
       expect(authMapper.signupRequestToEntity).toHaveBeenCalledWith(signupDto);
       expect(authService.userSignup).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('forgotPassword', () => {
+    it('should call authService.forgotPassword with email', async () => {
+      const forgotDto = { email: 'user@example.com' };
+      const expectedResponse = {
+        message: 'If the email exists, an OTP has been sent.',
+      };
+
+      authService.forgotPassword.mockResolvedValue(expectedResponse);
+
+      const result = await controller.forgotPassword(forgotDto);
+
+      expect(authService.forgotPassword).toHaveBeenCalledWith(
+        'user@example.com',
+      );
+      expect(result).toEqual(expectedResponse);
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('should call authService.resetPassword with token and passwords', async () => {
+      const resetDto = {
+        resetToken: 'valid-token',
+        newPassword: 'newPass123',
+        confirmPassword: 'newPass123',
+      };
+      const expectedResponse = { message: 'Password reset successfully' };
+
+      authService.resetPassword.mockResolvedValue(expectedResponse);
+
+      const result = await controller.resetPassword(resetDto);
+
+      expect(authService.resetPassword).toHaveBeenCalledWith(
+        'valid-token',
+        'newPass123',
+        'newPass123',
+      );
+      expect(result).toEqual(expectedResponse);
+    });
+  });
+
+  describe('changePassword', () => {
+    it('should call authService.changePassword with user id from JWT', async () => {
+      const changeDto = {
+        currentPassword: 'oldPass123',
+        newPassword: 'newPass123',
+        confirmPassword: 'newPass123',
+      };
+      const expectedResponse = { message: 'Password changed successfully' };
+
+      authService.changePassword.mockResolvedValue(expectedResponse);
+
+      const result = await controller.changePassword(
+        changeDto,
+        mockRegularUser,
+      );
+
+      expect(authService.changePassword).toHaveBeenCalledWith(
+        '2',
+        'oldPass123',
+        'newPass123',
+        'newPass123',
+      );
+      expect(result).toEqual(expectedResponse);
+    });
+  });
+
+  describe('refresh', () => {
+    it('should refresh user token successfully', async () => {
+      const refreshDto = { refreshToken: 'valid-refresh-token' };
+
+      authService.refreshToken.mockResolvedValue({
+        user: mockRegularUser,
+        tokens: mockTokens,
+      });
+      authMapper.userToUserLoginResponse.mockReturnValue(mockUserLoginResponse);
+
+      const result = await controller.refresh(refreshDto);
+
+      expect(authService.refreshToken).toHaveBeenCalledWith(
+        'valid-refresh-token',
+        'user',
+      );
+      expect(authMapper.userToUserLoginResponse).toHaveBeenCalledWith(
+        mockRegularUser,
+        mockTokens,
+      );
+      expect(result).toEqual(mockUserLoginResponse);
+    });
+
+    it('should throw BadRequestException when refresh token is missing', async () => {
+      await expect(
+        controller.refresh({ refreshToken: '' } as any),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw UnauthorizedException for invalid refresh token', async () => {
+      const refreshDto = { refreshToken: 'invalid-token' };
+
+      authService.refreshToken.mockRejectedValue(
+        new UnauthorizedException('Invalid or expired refresh token'),
+      );
+
+      await expect(controller.refresh(refreshDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 });
