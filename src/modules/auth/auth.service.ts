@@ -4,9 +4,11 @@ import {
   Logger,
   ConflictException,
   BadRequestException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcryptjs';
 import { UsersService } from './users.service';
 import { OtpService } from './otp.service';
@@ -18,7 +20,10 @@ import { ForgotPasswordResponseDto } from './dto/response/forgot-password.respon
 import { ResetPasswordResponseDto } from './dto/response/rese-password.response.dto';
 import { ChangePasswordResponseDto } from './dto/response/change-password.response.dto';
 import { VerifyResetOtpResponseDto } from './dto/response/verify-reset-otp.response.dto';
-import { JWT_EXPIRATION } from '@/shared/constants/jwt.constants';
+import {
+  JWT_EXPIRATION,
+  JWT_MIN_SECRET_LENGTH,
+} from '@/shared/constants/jwt.constants';
 import {
   generateResetToken,
   hashResetToken,
@@ -28,7 +33,7 @@ import { PrismaService } from '@/config/prisma.service';
 import { AuthTokenPurpose, OtpPurpose } from '@prisma/client';
 
 @Injectable()
-export class AuthService {
+export class AuthService implements OnModuleInit {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
@@ -38,6 +43,22 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly logger: Logger = new Logger(AuthService.name),
   ) {}
+
+  onModuleInit() {
+    const secret = this.configService.get<string>('JWT_SECRET');
+    const refreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
+
+    if (!secret || secret.length < JWT_MIN_SECRET_LENGTH) {
+      throw new Error(
+        'JWT_SECRET is not set or too short (minimum 32 characters).',
+      );
+    }
+    if (!refreshSecret || refreshSecret.length < JWT_MIN_SECRET_LENGTH) {
+      throw new Error(
+        'JWT_REFRESH_SECRET is not set or too short (minimum 32 characters).',
+      );
+    }
+  }
 
   async validateUser(credentials: AuthCredentials): Promise<User | null> {
     const user = await this.usersService.findByEmail(credentials.email);
@@ -88,12 +109,12 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Generate tokens for admin
     const tokenData = await this.getTokens(
       user.id,
       user.email,
       user.role,
       user.isMasterAdmin,
+      'platform-admin',
     );
     await this.updateRefreshToken(user.id, tokenData.refreshToken);
 
@@ -154,10 +175,11 @@ export class AuthService {
   }
 
   /**
-   * User login - validates credentials and ensures REGULAR role
-   * Returns user profile only (no tokens)
+   * User login - validates credentials, enforces email verification, and issues JWT tokens
    */
-  async userLogin(credentials: AuthCredentials): Promise<{ user: User }> {
+  async userLogin(
+    credentials: AuthCredentials,
+  ): Promise<{ user: User; tokens: TokenPair }> {
     const user = await this.validateUser(credentials);
     if (!user) {
       this.logger.warn(
@@ -166,7 +188,6 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Ensure user has REGULAR role
     if (user.role !== UserRole.REGULAR) {
       this.logger.warn(
         `User login failed: user is not REGULAR, email=${user.email}, role=${user.role}`,
@@ -174,11 +195,33 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    if (!user.emailVerified) {
+      this.logger.warn(
+        `User login failed: email not verified, email=${user.email}`,
+      );
+      throw new UnauthorizedException(
+        'Email address not verified. Please check your inbox for the verification OTP.',
+      );
+    }
+
+    const tokenData = await this.getTokens(
+      user.id,
+      user.email,
+      user.role,
+      user.isMasterAdmin,
+      'user',
+    );
+    await this.updateRefreshToken(user.id, tokenData.refreshToken);
+
+    const tokens = new TokenPair();
+    tokens.accessToken = tokenData.accessToken;
+    tokens.refreshToken = tokenData.refreshToken;
+
     this.logger.log(
       `User login successful: email=${user.email}, userId=${user.id}`,
     );
 
-    return { user };
+    return { user, tokens };
   }
 
   /**
@@ -227,12 +270,27 @@ export class AuthService {
 
   async refreshToken(
     refreshToken: string,
-  ): Promise<{ user: User; tokens?: TokenPair | undefined }> {
-    const decoded = await this.decodeRefreshToken(refreshToken);
+    expectedAudience: 'platform-admin' | 'user',
+  ): Promise<{ user: User; tokens: TokenPair }> {
+    const decoded = await this.decodeRefreshToken(
+      refreshToken,
+      expectedAudience,
+    );
     const user = await this.usersService.findById(decoded.sub);
     if (!user || !user.refreshToken) {
       this.logger.warn(
         `Token refresh failed: user not found or no refresh token, userId=${decoded.sub}`,
+      );
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    const expectedRole =
+      expectedAudience === 'platform-admin'
+        ? UserRole.PLATFORM_ADMIN
+        : UserRole.REGULAR;
+    if (user.role !== expectedRole) {
+      this.logger.warn(
+        `Token refresh failed: role/audience mismatch, userId=${user.id}, role=${user.role}, expectedAudience=${expectedAudience}`,
       );
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
@@ -249,13 +307,12 @@ export class AuthService {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
-    // Maintain role-based token generation logic
-    // Tokens contain role information from getTokens method
     const tokenData = await this.getTokens(
       user.id,
       user.email,
       user.role,
       user.isMasterAdmin,
+      expectedAudience,
     );
     await this.updateRefreshToken(user.id, tokenData.refreshToken);
 
@@ -275,7 +332,13 @@ export class AuthService {
     email: string,
     role: string,
     isMasterAdmin: boolean,
+    audience: 'platform-admin' | 'user',
   ) {
+    const issuer = this.configService.get<string>('app.name', 'PrismaCV');
+    const jwtSecret = this.configService.get<string>('JWT_SECRET');
+    const jwtRefreshSecret =
+      this.configService.get<string>('JWT_REFRESH_SECRET');
+
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
         {
@@ -283,10 +346,14 @@ export class AuthService {
           email,
           role,
           isMasterAdmin,
+          iss: issuer,
+          aud: audience,
+          jti: randomUUID(),
         },
         {
-          secret: process.env.JWT_SECRET,
+          secret: jwtSecret,
           expiresIn: JWT_EXPIRATION.ACCESS_TOKEN,
+          algorithm: 'HS256',
         },
       ),
       this.jwtService.signAsync(
@@ -295,18 +362,19 @@ export class AuthService {
           email,
           role,
           isMasterAdmin,
+          iss: issuer,
+          aud: audience,
+          jti: randomUUID(),
         },
         {
-          secret: process.env.JWT_REFRESH_SECRET,
+          secret: jwtRefreshSecret,
           expiresIn: JWT_EXPIRATION.REFRESH_TOKEN,
+          algorithm: 'HS256',
         },
       ),
     ]);
 
-    return {
-      accessToken,
-      refreshToken,
-    };
+    return { accessToken, refreshToken };
   }
 
   async updateRefreshToken(userId: string, refreshToken: string) {
@@ -316,10 +384,16 @@ export class AuthService {
     });
   }
 
-  async decodeRefreshToken(token: string) {
+  async decodeRefreshToken(
+    token: string,
+    expectedAudience: 'platform-admin' | 'user',
+  ) {
     try {
       return await this.jwtService.verifyAsync(token, {
-        secret: process.env.JWT_REFRESH_SECRET,
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+        audience: expectedAudience,
+        issuer: this.configService.get<string>('app.name', 'PrismaCV'),
+        algorithms: ['HS256'],
       });
     } catch {
       this.logger.warn('Token verification failed: invalid or expired token');

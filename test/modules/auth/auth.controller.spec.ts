@@ -223,6 +223,7 @@ describe('AuthController', () => {
 
       expect(authService.refreshToken).toHaveBeenCalledWith(
         refreshDto.refreshToken,
+        'platform-admin',
       );
       expect(authMapper.userToAdminAuthResponse).toHaveBeenCalledWith(
         mockAdminUser,
@@ -245,6 +246,7 @@ describe('AuthController', () => {
       );
       expect(authService.refreshToken).toHaveBeenCalledWith(
         refreshDto.refreshToken,
+        'platform-admin',
       );
       expect(authMapper.userToAdminAuthResponse).not.toHaveBeenCalled();
     });
@@ -267,6 +269,7 @@ describe('AuthController', () => {
       );
       expect(authService.refreshToken).toHaveBeenCalledWith(
         refreshDto.refreshToken,
+        'platform-admin',
       );
       expect(authMapper.userToAdminAuthResponse).toHaveBeenCalledWith(
         mockAdminUser,

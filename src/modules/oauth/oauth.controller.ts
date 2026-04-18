@@ -25,6 +25,7 @@ import { LinkedinImportRequestDto } from './dto/linkedin-import.request.dto';
 import { LinkedinCvResponseDto } from './dto/linkedin-cv.response.dto';
 import { AuthMapper } from '@/modules/auth/mappers/auth.mapper';
 import { User } from '@/modules/auth/entities/user.entity';
+import { TokenPair } from '@/modules/auth/entities/token-pair.entity';
 import { LinkedInCvService } from './services/linkedin-cv.service';
 
 @ApiTags('OAuth Authentication')
@@ -64,12 +65,12 @@ export class OAuthController {
   @UseGuards(LinkedInAuthGuard)
   @ApiExcludeEndpoint() // Keep hidden from Swagger
   async linkedinCallback(@Req() req: Request, @Res() res: Response) {
-    const { user } = req.user as { user: User };
-
-    const userResponse = this.authMapper.userToUserAuthResponse(user);
+    const { user, tokens } = req.user as { user: User; tokens: TokenPair };
 
     const response: OAuthCallbackResponseDto = {
-      user: userResponse,
+      user: this.authMapper.userToUserAuthResponse(user),
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
     };
 
     return res.status(HttpStatus.OK).json(response);
@@ -99,12 +100,12 @@ export class OAuthController {
   @UseGuards(GoogleAuthGuard)
   @ApiExcludeEndpoint() // Keep hidden from Swagger
   async googleCallback(@Req() req: Request, @Res() res: Response) {
-    const { user } = req.user as { user: User };
-
-    const userResponse = this.authMapper.userToUserAuthResponse(user);
+    const { user, tokens } = req.user as { user: User; tokens: TokenPair };
 
     const response: OAuthCallbackResponseDto = {
-      user: userResponse,
+      user: this.authMapper.userToUserAuthResponse(user),
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
     };
 
     return res.status(HttpStatus.OK).json(response);
@@ -137,12 +138,12 @@ export class OAuthController {
     @Req() req: Request,
     @Body() body: LinkedinImportRequestDto,
   ): Promise<LinkedinCvResponseDto> {
-    const authUser = (
-      req.user as { id?: string; userId?: string; sub?: string } | undefined
-    )?.id
-      ?? (req.user as { id?: string; userId?: string; sub?: string } | undefined)
-        ?.userId
-      ?? (req.user as { id?: string; userId?: string; sub?: string } | undefined)
+    const authUser =
+      (req.user as { id?: string; userId?: string; sub?: string } | undefined)
+        ?.id ??
+      (req.user as { id?: string; userId?: string; sub?: string } | undefined)
+        ?.userId ??
+      (req.user as { id?: string; userId?: string; sub?: string } | undefined)
         ?.sub;
     if (!authUser) {
       throw new BadRequestException('Authenticated user is required');

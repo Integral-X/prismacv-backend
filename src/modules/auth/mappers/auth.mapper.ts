@@ -5,6 +5,7 @@ import { AdminAuthResponseDto } from '../dto/response/admin-auth.response.dto';
 import { AdminLoginResponseDto } from '../dto/response/admin-login.response.dto';
 import { AdminSignupResponseDto } from '../dto/response/admin-signup.response.dto';
 import { UserAuthResponseDto } from '../dto/response/user-auth.response.dto';
+import { UserLoginResponseDto } from '../dto/response/user-login.response.dto';
 import { UserProfileResponseDto } from '../dto/response/user-profile.response.dto';
 import { User } from '../entities/user.entity';
 import { AuthCredentials } from '../entities/auth-credentials.entity';
@@ -157,6 +158,22 @@ export class AuthMapper {
 
     const response = new UserAuthResponseDto();
     response.user = this.userToProfileResponse(user);
+
+    return response;
+  }
+
+  userToUserLoginResponse(user: User, tokens: TokenPair): UserLoginResponseDto {
+    if (!user) {
+      throw new BadRequestException('User data is required');
+    }
+    if (!tokens) {
+      throw new BadRequestException('Tokens are required');
+    }
+
+    const response = new UserLoginResponseDto();
+    response.user = this.userToProfileResponse(user);
+    response.accessToken = tokens.accessToken;
+    response.refreshToken = tokens.refreshToken;
 
     return response;
   }

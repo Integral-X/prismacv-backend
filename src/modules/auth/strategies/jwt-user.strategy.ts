@@ -6,7 +6,7 @@ import { UsersService } from '../users.service';
 import { User, UserRole } from '../entities/user.entity';
 
 @Injectable()
-export class JwtAdminStrategy extends PassportStrategy(Strategy, 'jwt-admin') {
+export class JwtUserStrategy extends PassportStrategy(Strategy, 'jwt-user') {
   constructor(
     private configService: ConfigService,
     private usersService: UsersService,
@@ -15,14 +15,14 @@ export class JwtAdminStrategy extends PassportStrategy(Strategy, 'jwt-admin') {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: configService.get<string>('JWT_SECRET'),
-      audience: 'platform-admin',
+      audience: 'user',
       issuer: configService.get<string>('app.name', 'PrismaCV'),
       algorithms: ['HS256'],
     });
   }
 
   async validate(payload: any): Promise<User> {
-    if (payload.role !== UserRole.PLATFORM_ADMIN) {
+    if (payload.role !== UserRole.REGULAR) {
       throw new UnauthorizedException('Insufficient permissions');
     }
 
@@ -31,7 +31,7 @@ export class JwtAdminStrategy extends PassportStrategy(Strategy, 'jwt-admin') {
       throw new UnauthorizedException('User not found');
     }
 
-    if (user.role !== UserRole.PLATFORM_ADMIN) {
+    if (user.role !== UserRole.REGULAR) {
       throw new UnauthorizedException('Insufficient permissions');
     }
 
