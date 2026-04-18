@@ -13,4 +13,10 @@ export class OtpVerificationResponseDto {
     type: UserProfileResponseDto,
   })
   user: UserProfileResponseDto;
+
+  @ApiProperty({ description: 'JWT access token (15 min TTL)' })
+  accessToken: string;
+
+  @ApiProperty({ description: 'JWT refresh token (7 day TTL)' })
+  refreshToken: string;
 }

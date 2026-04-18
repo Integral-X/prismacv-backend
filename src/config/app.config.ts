@@ -15,11 +15,10 @@ export const AppConfig = () => ({
   },
   jwt: {
     secret: process.env.JWT_SECRET,
-    expiresIn: process.env.JWT_EXPIRES_IN || JWT_EXPIRATION.DEFAULT_EXPIRES_IN,
+    expiresIn: process.env.JWT_EXPIRES_IN || JWT_EXPIRATION.ACCESS_TOKEN,
     refreshSecret: process.env.JWT_REFRESH_SECRET,
     refreshExpiresIn:
-      process.env.JWT_REFRESH_EXPIRES_IN ||
-      JWT_EXPIRATION.DEFAULT_REFRESH_EXPIRES_IN,
+      process.env.JWT_REFRESH_EXPIRES_IN || JWT_EXPIRATION.REFRESH_TOKEN,
   },
   bcrypt: {
     rounds: parseInt(process.env.BCRYPT_ROUNDS, 10) || 12,

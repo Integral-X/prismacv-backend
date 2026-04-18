@@ -1,42 +1,19 @@
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { JwtAdminAuthGuard } from '../../../src/modules/auth/guards/jwt-auth.guard';
+import { JwtUserAuthGuard } from '../../../src/modules/auth/guards/jwt-user-auth.guard';
 
-describe('JwtAdminAuthGuard', () => {
-  let guard: JwtAdminAuthGuard;
-  let reflector: jest.Mocked<Reflector>;
+describe('JwtUserAuthGuard', () => {
+  let guard: JwtUserAuthGuard;
 
   beforeEach(() => {
-    reflector = {
-      getAllAndOverride: jest.fn(),
-    } as any;
-
-    guard = new JwtAdminAuthGuard(reflector);
+    guard = new JwtUserAuthGuard();
   });
 
   describe('canActivate', () => {
-    it('should return true for public endpoints', () => {
+    it('should call super.canActivate (no @Public bypass)', () => {
       const context = createMockExecutionContext();
-      reflector.getAllAndOverride.mockReturnValue(true);
-
-      const result = guard.canActivate(context);
-
-      expect(result).toBe(true);
-      expect(reflector.getAllAndOverride).toHaveBeenCalledWith('isPublic', [
-        context.getHandler(),
-        context.getClass(),
-      ]);
-    });
-
-    it('should call super.canActivate for protected endpoints', () => {
-      const context = createMockExecutionContext();
-      reflector.getAllAndOverride.mockReturnValue(false);
 
       const superCanActivateSpy = jest
-        .spyOn(
-          Object.getPrototypeOf(JwtAdminAuthGuard.prototype),
-          'canActivate',
-        )
+        .spyOn(Object.getPrototypeOf(JwtUserAuthGuard.prototype), 'canActivate')
         .mockReturnValue(true);
 
       const result = guard.canActivate(context);
@@ -50,7 +27,7 @@ describe('JwtAdminAuthGuard', () => {
 
   describe('handleRequest', () => {
     it('should return user when authentication is successful', () => {
-      const mockUser = { id: '1', email: 'test@example.com' };
+      const mockUser = { id: '1', email: 'user@example.com', role: 'REGULAR' };
 
       const result = guard.handleRequest(null, mockUser, null);
 
@@ -69,19 +46,23 @@ describe('JwtAdminAuthGuard', () => {
       );
     });
 
-    it('should throw UnauthorizedException when there is an error', () => {
-      const mockUser = { id: '1', email: 'test@example.com' };
-      const error = new Error('Token expired');
-
-      expect(() => guard.handleRequest(error, mockUser, null)).toThrow(
-        UnauthorizedException,
+    it('should throw UnauthorizedException with default message when no info', () => {
+      expect(() => guard.handleRequest(null, null, null)).toThrow(
+        'Authentication required — valid JWT token required',
       );
     });
 
-    it('should throw UnauthorizedException when both error and no user', () => {
-      const error = new Error('Invalid token');
+    it('should throw UnauthorizedException with info message when provided', () => {
+      expect(() =>
+        guard.handleRequest(null, null, { message: 'jwt expired' }),
+      ).toThrow('jwt expired');
+    });
 
-      expect(() => guard.handleRequest(error, null, null)).toThrow(
+    it('should throw UnauthorizedException when there is an error even with valid user', () => {
+      const mockUser = { id: '1', email: 'user@example.com' };
+      const error = new Error('Token expired');
+
+      expect(() => guard.handleRequest(error, mockUser, null)).toThrow(
         UnauthorizedException,
       );
     });

@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { OAuthService } from '../services/oauth.service';
 import { GoogleOAuthProvider } from '../services/google-oauth.provider';
 import { User } from '@/modules/auth/entities/user.entity';
+import { TokenPair } from '@/modules/auth/entities/token-pair.entity';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
@@ -25,7 +26,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     accessToken: string,
     refreshToken: string,
     profile: Profile,
-  ): Promise<{ user: User }> {
+  ): Promise<{ user: User; tokens: TokenPair }> {
     // Transform Google profile → our internal format
     const oauthProfile = this.googleProvider.validateProfile(profile);
 

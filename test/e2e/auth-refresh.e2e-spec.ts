@@ -32,10 +32,10 @@ describe('Auth Refresh (e2e)', () => {
     await app.close();
   });
 
-  describe('/auth/refresh (POST)', () => {
+  describe('/auth/admin/refresh (POST)', () => {
     it('should refresh tokens successfully with valid refresh token', () => {
       return request(app.getHttpServer())
-        .post('/auth/refresh')
+        .post('/auth/admin/refresh')
         .send({ refreshToken })
         .expect(200)
         .expect(res => {
@@ -50,14 +50,14 @@ describe('Auth Refresh (e2e)', () => {
 
     it('should return 401 for invalid refresh token', () => {
       return request(app.getHttpServer())
-        .post('/auth/refresh')
+        .post('/auth/admin/refresh')
         .send({ refreshToken: 'invalidtoken' })
         .expect(401);
     });
 
     it('should return 400 for missing refresh token', () => {
       return request(app.getHttpServer())
-        .post('/auth/refresh')
+        .post('/auth/admin/refresh')
         .send({})
         .expect(400); // Should now return 400 with our validation fix
     });
@@ -67,7 +67,7 @@ describe('Auth Refresh (e2e)', () => {
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE1MTYyMzkwMjJ9.invalid';
 
       return request(app.getHttpServer())
-        .post('/auth/refresh')
+        .post('/auth/admin/refresh')
         .send({ refreshToken: expiredToken })
         .expect(401);
     });
