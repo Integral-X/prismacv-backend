@@ -106,11 +106,11 @@ export class AuthController {
   }
 
   @Public()
-  @Post('refresh')
+  @Post('admin/refresh')
   @HttpCode(HttpStatus.OK)
   @ApiSecurity({})
   @ApiOperation({
-    summary: 'Refresh access token',
+    summary: 'Refresh admin access token',
     description:
       'Refreshes JWT access token using a valid refresh token. Only available for PLATFORM_ADMIN users.',
   })

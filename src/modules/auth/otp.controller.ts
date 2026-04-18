@@ -4,11 +4,13 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBody,
-  ApiBearerAuth,
+  ApiSecurity,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
+import { Public } from '../../common/decorators/public.decorator';
 import { OtpService } from './otp.service';
 import { AuthService } from './auth.service';
+import { TokenPair } from './entities/token-pair.entity';
 import { VerifyOtpRequestDto } from './dto/request/verify-otp.request.dto';
 import { ResendOtpRequestDto } from './dto/request/resend-otp.request.dto';
 import { VerifyResetOtpRequestDto } from './dto/request/verify-reset-otp.request';
@@ -18,7 +20,6 @@ import { VerifyResetOtpResponseDto } from './dto/response/verify-reset-otp.respo
 import { AuthMapper } from './mappers/auth.mapper';
 
 @ApiTags('OTP Verification')
-@ApiBearerAuth('JWT-auth')
 @Controller('otp')
 export class OtpController {
   constructor(
@@ -27,8 +28,10 @@ export class OtpController {
     private readonly authMapper: AuthMapper,
   ) {}
 
+  @Public()
   @Post('verify-signup')
   @HttpCode(HttpStatus.OK)
+  @ApiSecurity({})
   @Throttle({ default: { limit: 5, ttl: 300000 } }) // 5 attempts per 5 minutes
   @ApiOperation({
     summary: 'Verify email OTP for user signup',
@@ -68,14 +71,27 @@ export class OtpController {
       verifyOtpRequestDto.otp,
     );
 
+    const tokenData = await this.authService.getTokens(
+      user.id,
+      user.email,
+      user.role,
+      user.isMasterAdmin,
+      'user',
+    );
+    await this.authService.updateRefreshToken(user.id, tokenData.refreshToken);
+
     return {
       message: 'Email verified successfully',
       user: this.authMapper.userToProfileResponse(user),
+      accessToken: tokenData.accessToken,
+      refreshToken: tokenData.refreshToken,
     };
   }
 
+  @Public()
   @Post('resend-signup')
   @HttpCode(HttpStatus.OK)
+  @ApiSecurity({})
   @Throttle({ default: { limit: 5, ttl: 300000 } }) // 5 attempts per 5 minutes
   @ApiOperation({
     summary: 'Resend signup email verification OTP',
@@ -117,8 +133,10 @@ export class OtpController {
     };
   }
 
+  @Public()
   @Post('verify-reset')
   @HttpCode(HttpStatus.OK)
+  @ApiSecurity({})
   @Throttle({ default: { limit: 5, ttl: 300000 } }) // 5 attempts per 5 minutes
   @ApiOperation({
     summary: 'Verify password reset OTP',

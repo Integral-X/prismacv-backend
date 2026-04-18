@@ -1,12 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { UserAuthResponseDto } from '@/modules/auth/dto/response/user-auth.response.dto';
+import { UserProfileResponseDto } from './user-profile.response.dto';
 
-export class OAuthCallbackResponseDto {
+export class UserLoginResponseDto {
   @ApiProperty({
-    description: 'User profile information',
-    type: UserAuthResponseDto,
+    description: 'Regular user profile information',
+    type: UserProfileResponseDto,
   })
-  user: UserAuthResponseDto;
+  user: UserProfileResponseDto;
 
   @ApiProperty({ description: 'JWT access token (15 min TTL)' })
   accessToken: string;

@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { OAuthService } from '../services/oauth.service';
 import { LinkedInOAuthProvider } from '../services/linkedin-oauth.provider';
 import { User } from '@/modules/auth/entities/user.entity';
+import { TokenPair } from '@/modules/auth/entities/token-pair.entity';
 
 @Injectable()
 export class LinkedInStrategy extends PassportStrategy(Strategy, 'linkedin') {
@@ -25,7 +26,7 @@ export class LinkedInStrategy extends PassportStrategy(Strategy, 'linkedin') {
     accessToken: string,
     refreshToken: string,
     profile: Profile,
-  ): Promise<{ user: User }> {
+  ): Promise<{ user: User; tokens: TokenPair }> {
     // Transform LinkedIn profile to our OAuthProfile format
     const oauthProfile = this.linkedinProvider.validateProfile(profile);
 
