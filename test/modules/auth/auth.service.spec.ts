@@ -224,7 +224,8 @@ describe('AuthService', () => {
       const mockConfig = {
         get: jest.fn((key: string) => {
           if (key === 'JWT_SECRET') return undefined;
-          if (key === 'JWT_REFRESH_SECRET') return '01234567890123456789012345678901';
+          if (key === 'JWT_REFRESH_SECRET')
+            return '01234567890123456789012345678901';
           return undefined;
         }),
       } as unknown as ConfigService;
@@ -247,7 +248,8 @@ describe('AuthService', () => {
       const mockConfig = {
         get: jest.fn((key: string) => {
           if (key === 'JWT_SECRET') return 'short';
-          if (key === 'JWT_REFRESH_SECRET') return '01234567890123456789012345678901';
+          if (key === 'JWT_REFRESH_SECRET')
+            return '01234567890123456789012345678901';
           return undefined;
         }),
       } as unknown as ConfigService;
@@ -311,7 +313,9 @@ describe('AuthService', () => {
         accessToken: 'access',
         refreshToken: 'refresh',
       });
-      jest.spyOn(authService, 'updateRefreshToken').mockResolvedValue(undefined);
+      jest
+        .spyOn(authService, 'updateRefreshToken')
+        .mockResolvedValue(undefined);
 
       const result = await authService.userLogin(credentials);
 

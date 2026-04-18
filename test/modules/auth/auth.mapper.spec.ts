@@ -57,9 +57,9 @@ describe('AuthMapper', () => {
     it('should throw BadRequestException when tokens are null', () => {
       const user = createTestUser();
 
-      expect(() =>
-        mapper.userToUserLoginResponse(user, null as any),
-      ).toThrow(BadRequestException);
+      expect(() => mapper.userToUserLoginResponse(user, null as any)).toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -103,7 +103,11 @@ describe('AuthMapper', () => {
 
   describe('signupRequestToEntity', () => {
     it('should map signup DTO to User entity', () => {
-      const dto = { email: 'User@Example.COM', password: 'pass123', name: ' Test ' };
+      const dto = {
+        email: 'User@Example.COM',
+        password: 'pass123',
+        name: ' Test ',
+      };
 
       const result = mapper.signupRequestToEntity(dto);
 
@@ -120,7 +124,11 @@ describe('AuthMapper', () => {
 
     it('should throw BadRequestException when email is missing', () => {
       expect(() =>
-        mapper.signupRequestToEntity({ email: '', password: 'pass', name: 'x' }),
+        mapper.signupRequestToEntity({
+          email: '',
+          password: 'pass',
+          name: 'x',
+        }),
       ).toThrow(BadRequestException);
     });
   });

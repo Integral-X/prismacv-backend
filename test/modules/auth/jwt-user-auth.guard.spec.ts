@@ -13,10 +13,7 @@ describe('JwtUserAuthGuard', () => {
       const context = createMockExecutionContext();
 
       const superCanActivateSpy = jest
-        .spyOn(
-          Object.getPrototypeOf(JwtUserAuthGuard.prototype),
-          'canActivate',
-        )
+        .spyOn(Object.getPrototypeOf(JwtUserAuthGuard.prototype), 'canActivate')
         .mockReturnValue(true);
 
       const result = guard.canActivate(context);
