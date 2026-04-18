@@ -3,7 +3,7 @@ import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { OAuthService } from '../../../src/modules/oauth/services/oauth.service';
 import { UsersService } from '../../../src/modules/auth/users.service';
 import { AuthService } from '../../../src/modules/auth/auth.service';
-import { User, UserRole } from '../../../src/modules/auth/entities/user.entity';
+import { UserRole } from '../../../src/modules/auth/entities/user.entity';
 import { TokenPair } from '../../../src/modules/auth/entities/token-pair.entity';
 import { mockUser } from '../../helpers/mock-user.helper';
 
