@@ -11,9 +11,10 @@ export interface IMapper<TDto, TEntity> {
 /**
  * Abstract base mapper class providing common functionality
  */
-export abstract class BaseMapper<TDto, TEntity>
-  implements IMapper<TDto, TEntity>
-{
+export abstract class BaseMapper<TDto, TEntity> implements IMapper<
+  TDto,
+  TEntity
+> {
   /**
    * Convert DTO to Entity - must be implemented by concrete mappers
    */

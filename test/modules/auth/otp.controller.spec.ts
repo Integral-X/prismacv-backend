@@ -43,6 +43,11 @@ describe('OtpController', () => {
 
     const mockAuthService = {
       verifyPasswordResetOtp: jest.fn(),
+      getTokens: jest.fn().mockResolvedValue({
+        accessToken: 'mock-access-token',
+        refreshToken: 'mock-refresh-token',
+      }),
+      updateRefreshToken: jest.fn().mockResolvedValue(undefined),
     };
 
     const mockAuthMapper = {
@@ -93,6 +98,8 @@ describe('OtpController', () => {
       expect(result).toEqual({
         message: 'Email verified successfully',
         user: mockUserProfile,
+        accessToken: 'mock-access-token',
+        refreshToken: 'mock-refresh-token',
       });
     });
 

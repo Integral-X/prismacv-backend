@@ -1,15 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, MinLength, IsUUID } from 'class-validator';
+import { IsString, MinLength } from 'class-validator';
 
 export class ChangePasswordRequestDto {
-  @ApiProperty({
-    example: '01234567-89ab-cdef-0123-456789abcdef',
-    description: 'User ID obtained from login response',
-  })
-  @IsString()
-  @IsUUID()
-  userId: string;
-
   @ApiProperty({
     example: 'OldPassword123',
     description: 'Current password of the user',
