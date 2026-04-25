@@ -395,7 +395,7 @@ export class LinkedInCvService {
     } catch (err: any) {
       if (err?.name === 'AbortError') {
         throw new RequestTimeoutException(
-          `LinkedIn API request timed out after 30s (${url})`,
+          `LinkedIn API request timed out after ${timeoutMs}ms (${url})`,
         );
       }
       throw err;

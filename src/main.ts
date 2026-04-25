@@ -37,7 +37,8 @@ async function bootstrap() {
   app.enableCors({
     origin: isWildcard ? '*' : corsOrigin.split(','),
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-correlation-id'],
+    exposedHeaders: ['x-correlation-id'],
     credentials: !isWildcard,
   });
 
