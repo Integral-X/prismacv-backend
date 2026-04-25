@@ -4,7 +4,7 @@ import {
   OnModuleDestroy,
   Logger,
 } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, type Prisma } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -56,12 +56,7 @@ export class PrismaService
 
   // Transaction helper
   async transaction<T>(
-    fn: (
-      prisma: Omit<
-        PrismaClient,
-        '$on' | '$connect' | '$disconnect' | '$transaction' | '$extends'
-      >,
-    ) => Promise<T>,
+    fn: (prisma: Prisma.TransactionClient) => Promise<T>,
   ): Promise<T> {
     return this.$transaction(fn);
   }

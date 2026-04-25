@@ -114,11 +114,13 @@ export class LinkedInCvService {
       courses: [],
     };
 
+    const canonicalUrl = resolvedUrl ?? url!;
+
     const persistedImport = await this.prisma.linkedinCvImport.upsert({
       where: {
         userId_linkedinUrl: {
           userId,
-          linkedinUrl: url!,
+          linkedinUrl: canonicalUrl,
         },
       },
       create: {
@@ -126,7 +128,7 @@ export class LinkedInCvService {
         userId,
         provider: response.source.provider,
         linkedinHandle: response.source.handle,
-        linkedinUrl: url!,
+        linkedinUrl: canonicalUrl,
         fetchedAt: new Date(response.source.fetchedAt),
         dataScope: this.toJson(response.source.dataScope),
         warnings: this.toJson(response.source.warnings ?? null),

@@ -11,10 +11,15 @@ export class JwtUserStrategy extends PassportStrategy(Strategy, 'jwt-user') {
     private configService: ConfigService,
     private usersService: UsersService,
   ) {
+    const secret = configService.get<string>('JWT_SECRET');
+    if (!secret) {
+      throw new Error('JWT_SECRET is not configured');
+    }
+
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('JWT_SECRET')!,
+      secretOrKey: secret,
       audience: 'user',
       issuer: configService.get<string>('app.name', 'PrismaCV'),
       algorithms: ['HS256'],

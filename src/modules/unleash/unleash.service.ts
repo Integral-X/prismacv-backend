@@ -134,7 +134,13 @@ export class UnleashService implements OnModuleInit, OnModuleDestroy {
     } catch (error: unknown) {
       this.logger.error('Failed to initialize Unleash client:');
       this.logger.error('Error type:', typeof error);
-      const errObj = error instanceof Error ? error : {};
+
+      const errObj =
+        error instanceof Error
+          ? error
+          : typeof error === 'object' && error !== null
+            ? (error as Record<string, unknown>)
+            : {};
       this.logger.error(
         'Error message:',
         (errObj as Record<string, unknown>).message ?? 'No message',
@@ -147,7 +153,12 @@ export class UnleashService implements OnModuleInit, OnModuleDestroy {
         'Error status:',
         (errObj as Record<string, unknown>).status ?? 'No status',
       );
-      this.logger.error('Full error object:', JSON.stringify(error, null, 2));
+
+      try {
+        this.logger.error('Full error object:', JSON.stringify(error, null, 2));
+      } catch {
+        this.logger.error('Full error object: [unserializable]');
+      }
 
       // Check configuration values
       const url = this.configService.get<string>('unleash.url');

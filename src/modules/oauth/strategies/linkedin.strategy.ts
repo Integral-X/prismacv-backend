@@ -14,10 +14,19 @@ export class LinkedInStrategy extends PassportStrategy(Strategy, 'linkedin') {
     private readonly oauthService: OAuthService,
     private readonly linkedinProvider: LinkedInOAuthProvider,
   ) {
+    const clientID = configService.get<string>('LINKEDIN_CLIENT_ID');
+    const clientSecret = configService.get<string>('LINKEDIN_CLIENT_SECRET');
+    const callbackURL = configService.get<string>('LINKEDIN_CALLBACK_URL');
+    if (!clientID || !clientSecret || !callbackURL) {
+      throw new Error(
+        'LinkedIn OAuth requires LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET, and LINKEDIN_CALLBACK_URL',
+      );
+    }
+
     super({
-      clientID: configService.get<string>('LINKEDIN_CLIENT_ID')!,
-      clientSecret: configService.get<string>('LINKEDIN_CLIENT_SECRET')!,
-      callbackURL: configService.get<string>('LINKEDIN_CALLBACK_URL')!,
+      clientID,
+      clientSecret,
+      callbackURL,
       scope: ['r_emailaddress', 'r_liteprofile'],
     });
   }
