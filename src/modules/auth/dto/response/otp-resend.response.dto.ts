@@ -5,11 +5,11 @@ export class OtpResendResponseDto {
     description: 'Success message',
     example: 'OTP sent successfully',
   })
-  message: string;
+  message!: string;
 
   @ApiProperty({
     description: 'Timestamp when the OTP will expire',
     example: '2025-11-29T21:00:00.000Z',
   })
-  expiresAt: Date;
+  expiresAt!: Date;
 }

@@ -7,7 +7,7 @@ export class UserSignupRequestDto {
     description: 'Valid email address for regular user registration',
   })
   @IsEmail()
-  email: string;
+  email!: string;
 
   @ApiProperty({
     example: 'secureUserPass123',
@@ -15,7 +15,7 @@ export class UserSignupRequestDto {
   })
   @IsString()
   @MinLength(8)
-  password: string;
+  password!: string;
 
   @ApiProperty({
     example: 'John Doe',

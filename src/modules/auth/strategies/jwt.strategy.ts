@@ -11,10 +11,15 @@ export class JwtAdminStrategy extends PassportStrategy(Strategy, 'jwt-admin') {
     private configService: ConfigService,
     private usersService: UsersService,
   ) {
+    const secret = configService.get<string>('JWT_SECRET');
+    if (!secret) {
+      throw new Error('JWT_SECRET is not configured');
+    }
+
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('JWT_SECRET'),
+      secretOrKey: secret,
       audience: 'platform-admin',
       issuer: configService.get<string>('app.name', 'PrismaCV'),
       algorithms: ['HS256'],

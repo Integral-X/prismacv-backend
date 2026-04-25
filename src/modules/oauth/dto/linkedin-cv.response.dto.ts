@@ -2,7 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class LinkedinCvSourceDto {
   @ApiProperty({ example: 'LINKEDIN' })
-  provider: string;
+  provider!: string;
 
   @ApiPropertyOptional({ example: '0198a6d4-06cf-7bc6-a6b6-9468f8e1d6d2' })
   importId?: string;
@@ -14,13 +14,13 @@ export class LinkedinCvSourceDto {
   url?: string | null;
 
   @ApiProperty({ example: '2026-01-25T12:00:00.000Z' })
-  fetchedAt: string;
+  fetchedAt!: string;
 
   @ApiProperty({
     example: ['r_liteprofile', 'r_emailaddress'],
     description: 'OAuth scopes available for this import',
   })
-  dataScope: string[];
+  dataScope!: string[];
 
   @ApiPropertyOptional({
     example: [
@@ -216,38 +216,38 @@ export class LinkedinCvCourseDto {
 
 export class LinkedinCvResponseDto {
   @ApiProperty({ type: LinkedinCvSourceDto })
-  source: LinkedinCvSourceDto;
+  source!: LinkedinCvSourceDto;
 
   @ApiProperty({ type: LinkedinCvProfileDto })
-  profile: LinkedinCvProfileDto;
+  profile!: LinkedinCvProfileDto;
 
   @ApiProperty({ type: [LinkedinCvExperienceDto] })
-  experience: LinkedinCvExperienceDto[];
+  experience!: LinkedinCvExperienceDto[];
 
   @ApiProperty({ type: [LinkedinCvEducationDto] })
-  education: LinkedinCvEducationDto[];
+  education!: LinkedinCvEducationDto[];
 
   @ApiProperty({ type: [String] })
-  skills: string[];
+  skills!: string[];
 
   @ApiProperty({ type: [LinkedinCvCertificationDto] })
-  certifications: LinkedinCvCertificationDto[];
+  certifications!: LinkedinCvCertificationDto[];
 
   @ApiProperty({ type: [LinkedinCvProjectDto] })
-  projects: LinkedinCvProjectDto[];
+  projects!: LinkedinCvProjectDto[];
 
   @ApiProperty({ type: [LinkedinCvPublicationDto] })
-  publications: LinkedinCvPublicationDto[];
+  publications!: LinkedinCvPublicationDto[];
 
   @ApiProperty({ type: [LinkedinCvVolunteerDto] })
-  volunteer: LinkedinCvVolunteerDto[];
+  volunteer!: LinkedinCvVolunteerDto[];
 
   @ApiProperty({ type: [LinkedinCvHonorDto] })
-  honors: LinkedinCvHonorDto[];
+  honors!: LinkedinCvHonorDto[];
 
   @ApiProperty({ type: [LinkedinCvLanguageDto] })
-  languages: LinkedinCvLanguageDto[];
+  languages!: LinkedinCvLanguageDto[];
 
   @ApiProperty({ type: [LinkedinCvCourseDto] })
-  courses: LinkedinCvCourseDto[];
+  courses!: LinkedinCvCourseDto[];
 }

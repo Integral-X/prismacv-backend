@@ -15,10 +15,10 @@ export function mockUser(overrides: Partial<User> = {}): User {
   user.name = overrides.name || 'Test User';
   user.role = overrides.role || UserRole.REGULAR;
   user.isMasterAdmin = overrides.isMasterAdmin || false;
-  user.refreshToken = overrides.refreshToken || null;
+  user.refreshToken = overrides.refreshToken ?? undefined;
   user.emailVerified = overrides.emailVerified || false;
-  user.provider = overrides.provider || null;
-  user.providerId = overrides.providerId || null;
+  user.provider = overrides.provider ?? undefined;
+  user.providerId = overrides.providerId ?? undefined;
   user.createdAt = overrides.createdAt || new Date();
   user.updatedAt = overrides.updatedAt || new Date();
 

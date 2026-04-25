@@ -7,7 +7,7 @@ export class ChangePasswordRequestDto {
     description: 'Current password of the user',
   })
   @IsString()
-  currentPassword: string;
+  currentPassword!: string;
 
   @ApiProperty({
     example: 'NewStrongPassword123',
@@ -15,12 +15,12 @@ export class ChangePasswordRequestDto {
   })
   @IsString()
   @MinLength(8)
-  newPassword: string;
+  newPassword!: string;
 
   @ApiProperty({
     example: 'NewStrongPassword123',
     description: 'Confirmation of new password (must match newPassword)',
   })
   @IsString()
-  confirmPassword: string;
+  confirmPassword!: string;
 }

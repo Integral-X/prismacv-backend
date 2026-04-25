@@ -13,10 +13,10 @@ export enum UserRole {
  * Contains only business properties without validation or API decorators
  */
 export class User extends BaseEntity {
-  email: string;
+  email!: string;
   password?: string; // Optional for OAuth users
   name?: string;
-  role: UserRole;
+  role!: UserRole;
   isMasterAdmin: boolean = false;
   refreshToken?: string;
   emailVerified: boolean = false;

@@ -6,7 +6,7 @@ import { AuthService } from '../../../src/modules/auth/auth.service';
 import { AuthMapper } from '../../../src/modules/auth/mappers/auth.mapper';
 import { VerifyOtpRequestDto } from '../../../src/modules/auth/dto/request/verify-otp.request.dto';
 import { ResendOtpRequestDto } from '../../../src/modules/auth/dto/request/resend-otp.request.dto';
-import { VerifyResetOtpRequestDto } from '../../../src/modules/auth/dto/request/verify-reset-otp.request';
+import { VerifyResetOtpRequestDto } from '../../../src/modules/auth/dto/request/verify-reset-otp.request.dto';
 import { UserProfileResponseDto } from '../../../src/modules/auth/dto/response/user-profile.response.dto';
 import { mockUser } from '../../helpers/mock-user.helper';
 import { UserRole } from '../../../src/modules/auth/entities/user.entity';

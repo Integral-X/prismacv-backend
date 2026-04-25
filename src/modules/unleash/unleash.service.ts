@@ -131,13 +131,34 @@ export class UnleashService implements OnModuleInit, OnModuleDestroy {
           this.hasLoggedInitialFeatures = true;
         }
       });
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error('Failed to initialize Unleash client:');
       this.logger.error('Error type:', typeof error);
-      this.logger.error('Error message:', error?.message || 'No message');
-      this.logger.error('Error code:', error?.code || 'No code');
-      this.logger.error('Error status:', error?.status || 'No status');
-      this.logger.error('Full error object:', JSON.stringify(error, null, 2));
+
+      const errObj =
+        error instanceof Error
+          ? error
+          : typeof error === 'object' && error !== null
+            ? (error as Record<string, unknown>)
+            : {};
+      this.logger.error(
+        'Error message:',
+        (errObj as Record<string, unknown>).message ?? 'No message',
+      );
+      this.logger.error(
+        'Error code:',
+        (errObj as Record<string, unknown>).code ?? 'No code',
+      );
+      this.logger.error(
+        'Error status:',
+        (errObj as Record<string, unknown>).status ?? 'No status',
+      );
+
+      try {
+        this.logger.error('Full error object:', JSON.stringify(error, null, 2));
+      } catch {
+        this.logger.error('Full error object: [unserializable]');
+      }
 
       // Check configuration values
       const url = this.configService.get<string>('unleash.url');
@@ -192,7 +213,12 @@ export class UnleashService implements OnModuleInit, OnModuleDestroy {
     }
 
     try {
-      return this.unleash.getVariant(featureName, context);
+      return (
+        this.unleash.getVariant?.(featureName, context) ?? {
+          name: 'disabled',
+          enabled: false,
+        }
+      );
     } catch (error) {
       this.logger.error(`Error getting variant for "${featureName}":`, error);
       return { name: 'disabled', enabled: false };
@@ -217,7 +243,7 @@ export class UnleashService implements OnModuleInit, OnModuleDestroy {
 
     try {
       if ('getFeatureToggleDefinitions' in this.unleash) {
-        const definitions = this.unleash.getFeatureToggleDefinitions();
+        const definitions = this.unleash.getFeatureToggleDefinitions?.() ?? [];
         return definitions.map((def: any) => ({
           name: def.name,
           enabled: this.unleash!.isEnabled(def.name, context),

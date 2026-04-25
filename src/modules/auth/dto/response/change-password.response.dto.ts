@@ -5,5 +5,5 @@ export class ChangePasswordResponseDto {
     example: 'Password changed successfully',
     description: 'Success message confirming password change',
   })
-  message: string;
+  message!: string;
 }
