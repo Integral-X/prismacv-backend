@@ -6,11 +6,11 @@ export class OAuthCallbackResponseDto {
     description: 'User profile information',
     type: UserAuthResponseDto,
   })
-  user: UserAuthResponseDto;
+  user!: UserAuthResponseDto;
 
   @ApiProperty({ description: 'JWT access token (15 min TTL)' })
-  accessToken: string;
+  accessToken!: string;
 
   @ApiProperty({ description: 'JWT refresh token (7 day TTL)' })
-  refreshToken: string;
+  refreshToken!: string;
 }

@@ -15,9 +15,9 @@ export class LinkedInStrategy extends PassportStrategy(Strategy, 'linkedin') {
     private readonly linkedinProvider: LinkedInOAuthProvider,
   ) {
     super({
-      clientID: configService.get<string>('LINKEDIN_CLIENT_ID'),
-      clientSecret: configService.get<string>('LINKEDIN_CLIENT_SECRET'),
-      callbackURL: configService.get<string>('LINKEDIN_CALLBACK_URL'),
+      clientID: configService.get<string>('LINKEDIN_CLIENT_ID')!,
+      clientSecret: configService.get<string>('LINKEDIN_CLIENT_SECRET')!,
+      callbackURL: configService.get<string>('LINKEDIN_CALLBACK_URL')!,
       scope: ['r_emailaddress', 'r_liteprofile'],
     });
   }

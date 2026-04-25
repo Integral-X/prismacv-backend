@@ -342,7 +342,9 @@ describe('ClassName', () => {
 ## TypeScript
 
 - Target: `ES2020`, Module: `CommonJS`
-- `strictNullChecks: false`, `noImplicitAny: false`
+- `strict: true` (strictNullChecks, noImplicitAny, etc.)
+- DTOs/entities use `!` definite assignment assertions for class-validator pattern
+- Prisma returns `null`, domain entities use `undefined` — convert with `?? undefined`
 - `@typescript-eslint/no-explicit-any: off`
 - ESLint: flat config (`eslint.config.js`) with TypeScript-ESLint + Prettier
 - No explicit return types required (`explicit-function-return-type: off`)

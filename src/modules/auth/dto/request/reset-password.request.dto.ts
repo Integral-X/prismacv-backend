@@ -6,18 +6,18 @@ export class ResetPasswordRequestDto {
     example: 'reset-token-string',
   })
   @IsString()
-  resetToken: string;
+  resetToken!: string;
 
   @ApiProperty({
     example: 'StrongPassword123',
   })
   @IsString()
   @MinLength(8)
-  newPassword: string;
+  newPassword!: string;
 
   @ApiProperty({
     example: 'StrongPassword123',
   })
   @IsString()
-  confirmPassword: string;
+  confirmPassword!: string;
 }

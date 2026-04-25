@@ -27,7 +27,7 @@ describe('UsersService', () => {
     configService = module.get(ConfigService);
 
     // Mock the encryption key getter
-    configService.get.mockImplementation(key => {
+    configService.get.mockImplementation((key: string) => {
       if (key === 'security.encryptionKey')
         return '01234567890123456789012345678901';
       return null;
@@ -76,12 +76,12 @@ describe('UsersService', () => {
       expectedUserEntity.email = userEntity.email;
       expectedUserEntity.password = userEntity.password;
       expectedUserEntity.name = userEntity.name;
-      expectedUserEntity.refreshToken = null;
+      expectedUserEntity.refreshToken = undefined;
       expectedUserEntity.createdAt = createdPrismaUser.createdAt;
       expectedUserEntity.updatedAt = createdPrismaUser.updatedAt;
 
       prismaService.user.findUnique.mockResolvedValue(null);
-      prismaService.user.create.mockResolvedValue(createdPrismaUser);
+      prismaService.user.create.mockResolvedValue(createdPrismaUser as any);
 
       // Capture time before the service call to handle slow test environments
       const testStartTime = Date.now();
@@ -200,7 +200,7 @@ describe('UsersService', () => {
       };
 
       prismaService.user.findUnique.mockResolvedValue(null);
-      prismaService.user.create.mockResolvedValue(createdPrismaUser);
+      prismaService.user.create.mockResolvedValue(createdPrismaUser as any);
 
       const result = await usersService.create(userEntityWithoutName);
 
@@ -223,7 +223,7 @@ describe('UsersService', () => {
       expect(result).toBeInstanceOf(User);
       expect(result.email).toBe(userEntityWithoutName.email);
       expect(result.password).toBe(userEntityWithoutName.password);
-      expect(result.name).toBeNull();
+      expect(result.name).toBeUndefined();
     });
 
     it('should rethrow other Prisma errors', async () => {
@@ -287,11 +287,11 @@ describe('UsersService', () => {
         where: { email: 'test@example.com' },
       });
       expect(result).toBeInstanceOf(User);
-      expect(result.id).toBe(prismaUser.id);
-      expect(result.email).toBe(prismaUser.email);
-      expect(result.password).toBe(prismaUser.password);
-      expect(result.name).toBe(prismaUser.name);
-      expect(result.refreshToken).toBe(prismaUser.refreshToken);
+      expect(result!.id).toBe(prismaUser.id);
+      expect(result!.email).toBe(prismaUser.email);
+      expect(result!.password).toBe(prismaUser.password);
+      expect(result!.name).toBe(prismaUser.name);
+      expect(result!.refreshToken).toBeUndefined();
     });
 
     it('should return null when user not found', async () => {
@@ -335,11 +335,11 @@ describe('UsersService', () => {
         where: { id: '1' },
       });
       expect(result).toBeInstanceOf(User);
-      expect(result.id).toBe(prismaUser.id);
-      expect(result.email).toBe(prismaUser.email);
-      expect(result.password).toBe(prismaUser.password);
-      expect(result.name).toBe(prismaUser.name);
-      expect(result.refreshToken).toBe(prismaUser.refreshToken);
+      expect(result!.id).toBe(prismaUser.id);
+      expect(result!.email).toBe(prismaUser.email);
+      expect(result!.password).toBe(prismaUser.password);
+      expect(result!.name).toBe(prismaUser.name);
+      expect(result!.refreshToken).toBe(prismaUser.refreshToken);
     });
 
     it('should return null when user not found', async () => {

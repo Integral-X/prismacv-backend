@@ -6,5 +6,5 @@ export class UserAuthResponseDto {
     description: 'Regular user profile information',
     type: UserProfileResponseDto,
   })
-  user: UserProfileResponseDto;
+  user!: UserProfileResponseDto;
 }

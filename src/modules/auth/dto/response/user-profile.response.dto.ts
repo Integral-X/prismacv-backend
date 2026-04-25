@@ -3,10 +3,10 @@ import { UserRole } from '../../entities';
 
 export class UserProfileResponseDto {
   @ApiProperty({ description: 'User ID' })
-  id: string;
+  id!: string;
 
   @ApiProperty({ description: 'User email address' })
-  email: string;
+  email!: string;
 
   @ApiProperty({ description: 'User name', required: false })
   name?: string;
@@ -16,17 +16,17 @@ export class UserProfileResponseDto {
     enum: UserRole,
     example: UserRole.REGULAR,
   })
-  role: UserRole;
+  role!: UserRole;
 
   @ApiProperty({
     description: 'Whether the email has been verified',
     example: false,
   })
-  emailVerified: boolean;
+  emailVerified!: boolean;
 
   @ApiProperty({ description: 'Account creation timestamp' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @ApiProperty({ description: 'Account last update timestamp' })
-  updatedAt: Date;
+  updatedAt!: Date;
 }

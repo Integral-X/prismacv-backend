@@ -8,5 +8,5 @@ export class LinkedinImportRequestDto {
   })
   @IsString()
   @MinLength(2)
-  handleOrUrl: string;
+  handleOrUrl!: string;
 }

@@ -118,7 +118,7 @@ export class LinkedInCvService {
       where: {
         userId_linkedinUrl: {
           userId,
-          linkedinUrl: url,
+          linkedinUrl: url!,
         },
       },
       create: {
@@ -126,7 +126,7 @@ export class LinkedInCvService {
         userId,
         provider: response.source.provider,
         linkedinHandle: response.source.handle,
-        linkedinUrl: url,
+        linkedinUrl: url!,
         fetchedAt: new Date(response.source.fetchedAt),
         dataScope: this.toJson(response.source.dataScope),
         warnings: this.toJson(response.source.warnings ?? null),

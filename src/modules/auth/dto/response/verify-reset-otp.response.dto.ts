@@ -5,5 +5,5 @@ export class VerifyResetOtpResponseDto {
     example: 'reset-token-string',
     description: 'Short lived token used to reset password',
   })
-  resetToken: string;
+  resetToken!: string;
 }

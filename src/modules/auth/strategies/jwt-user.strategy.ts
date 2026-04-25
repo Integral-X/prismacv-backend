@@ -14,7 +14,7 @@ export class JwtUserStrategy extends PassportStrategy(Strategy, 'jwt-user') {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('JWT_SECRET'),
+      secretOrKey: configService.get<string>('JWT_SECRET')!,
       audience: 'user',
       issuer: configService.get<string>('app.name', 'PrismaCV'),
       algorithms: ['HS256'],

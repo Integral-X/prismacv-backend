@@ -55,7 +55,14 @@ export class PrismaService
   }
 
   // Transaction helper
-  async transaction<T>(fn: (prisma: PrismaClient) => Promise<T>): Promise<T> {
+  async transaction<T>(
+    fn: (
+      prisma: Omit<
+        PrismaClient,
+        '$on' | '$connect' | '$disconnect' | '$transaction' | '$extends'
+      >,
+    ) => Promise<T>,
+  ): Promise<T> {
     return this.$transaction(fn);
   }
 }

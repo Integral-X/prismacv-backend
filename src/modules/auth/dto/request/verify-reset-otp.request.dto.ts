@@ -6,7 +6,7 @@ export class VerifyResetOtpRequestDto {
     example: 'user@example.com',
   })
   @IsEmail()
-  email: string;
+  email!: string;
 
   @ApiProperty({
     example: '123456',
@@ -14,5 +14,5 @@ export class VerifyResetOtpRequestDto {
   })
   @IsString()
   @Length(6, 6)
-  otp: string;
+  otp!: string;
 }
