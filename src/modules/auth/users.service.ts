@@ -74,7 +74,9 @@ export class UsersService {
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    const prismaUser = await this.prisma.user.findUnique({ where: { email } });
+    const prismaUser = await this.prisma.user.findUnique({
+      where: { email: email.toLowerCase().trim() },
+    });
     return prismaUser ? this.prismaUserToEntity(prismaUser) : null;
   }
 

@@ -25,6 +25,7 @@ import { AdminSignupResponseDto } from './dto/response/admin-signup.response.dto
 import { AdminAuthResponseDto } from './dto/response/admin-auth.response.dto';
 import { AuthMapper } from './mappers/auth.mapper';
 import { Public } from '../../common/decorators/public.decorator';
+import { Throttle } from '@nestjs/throttler';
 import { UserRole } from './entities/user.entity';
 
 @ApiTags('Admin Authentication')
@@ -38,6 +39,7 @@ export class AuthController {
   @Public()
   @Post('admin/login')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 300000 } })
   @ApiOperation({
     summary: 'Platform admin authentication',
     description:
