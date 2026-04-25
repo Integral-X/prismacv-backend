@@ -19,5 +19,6 @@ export class ResetPasswordRequestDto {
     example: 'StrongPassword123',
   })
   @IsString()
+  @MinLength(8)
   confirmPassword!: string;
 }

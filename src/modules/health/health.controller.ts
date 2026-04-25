@@ -12,7 +12,7 @@ export class HealthController {
   @Get()
   @ApiOperation({ summary: 'Health check endpoint' })
   @ApiResponse({ status: 200, description: 'Service is healthy' })
-  check() {
+  async check() {
     return this.healthService.getHealth();
   }
 }

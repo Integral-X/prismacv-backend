@@ -33,11 +33,13 @@ async function bootstrap() {
 
   // CORS configuration
   const disableCors = configService.get<boolean>('cors.disable');
+  const isWildcard = disableCors || corsOrigin === '*';
   app.enableCors({
-    origin: disableCors ? '*' : corsOrigin.split(','),
+    origin: isWildcard ? '*' : corsOrigin.split(','),
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-correlation-id'],
+    exposedHeaders: ['x-correlation-id'],
+    credentials: !isWildcard,
   });
 
   // Global prefix

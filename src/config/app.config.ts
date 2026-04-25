@@ -1,5 +1,4 @@
 import { JWT_EXPIRATION } from '@/shared/constants/jwt.constants';
-import { APP_CONSTANTS } from '@/shared/constants/app.constants';
 
 function safeParseInt(value: string | undefined, fallback: number): number {
   if (value === undefined) return fallback;
@@ -41,20 +40,7 @@ export const AppConfig = () => ({
     disable: process.env.DISABLE_CORS === 'true',
     origin: process.env.CORS_ORIGIN?.split(',') || ['*'],
   },
-  upload: {
-    maxFileSize: safeParseInt(
-      process.env.MAX_FILE_SIZE,
-      APP_CONSTANTS.MAX_FILE_SIZE,
-    ),
-    allowedTypes: process.env.ALLOWED_FILE_TYPES?.split(',') || [
-      'image/jpeg',
-      'image/png',
-      'image/jpg',
-      'application/pdf',
-    ],
-  },
   monitoring: {
-    sentryDsn: process.env.SENTRY_DSN,
     logLevel: process.env.LOG_LEVEL || 'info',
   },
   unleash: {

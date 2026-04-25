@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { Profile } from 'passport-linkedin-oauth2';
 import {
   IOAuthProvider,
@@ -20,12 +20,12 @@ export class LinkedInOAuthProvider implements IOAuthProvider<Profile> {
     // LinkedIn profile structure from passport-linkedin-oauth2
     // https://github.com/auth0/passport-linkedin-oauth2
     if (!profile?.id) {
-      throw new Error('Invalid LinkedIn profile: missing id');
+      throw new BadRequestException('Invalid LinkedIn profile: missing id');
     }
 
     const email = profile.emails?.[0]?.value;
     if (!email) {
-      throw new Error('Invalid LinkedIn profile: missing email');
+      throw new BadRequestException('Invalid LinkedIn profile: missing email');
     }
 
     return {
