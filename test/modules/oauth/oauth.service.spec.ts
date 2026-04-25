@@ -117,7 +117,7 @@ describe('OAuthService', () => {
         id: '3',
         email: 'user@example.com',
         role: UserRole.REGULAR,
-        provider: null,
+        provider: undefined,
       });
       const linkedUser = mockUser({
         ...existingUser,
@@ -177,7 +177,7 @@ describe('OAuthService', () => {
         id: '6',
         email: 'admin@example.com',
         role: UserRole.PLATFORM_ADMIN,
-        provider: null,
+        provider: undefined,
       });
 
       usersService.findByProvider.mockResolvedValue(null);

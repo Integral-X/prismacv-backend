@@ -6,7 +6,7 @@ export class AuthResponseDto {
     description: 'User profile information',
     type: UserProfileResponseDto,
   })
-  user: UserProfileResponseDto;
+  user!: UserProfileResponseDto;
 
   @ApiProperty({
     description: 'JWT Access Token (only for PLATFORM_ADMIN users)',

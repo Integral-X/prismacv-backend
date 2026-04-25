@@ -6,17 +6,17 @@ export class OtpVerificationResponseDto {
     description: 'Success message',
     example: 'Email verified successfully',
   })
-  message: string;
+  message!: string;
 
   @ApiProperty({
     description: 'Updated user profile with emailVerified set to true',
     type: UserProfileResponseDto,
   })
-  user: UserProfileResponseDto;
+  user!: UserProfileResponseDto;
 
   @ApiProperty({ description: 'JWT access token (15 min TTL)' })
-  accessToken: string;
+  accessToken!: string;
 
   @ApiProperty({ description: 'JWT refresh token (7 day TTL)' })
-  refreshToken: string;
+  refreshToken!: string;
 }

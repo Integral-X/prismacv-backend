@@ -6,7 +6,7 @@ import { OtpService } from './otp.service';
 import { AuthService } from './auth.service';
 import { VerifyOtpRequestDto } from './dto/request/verify-otp.request.dto';
 import { ResendOtpRequestDto } from './dto/request/resend-otp.request.dto';
-import { VerifyResetOtpRequestDto } from './dto/request/verify-reset-otp.request';
+import { VerifyResetOtpRequestDto } from './dto/request/verify-reset-otp.request.dto';
 import { OtpVerificationResponseDto } from './dto/response/otp-verification.response.dto';
 import { OtpResendResponseDto } from './dto/response/otp-resend.response.dto';
 import { VerifyResetOtpResponseDto } from './dto/response/verify-reset-otp.response.dto';

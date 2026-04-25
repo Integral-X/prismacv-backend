@@ -17,7 +17,7 @@ import { User, UserRole } from './entities/user.entity';
 import { AuthCredentials } from './entities/auth-credentials.entity';
 import { TokenPair } from './entities/token-pair.entity';
 import { ForgotPasswordResponseDto } from './dto/response/forgot-password.response.dto';
-import { ResetPasswordResponseDto } from './dto/response/rese-password.response.dto';
+import { ResetPasswordResponseDto } from './dto/response/reset-password.response.dto';
 import { ChangePasswordResponseDto } from './dto/response/change-password.response.dto';
 import { VerifyResetOtpResponseDto } from './dto/response/verify-reset-otp.response.dto';
 import {
@@ -137,7 +137,7 @@ export class AuthService implements OnModuleInit {
   async adminSignup(user: User): Promise<{ user: User }> {
     try {
       // Hash the password
-      const hashedPassword = await bcrypt.hash(user.password, 10);
+      const hashedPassword = await bcrypt.hash(user.password!, 10);
 
       // Create user entity with PLATFORM_ADMIN role
       const userToCreate = new User();
@@ -232,7 +232,7 @@ export class AuthService implements OnModuleInit {
   async userSignup(user: User): Promise<{ user: User }> {
     try {
       // Hash the password
-      const hashedPassword = await bcrypt.hash(user.password, 10);
+      const hashedPassword = await bcrypt.hash(user.password!, 10);
 
       // Create user entity with REGULAR role
       const userToCreate = new User();
@@ -554,7 +554,7 @@ export class AuthService implements OnModuleInit {
     // Update user password
     await this.usersService.update(validTokenRecord.userId, {
       password: hashedPassword,
-      refreshToken: null, // Invalidate all sessions
+      refreshToken: undefined, // Invalidate all sessions
     });
 
     // Mark token as used
@@ -649,7 +649,7 @@ export class AuthService implements OnModuleInit {
     // Update user password
     await this.usersService.update(userId, {
       password: hashedNewPassword,
-      refreshToken: null, // Invalidate all sessions for security
+      refreshToken: undefined, // Invalidate all sessions for security
     });
 
     this.logger.log(

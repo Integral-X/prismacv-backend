@@ -7,7 +7,7 @@ export class VerifyOtpRequestDto {
     example: 'user@example.com',
   })
   @IsEmail()
-  email: string;
+  email!: string;
 
   @ApiProperty({
     description: '6-digit OTP verification code',
@@ -17,5 +17,5 @@ export class VerifyOtpRequestDto {
   })
   @IsString()
   @Length(6, 6, { message: 'OTP must be exactly 6 digits' })
-  otp: string;
+  otp!: string;
 }

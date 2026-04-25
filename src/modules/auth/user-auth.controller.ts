@@ -29,7 +29,7 @@ import { RefreshTokenRequestDto } from './dto/request/refresh-token.request.dto'
 import { UserLoginResponseDto } from './dto/response/user-login.response.dto';
 import { UserAuthResponseDto } from './dto/response/user-auth.response.dto';
 import { ForgotPasswordResponseDto } from './dto/response/forgot-password.response.dto';
-import { ResetPasswordResponseDto } from './dto/response/rese-password.response.dto';
+import { ResetPasswordResponseDto } from './dto/response/reset-password.response.dto';
 import { ChangePasswordResponseDto } from './dto/response/change-password.response.dto';
 import { AuthMapper } from './mappers/auth.mapper';
 import { User } from './entities/user.entity';

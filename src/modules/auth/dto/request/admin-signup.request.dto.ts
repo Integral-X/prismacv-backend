@@ -7,7 +7,7 @@ export class AdminSignupRequestDto {
     description: 'Valid email address for platform admin registration',
   })
   @IsEmail()
-  email: string;
+  email!: string;
 
   @ApiProperty({
     example: 'secureAdminPass123',
@@ -15,7 +15,7 @@ export class AdminSignupRequestDto {
   })
   @IsString()
   @MinLength(8)
-  password: string;
+  password!: string;
 
   @ApiProperty({
     example: 'Admin User',

@@ -4,5 +4,5 @@ export class ResetPasswordResponseDto {
   @ApiProperty({
     example: 'Password reset successfully',
   })
-  message: string;
+  message!: string;
 }

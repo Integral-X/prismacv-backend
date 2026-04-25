@@ -45,10 +45,10 @@ export class UsersService {
     user.id = prismaUser.id;
     user.email = prismaUser.email;
     user.password = prismaUser.password || undefined;
-    user.name = prismaUser.name;
+    user.name = prismaUser.name ?? undefined;
     user.role = prismaUser.role as UserRole; // Map Prisma UserRole to entity UserRole
     user.isMasterAdmin = prismaUser.isMasterAdmin;
-    user.refreshToken = prismaUser.refreshToken;
+    user.refreshToken = prismaUser.refreshToken ?? undefined;
     user.emailVerified = prismaUser.emailVerified;
     user.avatarUrl = prismaUser.avatarUrl || undefined;
     user.provider = prismaUser.provider || undefined;
