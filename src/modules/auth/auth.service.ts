@@ -453,7 +453,10 @@ export class AuthService implements OnModuleInit {
     // Generate reset token
     const resetToken = generateResetToken();
     const tokenHash = await hashResetToken(resetToken);
-    const tokenExpiryMinutes = 15; // 15 minutes for reset token
+    const tokenExpiryMinutes = this.configService.get<number>(
+      'RESET_TOKEN_EXPIRY_MINUTES',
+      15,
+    );
     const tokenExpiresAt = new Date(
       Date.now() + tokenExpiryMinutes * 60 * 1000,
     );

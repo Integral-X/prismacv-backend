@@ -45,6 +45,7 @@ export class UserAuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 300000 } })
   @ApiOperation({
     summary: 'Regular user authentication',
     description:
