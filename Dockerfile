@@ -12,6 +12,9 @@ RUN npx prisma generate
 COPY . .
 RUN npm run build
 
+# Prune devDependencies for smaller runtime image
+RUN npm prune --omit=dev && npx prisma generate
+
 # ── Stage 2: Production ──────────────────────────────────────
 FROM node:20-alpine AS runner
 

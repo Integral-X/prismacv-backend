@@ -62,6 +62,7 @@ import { PaginatedResponseDto } from '@/shared/dto/paginated-response.dto';
 
 @ApiTags('CV')
 @ApiBearerAuth('JWT-auth')
+@Public()
 @UseGuards(JwtUserAuthGuard)
 @Controller('cv')
 export class CvController {

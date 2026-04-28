@@ -15,7 +15,7 @@ export class CreateCvRequestDto {
 
   @ApiPropertyOptional({
     description: 'Template ID to use for this CV',
-    example: 'azuril',
+    example: '1',
   })
   @IsOptional()
   @IsString()

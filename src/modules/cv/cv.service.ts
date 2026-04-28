@@ -59,13 +59,14 @@ export class CvService {
   }
 
   private generateSlug(title: string): string {
-    return title
+    const slug = title
       .toLowerCase()
       .trim()
       .replace(/[^\w\s-]/g, '')
       .replace(/[\s_]+/g, '-')
       .replace(/-+/g, '-')
       .replace(/^-|-$/g, '');
+    return slug || 'untitled';
   }
 
   private async ensureUniqueSlug(
@@ -396,11 +397,15 @@ export class CvService {
         };
 
         if (item.id) {
-          await tx.experience.upsert({
-            where: { id: item.id },
-            update: data,
-            create: { id: item.id, cvId, ...data },
+          const updated = await tx.experience.updateMany({
+            where: { id: item.id, cvId },
+            data,
           });
+          if (updated.count === 0) {
+            await tx.experience.create({
+              data: { id: item.id, cvId, ...data },
+            });
+          }
         } else {
           await tx.experience.create({
             data: { id: generateUuidv7(), cvId, ...data },
@@ -444,11 +449,15 @@ export class CvService {
         };
 
         if (item.id) {
-          await tx.education.upsert({
-            where: { id: item.id },
-            update: data,
-            create: { id: item.id, cvId, ...data },
+          const updated = await tx.education.updateMany({
+            where: { id: item.id, cvId },
+            data,
           });
+          if (updated.count === 0) {
+            await tx.education.create({
+              data: { id: item.id, cvId, ...data },
+            });
+          }
         } else {
           await tx.education.create({
             data: { id: generateUuidv7(), cvId, ...data },
@@ -488,11 +497,15 @@ export class CvService {
         };
 
         if (item.id) {
-          await tx.skill.upsert({
-            where: { id: item.id },
-            update: data,
-            create: { id: item.id, cvId, ...data },
+          const updated = await tx.skill.updateMany({
+            where: { id: item.id, cvId },
+            data,
           });
+          if (updated.count === 0) {
+            await tx.skill.create({
+              data: { id: item.id, cvId, ...data },
+            });
+          }
         } else {
           await tx.skill.create({
             data: { id: generateUuidv7(), cvId, ...data },
@@ -534,11 +547,15 @@ export class CvService {
         };
 
         if (item.id) {
-          await tx.certification.upsert({
-            where: { id: item.id },
-            update: data,
-            create: { id: item.id, cvId, ...data },
+          const updated = await tx.certification.updateMany({
+            where: { id: item.id, cvId },
+            data,
           });
+          if (updated.count === 0) {
+            await tx.certification.create({
+              data: { id: item.id, cvId, ...data },
+            });
+          }
         } else {
           await tx.certification.create({
             data: { id: generateUuidv7(), cvId, ...data },
@@ -580,11 +597,15 @@ export class CvService {
         };
 
         if (item.id) {
-          await tx.project.upsert({
-            where: { id: item.id },
-            update: data,
-            create: { id: item.id, cvId, ...data },
+          const updated = await tx.project.updateMany({
+            where: { id: item.id, cvId },
+            data,
           });
+          if (updated.count === 0) {
+            await tx.project.create({
+              data: { id: item.id, cvId, ...data },
+            });
+          }
         } else {
           await tx.project.create({
             data: { id: generateUuidv7(), cvId, ...data },
@@ -623,11 +644,15 @@ export class CvService {
         };
 
         if (item.id) {
-          await tx.language.upsert({
-            where: { id: item.id },
-            update: data,
-            create: { id: item.id, cvId, ...data },
+          const updated = await tx.language.updateMany({
+            where: { id: item.id, cvId },
+            data,
           });
+          if (updated.count === 0) {
+            await tx.language.create({
+              data: { id: item.id, cvId, ...data },
+            });
+          }
         } else {
           await tx.language.create({
             data: { id: generateUuidv7(), cvId, ...data },
@@ -667,11 +692,15 @@ export class CvService {
         };
 
         if (item.id) {
-          await tx.customSection.upsert({
-            where: { id: item.id },
-            update: data,
-            create: { id: item.id, cvId, ...data },
+          const updated = await tx.customSection.updateMany({
+            where: { id: item.id, cvId },
+            data,
           });
+          if (updated.count === 0) {
+            await tx.customSection.create({
+              data: { id: item.id, cvId, ...data },
+            });
+          }
         } else {
           await tx.customSection.create({
             data: { id: generateUuidv7(), cvId, ...data },

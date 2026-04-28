@@ -25,6 +25,7 @@ import {
 } from '@nestjs/swagger';
 import { JwtUserAuthGuard } from '@/modules/auth/guards/jwt-user-auth.guard';
 import { GetUser } from '@/common/decorators/get-user.decorator';
+import { Public } from '@/common/decorators/public.decorator';
 import { User } from '@/modules/auth/entities/user.entity';
 import { UsersProfileService } from './users-profile.service';
 import { AvatarStorageService } from './avatar-storage.service';
@@ -33,6 +34,7 @@ import { UserProfileResponseDto } from './dto/response/user-profile.response.dto
 
 @ApiTags('Users')
 @ApiBearerAuth('JWT-auth')
+@Public()
 @UseGuards(JwtUserAuthGuard)
 @Controller('users')
 export class UsersController {
