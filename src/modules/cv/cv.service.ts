@@ -20,7 +20,7 @@ import {
   BulkUpsertLanguagesRequestDto,
   BulkUpsertCustomSectionsRequestDto,
 } from './dto/request/upsert-sections.request.dto';
-import type { Cv, PersonalInfo, Prisma } from '@prisma/client';
+import type { PersonalInfo, Prisma } from '@prisma/client';
 
 const CV_INCLUDE_ALL = {
   personalInfo: true,

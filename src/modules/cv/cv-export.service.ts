@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import puppeteer from 'puppeteer-core';
 import { ConfigService } from '@nestjs/config';
+import { existsSync } from 'fs';
 
 @Injectable()
 export class CvExportService {
@@ -66,10 +67,8 @@ export class CvExportService {
     const platform = process.platform;
     const candidates = paths[platform] ?? paths.linux;
 
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const fs = require('fs');
     for (const candidate of candidates) {
-      if (fs.existsSync(candidate)) return candidate;
+      if (existsSync(candidate)) return candidate;
     }
 
     throw new Error(

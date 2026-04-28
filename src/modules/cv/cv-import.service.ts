@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '@/config/prisma.service';
 import { generateUuidv7 } from '@/shared/utils/uuid.util';
-import type { Prisma } from '@prisma/client';
 
 interface LinkedInProfile {
   fullName?: string | null;
