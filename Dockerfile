@@ -15,6 +15,9 @@ RUN npm run build
 # Prune devDependencies (prisma CLI stays — it's in dependencies)
 RUN npm prune --omit=dev
 
+# ── Stage 2: Production ──────────────────────────────────────
+FROM node:20-alpine AS production
+
 # Install Chromium for Puppeteer PDF export
 RUN apk add --no-cache chromium
 ENV CHROME_EXECUTABLE_PATH=/usr/bin/chromium-browser
