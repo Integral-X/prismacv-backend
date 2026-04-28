@@ -1,11 +1,14 @@
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { JwtUserAuthGuard } from '../../../src/modules/auth/guards/jwt-user-auth.guard';
 
 describe('JwtUserAuthGuard', () => {
   let guard: JwtUserAuthGuard;
+  let reflector: Reflector;
 
   beforeEach(() => {
-    guard = new JwtUserAuthGuard();
+    reflector = new Reflector();
+    guard = new JwtUserAuthGuard(reflector);
   });
 
   describe('canActivate', () => {
