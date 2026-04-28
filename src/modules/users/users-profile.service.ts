@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/config/prisma.service';
+import { Prisma } from '@prisma/client';
 import { UpdateProfileRequestDto } from './dto/request/update-profile.request.dto';
 import { UserProfileResponseDto } from './dto/response/user-profile.response.dto';
 
@@ -23,21 +24,41 @@ export class UsersProfileService {
     userId: string,
     dto: UpdateProfileRequestDto,
   ): Promise<UserProfileResponseDto> {
-    const user = await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        ...(dto.name !== undefined && { name: dto.name }),
-        ...(dto.avatarUrl !== undefined && { avatarUrl: dto.avatarUrl }),
-      },
-    });
+    try {
+      const user = await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          ...(dto.name !== undefined && { name: dto.name }),
+          ...(dto.avatarUrl !== undefined && { avatarUrl: dto.avatarUrl }),
+        },
+      });
 
-    return this.toResponse(user);
+      return this.toResponse(user);
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === 'P2025'
+      ) {
+        throw new NotFoundException('User not found');
+      }
+      throw err;
+    }
   }
 
   async deleteAccount(userId: string): Promise<void> {
-    await this.prisma.user.delete({
-      where: { id: userId },
-    });
+    try {
+      await this.prisma.user.delete({
+        where: { id: userId },
+      });
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === 'P2025'
+      ) {
+        throw new NotFoundException('User not found');
+      }
+      throw err;
+    }
   }
 
   private toResponse(user: {

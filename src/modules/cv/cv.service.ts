@@ -3,11 +3,13 @@ import {
   Logger,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '@/config/prisma.service';
 import { generateUuidv7 } from '@/shared/utils/uuid.util';
 import { PaginationQueryDto } from '@/shared/dto/pagination-query.dto';
 import { PaginatedResponseDto } from '@/shared/dto/paginated-response.dto';
+import { generateSlug, ensureUniqueSlug } from './slug.util';
 import { CreateCvRequestDto } from './dto/request/create-cv.request.dto';
 import { UpdateCvRequestDto } from './dto/request/update-cv.request.dto';
 import { UpsertPersonalInfoRequestDto } from './dto/request/upsert-personal-info.request.dto';
@@ -58,46 +60,13 @@ export class CvService {
     return cv;
   }
 
-  private generateSlug(title: string): string {
-    const slug = title
-      .toLowerCase()
-      .trim()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/[\s_]+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '');
-    return slug || 'untitled';
-  }
-
-  private async ensureUniqueSlug(
-    userId: string,
-    slug: string,
-    excludeCvId?: string,
-  ): Promise<string> {
-    let candidate = slug;
-    let suffix = 1;
-
-    while (true) {
-      const existing = await this.prisma.cv.findUnique({
-        where: { userId_slug: { userId, slug: candidate } },
-        select: { id: true },
-      });
-
-      if (!existing || existing.id === excludeCvId) {
-        return candidate;
-      }
-
-      candidate = `${slug}-${suffix}`;
-      suffix++;
-    }
-  }
-
   // ─── CRUD ────────────────────────────────────────────────────────────────
 
   async create(userId: string, dto: CreateCvRequestDto) {
-    const slug = await this.ensureUniqueSlug(
+    const slug = await ensureUniqueSlug(
+      this.prisma,
       userId,
-      this.generateSlug(dto.title),
+      generateSlug(dto.title),
     );
 
     const cv = await this.prisma.cv.create({
@@ -116,12 +85,7 @@ export class CvService {
   }
 
   async findAllByUser(userId: string, pagination: PaginationQueryDto) {
-    const allowedSortFields = [
-      'createdAt',
-      'updatedAt',
-      'title',
-      'status',
-    ];
+    const allowedSortFields = ['createdAt', 'updatedAt', 'title', 'status'];
     const sortBy =
       pagination.sortBy && allowedSortFields.includes(pagination.sortBy)
         ? pagination.sortBy
@@ -157,9 +121,10 @@ export class CvService {
     const data: Record<string, unknown> = {};
     if (dto.title !== undefined) {
       data.title = dto.title;
-      data.slug = await this.ensureUniqueSlug(
+      data.slug = await ensureUniqueSlug(
+        this.prisma,
         userId,
-        this.generateSlug(dto.title),
+        generateSlug(dto.title),
         cvId,
       );
     }
@@ -195,12 +160,13 @@ export class CvService {
     const source = await this.findCvOrThrow(cvId, userId);
     const newId = generateUuidv7();
     const newTitle = `${source.title} (Copy)`;
-    const slug = await this.ensureUniqueSlug(
+    const slug = await ensureUniqueSlug(
+      this.prisma,
       userId,
-      this.generateSlug(newTitle),
+      generateSlug(newTitle),
     );
 
-    const cv = await this.prisma.$transaction(async (tx) => {
+    const cv = await this.prisma.$transaction(async tx => {
       const created = await tx.cv.create({
         data: {
           id: newId,
@@ -230,7 +196,7 @@ export class CvService {
 
       if (source.experiences?.length) {
         await tx.experience.createMany({
-          data: source.experiences.map((e) => ({
+          data: source.experiences.map(e => ({
             id: generateUuidv7(),
             cvId: newId,
             company: e.company,
@@ -247,7 +213,7 @@ export class CvService {
 
       if (source.education?.length) {
         await tx.education.createMany({
-          data: source.education.map((e) => ({
+          data: source.education.map(e => ({
             id: generateUuidv7(),
             cvId: newId,
             institution: e.institution,
@@ -264,7 +230,7 @@ export class CvService {
 
       if (source.skills?.length) {
         await tx.skill.createMany({
-          data: source.skills.map((s) => ({
+          data: source.skills.map(s => ({
             id: generateUuidv7(),
             cvId: newId,
             name: s.name,
@@ -277,7 +243,7 @@ export class CvService {
 
       if (source.certifications?.length) {
         await tx.certification.createMany({
-          data: source.certifications.map((c) => ({
+          data: source.certifications.map(c => ({
             id: generateUuidv7(),
             cvId: newId,
             name: c.name,
@@ -292,7 +258,7 @@ export class CvService {
 
       if (source.projects?.length) {
         await tx.project.createMany({
-          data: source.projects.map((p) => ({
+          data: source.projects.map(p => ({
             id: generateUuidv7(),
             cvId: newId,
             name: p.name,
@@ -307,7 +273,7 @@ export class CvService {
 
       if (source.languages?.length) {
         await tx.language.createMany({
-          data: source.languages.map((l) => ({
+          data: source.languages.map(l => ({
             id: generateUuidv7(),
             cvId: newId,
             name: l.name,
@@ -319,7 +285,7 @@ export class CvService {
 
       if (source.customSections?.length) {
         await tx.customSection.createMany({
-          data: source.customSections.map((cs) => ({
+          data: source.customSections.map(cs => ({
             id: generateUuidv7(),
             cvId: newId,
             title: cs.title,
@@ -375,10 +341,10 @@ export class CvService {
   ) {
     await this.findCvOrThrow(cvId, userId);
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async tx => {
       const incomingIds = dto.items
-        .filter((item) => item.id)
-        .map((item) => item.id!);
+        .filter(item => item.id)
+        .map(item => item.id!);
 
       await tx.experience.deleteMany({
         where: { cvId, id: { notIn: incomingIds } },
@@ -402,9 +368,9 @@ export class CvService {
             data,
           });
           if (updated.count === 0) {
-            await tx.experience.create({
-              data: { id: item.id, cvId, ...data },
-            });
+            throw new BadRequestException(
+              `Experience item ${item.id} not found on this CV`,
+            );
           }
         } else {
           await tx.experience.create({
@@ -427,10 +393,10 @@ export class CvService {
   ) {
     await this.findCvOrThrow(cvId, userId);
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async tx => {
       const incomingIds = dto.items
-        .filter((item) => item.id)
-        .map((item) => item.id!);
+        .filter(item => item.id)
+        .map(item => item.id!);
 
       await tx.education.deleteMany({
         where: { cvId, id: { notIn: incomingIds } },
@@ -454,9 +420,9 @@ export class CvService {
             data,
           });
           if (updated.count === 0) {
-            await tx.education.create({
-              data: { id: item.id, cvId, ...data },
-            });
+            throw new BadRequestException(
+              `Education item ${item.id} not found on this CV`,
+            );
           }
         } else {
           await tx.education.create({
@@ -479,10 +445,10 @@ export class CvService {
   ) {
     await this.findCvOrThrow(cvId, userId);
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async tx => {
       const incomingIds = dto.items
-        .filter((item) => item.id)
-        .map((item) => item.id!);
+        .filter(item => item.id)
+        .map(item => item.id!);
 
       await tx.skill.deleteMany({
         where: { cvId, id: { notIn: incomingIds } },
@@ -502,9 +468,9 @@ export class CvService {
             data,
           });
           if (updated.count === 0) {
-            await tx.skill.create({
-              data: { id: item.id, cvId, ...data },
-            });
+            throw new BadRequestException(
+              `Skill item ${item.id} not found on this CV`,
+            );
           }
         } else {
           await tx.skill.create({
@@ -527,10 +493,10 @@ export class CvService {
   ) {
     await this.findCvOrThrow(cvId, userId);
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async tx => {
       const incomingIds = dto.items
-        .filter((item) => item.id)
-        .map((item) => item.id!);
+        .filter(item => item.id)
+        .map(item => item.id!);
 
       await tx.certification.deleteMany({
         where: { cvId, id: { notIn: incomingIds } },
@@ -552,9 +518,9 @@ export class CvService {
             data,
           });
           if (updated.count === 0) {
-            await tx.certification.create({
-              data: { id: item.id, cvId, ...data },
-            });
+            throw new BadRequestException(
+              `Certification item ${item.id} not found on this CV`,
+            );
           }
         } else {
           await tx.certification.create({
@@ -577,10 +543,10 @@ export class CvService {
   ) {
     await this.findCvOrThrow(cvId, userId);
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async tx => {
       const incomingIds = dto.items
-        .filter((item) => item.id)
-        .map((item) => item.id!);
+        .filter(item => item.id)
+        .map(item => item.id!);
 
       await tx.project.deleteMany({
         where: { cvId, id: { notIn: incomingIds } },
@@ -602,9 +568,9 @@ export class CvService {
             data,
           });
           if (updated.count === 0) {
-            await tx.project.create({
-              data: { id: item.id, cvId, ...data },
-            });
+            throw new BadRequestException(
+              `Project item ${item.id} not found on this CV`,
+            );
           }
         } else {
           await tx.project.create({
@@ -627,10 +593,10 @@ export class CvService {
   ) {
     await this.findCvOrThrow(cvId, userId);
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async tx => {
       const incomingIds = dto.items
-        .filter((item) => item.id)
-        .map((item) => item.id!);
+        .filter(item => item.id)
+        .map(item => item.id!);
 
       await tx.language.deleteMany({
         where: { cvId, id: { notIn: incomingIds } },
@@ -649,9 +615,9 @@ export class CvService {
             data,
           });
           if (updated.count === 0) {
-            await tx.language.create({
-              data: { id: item.id, cvId, ...data },
-            });
+            throw new BadRequestException(
+              `Language item ${item.id} not found on this CV`,
+            );
           }
         } else {
           await tx.language.create({
@@ -674,10 +640,10 @@ export class CvService {
   ) {
     await this.findCvOrThrow(cvId, userId);
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async tx => {
       const incomingIds = dto.items
-        .filter((item) => item.id)
-        .map((item) => item.id!);
+        .filter(item => item.id)
+        .map(item => item.id!);
 
       await tx.customSection.deleteMany({
         where: { cvId, id: { notIn: incomingIds } },
@@ -697,9 +663,9 @@ export class CvService {
             data,
           });
           if (updated.count === 0) {
-            await tx.customSection.create({
-              data: { id: item.id, cvId, ...data },
-            });
+            throw new BadRequestException(
+              `Custom section item ${item.id} not found on this CV`,
+            );
           }
         } else {
           await tx.customSection.create({

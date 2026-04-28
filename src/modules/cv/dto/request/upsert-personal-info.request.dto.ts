@@ -1,5 +1,11 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsEmail, IsUrl, MaxLength } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsEmail,
+  IsUrl,
+  MaxLength,
+} from 'class-validator';
 
 export class UpsertPersonalInfoRequestDto {
   @ApiPropertyOptional({ example: 'John Doe' })

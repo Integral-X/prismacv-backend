@@ -17,7 +17,9 @@ import {
 // ─── Experience ──────────────────────────────────────────────────────────────
 
 export class ExperienceItemDto {
-  @ApiPropertyOptional({ description: 'ID for existing entries (omit for new)' })
+  @ApiPropertyOptional({
+    description: 'ID for existing entries (omit for new)',
+  })
   @IsOptional()
   @IsString()
   id?: string;
@@ -78,7 +80,9 @@ export class BulkUpsertExperienceRequestDto {
 // ─── Education ───────────────────────────────────────────────────────────────
 
 export class EducationItemDto {
-  @ApiPropertyOptional({ description: 'ID for existing entries (omit for new)' })
+  @ApiPropertyOptional({
+    description: 'ID for existing entries (omit for new)',
+  })
   @IsOptional()
   @IsString()
   id?: string;
@@ -147,7 +151,9 @@ export enum SkillLevelDto {
 }
 
 export class SkillItemDto {
-  @ApiPropertyOptional({ description: 'ID for existing entries (omit for new)' })
+  @ApiPropertyOptional({
+    description: 'ID for existing entries (omit for new)',
+  })
   @IsOptional()
   @IsString()
   id?: string;
@@ -157,7 +163,10 @@ export class SkillItemDto {
   @MaxLength(100)
   name!: string;
 
-  @ApiPropertyOptional({ enum: SkillLevelDto, default: SkillLevelDto.INTERMEDIATE })
+  @ApiPropertyOptional({
+    enum: SkillLevelDto,
+    default: SkillLevelDto.INTERMEDIATE,
+  })
   @IsOptional()
   @IsEnum(SkillLevelDto)
   level?: SkillLevelDto;
@@ -186,7 +195,9 @@ export class BulkUpsertSkillsRequestDto {
 // ─── Certifications ──────────────────────────────────────────────────────────
 
 export class CertificationItemDto {
-  @ApiPropertyOptional({ description: 'ID for existing entries (omit for new)' })
+  @ApiPropertyOptional({
+    description: 'ID for existing entries (omit for new)',
+  })
   @IsOptional()
   @IsString()
   id?: string;
@@ -237,7 +248,9 @@ export class BulkUpsertCertificationsRequestDto {
 // ─── Projects ────────────────────────────────────────────────────────────────
 
 export class ProjectItemDto {
-  @ApiPropertyOptional({ description: 'ID for existing entries (omit for new)' })
+  @ApiPropertyOptional({
+    description: 'ID for existing entries (omit for new)',
+  })
   @IsOptional()
   @IsString()
   id?: string;
@@ -296,7 +309,9 @@ export enum LanguageProficiencyDto {
 }
 
 export class LanguageItemDto {
-  @ApiPropertyOptional({ description: 'ID for existing entries (omit for new)' })
+  @ApiPropertyOptional({
+    description: 'ID for existing entries (omit for new)',
+  })
   @IsOptional()
   @IsString()
   id?: string;
@@ -332,7 +347,9 @@ export class BulkUpsertLanguagesRequestDto {
 // ─── Custom Sections ─────────────────────────────────────────────────────────
 
 export class CustomSectionItemDto {
-  @ApiPropertyOptional({ description: 'ID for existing entries (omit for new)' })
+  @ApiPropertyOptional({
+    description: 'ID for existing entries (omit for new)',
+  })
   @IsOptional()
   @IsString()
   id?: string;
@@ -342,7 +359,9 @@ export class CustomSectionItemDto {
   @MaxLength(200)
   title!: string;
 
-  @ApiProperty({ example: [{ heading: 'Red Cross', detail: 'Volunteer since 2020' }] })
+  @ApiProperty({
+    example: [{ heading: 'Red Cross', detail: 'Volunteer since 2020' }],
+  })
   @IsArray()
   entries!: Record<string, unknown>[];
 

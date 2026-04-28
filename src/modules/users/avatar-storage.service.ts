@@ -30,12 +30,13 @@ export class AvatarStorageService {
   private async deleteExisting(userId: string): Promise<void> {
     try {
       const files = await fs.readdir(this.uploadDir);
-      const existing = files.filter((f) => f.startsWith(`${userId}-`));
+      const existing = files.filter(f => f.startsWith(`${userId}-`));
       await Promise.all(
-        existing.map((f) => fs.unlink(path.join(this.uploadDir, f))),
+        existing.map(f => fs.unlink(path.join(this.uploadDir, f))),
       );
-    } catch {
-      // directory may not exist yet — ignore
+    } catch (err: any) {
+      if (err?.code === 'ENOENT') return; // directory doesn't exist yet
+      throw err;
     }
   }
 

@@ -93,13 +93,18 @@ export class CvResponseDto {
   @ApiProperty() updatedAt!: string;
   @ApiPropertyOptional({ type: PersonalInfoResponseDto })
   personalInfo?: PersonalInfoResponseDto;
-  @ApiProperty({ type: [ExperienceResponseDto] }) experiences!: ExperienceResponseDto[];
-  @ApiProperty({ type: [EducationResponseDto] }) education!: EducationResponseDto[];
+  @ApiProperty({ type: [ExperienceResponseDto] })
+  experiences!: ExperienceResponseDto[];
+  @ApiProperty({ type: [EducationResponseDto] })
+  education!: EducationResponseDto[];
   @ApiProperty({ type: [SkillResponseDto] }) skills!: SkillResponseDto[];
-  @ApiProperty({ type: [CertificationResponseDto] }) certifications!: CertificationResponseDto[];
+  @ApiProperty({ type: [CertificationResponseDto] })
+  certifications!: CertificationResponseDto[];
   @ApiProperty({ type: [ProjectResponseDto] }) projects!: ProjectResponseDto[];
-  @ApiProperty({ type: [LanguageResponseDto] }) languages!: LanguageResponseDto[];
-  @ApiProperty({ type: [CustomSectionResponseDto] }) customSections!: CustomSectionResponseDto[];
+  @ApiProperty({ type: [LanguageResponseDto] })
+  languages!: LanguageResponseDto[];
+  @ApiProperty({ type: [CustomSectionResponseDto] })
+  customSections!: CustomSectionResponseDto[];
 }
 
 export class CvListItemResponseDto {

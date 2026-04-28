@@ -49,21 +49,17 @@ export class CvMapper {
     dto.personalInfo = cv.personalInfo
       ? this.personalInfoToResponse(cv.personalInfo)
       : undefined;
-    dto.experiences = (cv.experiences ?? []).map((e) =>
+    dto.experiences = (cv.experiences ?? []).map(e =>
       this.experienceToResponse(e),
     );
-    dto.education = (cv.education ?? []).map((e) =>
-      this.educationToResponse(e),
-    );
-    dto.skills = (cv.skills ?? []).map((s) => this.skillToResponse(s));
-    dto.certifications = (cv.certifications ?? []).map((c) =>
+    dto.education = (cv.education ?? []).map(e => this.educationToResponse(e));
+    dto.skills = (cv.skills ?? []).map(s => this.skillToResponse(s));
+    dto.certifications = (cv.certifications ?? []).map(c =>
       this.certificationToResponse(c),
     );
-    dto.projects = (cv.projects ?? []).map((p) => this.projectToResponse(p));
-    dto.languages = (cv.languages ?? []).map((l) =>
-      this.languageToResponse(l),
-    );
-    dto.customSections = (cv.customSections ?? []).map((cs) =>
+    dto.projects = (cv.projects ?? []).map(p => this.projectToResponse(p));
+    dto.languages = (cv.languages ?? []).map(l => this.languageToResponse(l));
+    dto.customSections = (cv.customSections ?? []).map(cs =>
       this.customSectionToResponse(cs),
     );
     return dto;
@@ -82,9 +78,7 @@ export class CvMapper {
     return dto;
   }
 
-  personalInfoToResponse(
-    pi: PrismaPersonalInfo,
-  ): PersonalInfoResponseDto {
+  personalInfoToResponse(pi: PrismaPersonalInfo): PersonalInfoResponseDto {
     const dto = new PersonalInfoResponseDto();
     dto.id = pi.id;
     dto.fullName = pi.fullName ?? undefined;
@@ -136,9 +130,7 @@ export class CvMapper {
     return dto;
   }
 
-  certificationToResponse(
-    cert: PrismaCertification,
-  ): CertificationResponseDto {
+  certificationToResponse(cert: PrismaCertification): CertificationResponseDto {
     const dto = new CertificationResponseDto();
     dto.id = cert.id;
     dto.name = cert.name;
@@ -171,9 +163,7 @@ export class CvMapper {
     return dto;
   }
 
-  customSectionToResponse(
-    cs: PrismaCustomSection,
-  ): CustomSectionResponseDto {
+  customSectionToResponse(cs: PrismaCustomSection): CustomSectionResponseDto {
     const dto = new CustomSectionResponseDto();
     dto.id = cs.id;
     dto.title = cs.title;

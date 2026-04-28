@@ -13,7 +13,7 @@ export interface CvTemplate {
 export const CV_TEMPLATES: readonly CvTemplate[] = [
   {
     id: '1',
-    name: 'Azuril',
+    name: 'Classic',
     thumbnail: '/images/onboarding/resume_thumb_1.svg',
     hasHeadshot: true,
     layout: 'single',
@@ -21,7 +21,7 @@ export const CV_TEMPLATES: readonly CvTemplate[] = [
   },
   {
     id: '2',
-    name: 'Azuril',
+    name: 'Horizon',
     thumbnail: '/images/onboarding/resume_thumb_2.svg',
     hasHeadshot: false,
     layout: 'two-column',
@@ -29,7 +29,7 @@ export const CV_TEMPLATES: readonly CvTemplate[] = [
   },
   {
     id: '3',
-    name: 'Azuril',
+    name: 'Prism',
     thumbnail: '/images/onboarding/resume_thumb_3.svg',
     hasHeadshot: true,
     layout: 'two-column',
@@ -37,7 +37,7 @@ export const CV_TEMPLATES: readonly CvTemplate[] = [
   },
   {
     id: '4',
-    name: 'Azuril',
+    name: 'Executive',
     thumbnail: '/images/onboarding/resume_thumb_1.svg',
     hasHeadshot: false,
     layout: 'single',
@@ -45,7 +45,7 @@ export const CV_TEMPLATES: readonly CvTemplate[] = [
   },
   {
     id: '5',
-    name: 'Azuril',
+    name: 'Nova',
     thumbnail: '/images/onboarding/resume_thumb_2.svg',
     hasHeadshot: true,
     layout: 'single',
@@ -53,7 +53,7 @@ export const CV_TEMPLATES: readonly CvTemplate[] = [
   },
   {
     id: '6',
-    name: 'Azuril',
+    name: 'Mosaic',
     thumbnail: '/images/onboarding/resume_thumb_3.svg',
     hasHeadshot: false,
     layout: 'two-column',
@@ -61,7 +61,7 @@ export const CV_TEMPLATES: readonly CvTemplate[] = [
   },
   {
     id: '7',
-    name: 'Azuril',
+    name: 'Pinnacle',
     thumbnail: '/images/onboarding/resume_thumb_1.svg',
     hasHeadshot: true,
     layout: 'two-column',
@@ -69,7 +69,7 @@ export const CV_TEMPLATES: readonly CvTemplate[] = [
   },
   {
     id: '8',
-    name: 'Azuril',
+    name: 'Slate',
     thumbnail: '/images/onboarding/resume_thumb_2.svg',
     hasHeadshot: false,
     layout: 'single',
@@ -77,7 +77,7 @@ export const CV_TEMPLATES: readonly CvTemplate[] = [
   },
   {
     id: '9',
-    name: 'Azuril',
+    name: 'Vivid',
     thumbnail: '/images/onboarding/resume_thumb_3.svg',
     hasHeadshot: true,
     layout: 'single',
@@ -86,7 +86,7 @@ export const CV_TEMPLATES: readonly CvTemplate[] = [
 ] as const;
 
 export function findTemplateById(id: string): CvTemplate | undefined {
-  return CV_TEMPLATES.find((t) => t.id === id);
+  return CV_TEMPLATES.find(t => t.id === id);
 }
 
 export function filterTemplates(options?: {
@@ -96,10 +96,13 @@ export function filterTemplates(options?: {
 }): CvTemplate[] {
   if (!options) return [...CV_TEMPLATES];
 
-  return CV_TEMPLATES.filter((t) => {
+  return CV_TEMPLATES.filter(t => {
     if (options.layout && t.layout !== options.layout) return false;
     if (options.category && t.category !== options.category) return false;
-    if (options.hasHeadshot !== undefined && t.hasHeadshot !== options.hasHeadshot)
+    if (
+      options.hasHeadshot !== undefined &&
+      t.hasHeadshot !== options.hasHeadshot
+    )
       return false;
     return true;
   });

@@ -19,7 +19,7 @@ describe('Template Registry', () => {
       const template = findTemplateById('1');
       expect(template).toBeDefined();
       expect(template!.id).toBe('1');
-      expect(template!.name).toBe('Azuril');
+      expect(template!.name).toBe('Classic');
     });
 
     it('should return undefined for non-existent ID', () => {

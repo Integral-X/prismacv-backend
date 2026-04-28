@@ -154,11 +154,11 @@ function buildHeader(pi: CvPdfData['personalInfo']): string {
   if (pi.phone) parts.push(`<span>${esc(pi.phone)}</span>`);
   if (pi.location) parts.push(`<span>${esc(pi.location)}</span>`);
   if (pi.website)
-    parts.push(`<span><a href="${esc(pi.website)}">${esc(pi.website)}</a></span>`);
-  if (pi.linkedinUrl)
     parts.push(
-      `<span><a href="${esc(pi.linkedinUrl)}">LinkedIn</a></span>`,
+      `<span><a href="${esc(pi.website)}">${esc(pi.website)}</a></span>`,
     );
+  if (pi.linkedinUrl)
+    parts.push(`<span><a href="${esc(pi.linkedinUrl)}">LinkedIn</a></span>`);
 
   return `
 <h1>${esc(pi.fullName)}</h1>
@@ -195,7 +195,7 @@ function buildSkillsSection(skills: CvPdfData['skills']): string {
   if (!skills.length) return '';
   const items = skills
     .map(
-      (s) =>
+      s =>
         `<div class="skill-item">${esc(s.name)} <span class="skill-level">${esc(s.level)}</span></div>`,
     )
     .join('\n');
@@ -213,9 +213,7 @@ function buildCertification(cert: CvPdfData['certifications'][0]): string {
 }
 
 function buildProject(proj: CvPdfData['projects'][0]): string {
-  const link = proj.url
-    ? ` <a href="${esc(proj.url)}">[link]</a>`
-    : '';
+  const link = proj.url ? ` <a href="${esc(proj.url)}">[link]</a>` : '';
   return `<div class="entry">
   <div class="entry-header"><h3>${esc(proj.name)}${link}</h3><span class="right">${dateRange(proj.startDate, proj.endDate)}</span></div>
   ${proj.description ? `<div class="entry-desc">${esc(proj.description)}</div>` : ''}
@@ -226,7 +224,7 @@ function buildLanguagesSection(langs: CvPdfData['languages']): string {
   if (!langs.length) return '';
   const items = langs
     .map(
-      (l) =>
+      l =>
         `<span class="lang-item">${esc(l.name)} <span class="lang-prof">${esc(l.proficiency)}</span></span>`,
     )
     .join('\n');
@@ -236,13 +234,13 @@ function buildLanguagesSection(langs: CvPdfData['languages']): string {
 function buildCustomSections(sections: CvPdfData['customSections']): string {
   if (!sections.length) return '';
   return sections
-    .map((s) => {
+    .map(s => {
       const entries = Array.isArray(s.entries)
         ? (s.entries as Record<string, unknown>[])
-            .map((e) => {
+            .map(e => {
               const vals = Object.values(e)
                 .filter(Boolean)
-                .map((v) => esc(String(v)));
+                .map(v => esc(String(v)));
               return `<div class="entry-desc">${vals.join(' · ')}</div>`;
             })
             .join('\n')

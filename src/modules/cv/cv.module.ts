@@ -8,7 +8,14 @@ import { PrismaService } from '@/config/prisma.service';
 
 @Module({
   controllers: [CvController],
-  providers: [CvService, CvImportService, CvExportService, CvMapper, PrismaService, Logger],
+  providers: [
+    CvService,
+    CvImportService,
+    CvExportService,
+    CvMapper,
+    PrismaService,
+    Logger,
+  ],
   exports: [CvService, CvImportService, CvExportService],
 })
 export class CvModule {}

@@ -63,7 +63,6 @@ import { PaginatedResponseDto } from '@/shared/dto/paginated-response.dto';
 @ApiTags('CV')
 @ApiBearerAuth('JWT-auth')
 @Public()
-@UseGuards(JwtUserAuthGuard)
 @Controller('cv')
 export class CvController {
   constructor(
@@ -76,10 +75,12 @@ export class CvController {
   // ─── CRUD ────────────────────────────────────────────────────────────────
 
   @Post()
+  @UseGuards(JwtUserAuthGuard)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Create a new CV',
-    description: 'Creates a new CV with DRAFT status for the authenticated user.',
+    description:
+      'Creates a new CV with DRAFT status for the authenticated user.',
   })
   @ApiBody({ type: CreateCvRequestDto })
   @ApiResponse({ status: 201, description: 'CV created', type: CvResponseDto })
@@ -92,6 +93,7 @@ export class CvController {
   }
 
   @Get()
+  @UseGuards(JwtUserAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'List CVs',
@@ -107,7 +109,7 @@ export class CvController {
   ): Promise<PaginatedResponseDto<CvListItemResponseDto>> {
     const result = await this.cvService.findAllByUser(user.id, pagination);
     return PaginatedResponseDto.create(
-      result.data.map((cv) => this.cvMapper.cvToListItemResponse(cv)),
+      result.data.map(cv => this.cvMapper.cvToListItemResponse(cv)),
       result.meta.total,
       result.meta.page,
       result.meta.limit,
@@ -127,6 +129,7 @@ export class CvController {
   }
 
   @Get(':id')
+  @UseGuards(JwtUserAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Get a CV by ID',
@@ -144,6 +147,7 @@ export class CvController {
   }
 
   @Patch(':id')
+  @UseGuards(JwtUserAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Update CV metadata',
@@ -162,6 +166,7 @@ export class CvController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtUserAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Delete a CV',
@@ -169,21 +174,23 @@ export class CvController {
   })
   @ApiParam({ name: 'id', description: 'CV UUID' })
   @ApiResponse({ status: 204, description: 'CV deleted' })
-  async remove(
-    @GetUser() user: User,
-    @Param('id') id: string,
-  ): Promise<void> {
+  async remove(@GetUser() user: User, @Param('id') id: string): Promise<void> {
     await this.cvService.remove(id, user.id);
   }
 
   @Post(':id/duplicate')
+  @UseGuards(JwtUserAuthGuard)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Duplicate a CV',
     description: 'Creates a deep copy of a CV including all sections.',
   })
   @ApiParam({ name: 'id', description: 'CV UUID to duplicate' })
-  @ApiResponse({ status: 201, description: 'CV duplicated', type: CvResponseDto })
+  @ApiResponse({
+    status: 201,
+    description: 'CV duplicated',
+    type: CvResponseDto,
+  })
   async duplicate(
     @GetUser() user: User,
     @Param('id') id: string,
@@ -193,6 +200,7 @@ export class CvController {
   }
 
   @Post('import/linkedin')
+  @UseGuards(JwtUserAuthGuard)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Import LinkedIn data into a new CV',
@@ -200,7 +208,11 @@ export class CvController {
       'Creates a new CV populated from a previously imported LinkedIn profile.',
   })
   @ApiBody({ type: ImportLinkedInToCvRequestDto })
-  @ApiResponse({ status: 201, description: 'CV created from LinkedIn data', type: CvResponseDto })
+  @ApiResponse({
+    status: 201,
+    description: 'CV created from LinkedIn data',
+    type: CvResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'LinkedIn import not found' })
   async importFromLinkedIn(
     @GetUser() user: User,
@@ -216,12 +228,18 @@ export class CvController {
   }
 
   @Get(':id/export/pdf')
+  @UseGuards(JwtUserAuthGuard)
   @ApiOperation({
     summary: 'Export CV as PDF',
-    description: 'Generates a PDF file from the CV data using the assigned template.',
+    description:
+      'Generates a PDF file from the CV data using the assigned template.',
   })
   @ApiParam({ name: 'id', description: 'CV UUID' })
-  @ApiResponse({ status: 200, description: 'PDF file', content: { 'application/pdf': {} } })
+  @ApiResponse({
+    status: 200,
+    description: 'PDF file',
+    content: { 'application/pdf': {} },
+  })
   @ApiResponse({ status: 404, description: 'CV not found' })
   async exportPdf(
     @GetUser() user: User,
@@ -244,6 +262,7 @@ export class CvController {
   // ─── Section Endpoints ──────────────────────────────────────────────────
 
   @Put(':id/personal-info')
+  @UseGuards(JwtUserAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Upsert personal info section' })
   @ApiParam({ name: 'id', description: 'CV UUID' })
@@ -259,6 +278,7 @@ export class CvController {
   }
 
   @Put(':id/experiences')
+  @UseGuards(JwtUserAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Bulk upsert experiences' })
   @ApiParam({ name: 'id', description: 'CV UUID' })
@@ -270,10 +290,11 @@ export class CvController {
     @Body() dto: BulkUpsertExperienceRequestDto,
   ): Promise<ExperienceResponseDto[]> {
     const items = await this.cvService.bulkUpsertExperiences(id, user.id, dto);
-    return items.map((e) => this.cvMapper.experienceToResponse(e));
+    return items.map(e => this.cvMapper.experienceToResponse(e));
   }
 
   @Put(':id/education')
+  @UseGuards(JwtUserAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Bulk upsert education' })
   @ApiParam({ name: 'id', description: 'CV UUID' })
@@ -285,10 +306,11 @@ export class CvController {
     @Body() dto: BulkUpsertEducationRequestDto,
   ): Promise<EducationResponseDto[]> {
     const items = await this.cvService.bulkUpsertEducation(id, user.id, dto);
-    return items.map((e) => this.cvMapper.educationToResponse(e));
+    return items.map(e => this.cvMapper.educationToResponse(e));
   }
 
   @Put(':id/skills')
+  @UseGuards(JwtUserAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Bulk upsert skills' })
   @ApiParam({ name: 'id', description: 'CV UUID' })
@@ -300,10 +322,11 @@ export class CvController {
     @Body() dto: BulkUpsertSkillsRequestDto,
   ): Promise<SkillResponseDto[]> {
     const items = await this.cvService.bulkUpsertSkills(id, user.id, dto);
-    return items.map((s) => this.cvMapper.skillToResponse(s));
+    return items.map(s => this.cvMapper.skillToResponse(s));
   }
 
   @Put(':id/certifications')
+  @UseGuards(JwtUserAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Bulk upsert certifications' })
   @ApiParam({ name: 'id', description: 'CV UUID' })
@@ -319,10 +342,11 @@ export class CvController {
       user.id,
       dto,
     );
-    return items.map((c) => this.cvMapper.certificationToResponse(c));
+    return items.map(c => this.cvMapper.certificationToResponse(c));
   }
 
   @Put(':id/projects')
+  @UseGuards(JwtUserAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Bulk upsert projects' })
   @ApiParam({ name: 'id', description: 'CV UUID' })
@@ -334,10 +358,11 @@ export class CvController {
     @Body() dto: BulkUpsertProjectsRequestDto,
   ): Promise<ProjectResponseDto[]> {
     const items = await this.cvService.bulkUpsertProjects(id, user.id, dto);
-    return items.map((p) => this.cvMapper.projectToResponse(p));
+    return items.map(p => this.cvMapper.projectToResponse(p));
   }
 
   @Put(':id/languages')
+  @UseGuards(JwtUserAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Bulk upsert languages' })
   @ApiParam({ name: 'id', description: 'CV UUID' })
@@ -349,10 +374,11 @@ export class CvController {
     @Body() dto: BulkUpsertLanguagesRequestDto,
   ): Promise<LanguageResponseDto[]> {
     const items = await this.cvService.bulkUpsertLanguages(id, user.id, dto);
-    return items.map((l) => this.cvMapper.languageToResponse(l));
+    return items.map(l => this.cvMapper.languageToResponse(l));
   }
 
   @Put(':id/custom-sections')
+  @UseGuards(JwtUserAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Bulk upsert custom sections' })
   @ApiParam({ name: 'id', description: 'CV UUID' })
@@ -368,6 +394,6 @@ export class CvController {
       user.id,
       dto,
     );
-    return items.map((cs) => this.cvMapper.customSectionToResponse(cs));
+    return items.map(cs => this.cvMapper.customSectionToResponse(cs));
   }
 }

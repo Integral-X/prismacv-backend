@@ -35,7 +35,6 @@ import { UserProfileResponseDto } from './dto/response/user-profile.response.dto
 @ApiTags('Users')
 @ApiBearerAuth('JWT-auth')
 @Public()
-@UseGuards(JwtUserAuthGuard)
 @Controller('users')
 export class UsersController {
   constructor(
@@ -44,6 +43,7 @@ export class UsersController {
   ) {}
 
   @Get('me')
+  @UseGuards(JwtUserAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Get current user profile',
@@ -55,6 +55,7 @@ export class UsersController {
   }
 
   @Patch('me')
+  @UseGuards(JwtUserAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Update current user profile',
@@ -70,6 +71,7 @@ export class UsersController {
   }
 
   @Post('me/avatar')
+  @UseGuards(JwtUserAuthGuard)
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(FileInterceptor('avatar'))
   @ApiOperation({
@@ -101,6 +103,7 @@ export class UsersController {
   }
 
   @Delete('me')
+  @UseGuards(JwtUserAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Delete current user account',

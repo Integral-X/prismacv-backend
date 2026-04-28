@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '@/config/prisma.service';
 import { generateUuidv7 } from '@/shared/utils/uuid.util';
+import { generateSlug, ensureUniqueSlug } from './slug.util';
 
 interface LinkedInProfile {
   fullName?: string | null;
@@ -109,10 +110,10 @@ export class CvImportService {
 
     const cvTitle =
       title ?? (profile.fullName ? `${profile.fullName}'s CV` : 'Imported CV');
-    const slug = this.generateSlug(cvTitle);
-    const uniqueSlug = await this.ensureUniqueSlug(slug, userId);
+    const slug = generateSlug(cvTitle);
+    const uniqueSlug = await ensureUniqueSlug(this.prisma, userId, slug);
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async tx => {
       const cvId = generateUuidv7();
 
       const cv = await tx.cv.create({
@@ -251,25 +252,6 @@ export class CvImportService {
     });
   }
 
-  private generateSlug(title: string): string {
-    return title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '');
-  }
-
-  private async ensureUniqueSlug(
-    slug: string,
-    userId: string,
-  ): Promise<string> {
-    const existing = await this.prisma.cv.findFirst({
-      where: { userId, slug },
-    });
-    if (!existing) return slug;
-    const suffix = Date.now().toString(36);
-    return `${slug}-${suffix}`;
-  }
-
   private parseDate(value?: string | null): Date | null {
     if (!value) return null;
     const d = new Date(value);
@@ -281,8 +263,7 @@ export class CvImportService {
   ): 'NATIVE' | 'FLUENT' | 'ADVANCED' | 'INTERMEDIATE' | 'BASIC' {
     if (!proficiency) return 'INTERMEDIATE';
     const lower = proficiency.toLowerCase();
-    if (lower.includes('native') || lower.includes('mother'))
-      return 'NATIVE';
+    if (lower.includes('native') || lower.includes('mother')) return 'NATIVE';
     if (lower.includes('fluent') || lower.includes('full professional'))
       return 'FLUENT';
     if (lower.includes('advanced') || lower.includes('professional working'))
