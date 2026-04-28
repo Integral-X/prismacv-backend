@@ -8,10 +8,12 @@ import {
   Body,
   Param,
   Query,
+  Res,
   HttpCode,
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import {
   ApiTags,
   ApiOperation,
@@ -26,8 +28,10 @@ import { Public } from '@/common/decorators/public.decorator';
 import { User } from '@/modules/auth/entities/user.entity';
 import { CvService } from './cv.service';
 import { CvImportService } from './cv-import.service';
+import { CvExportService } from './cv-export.service';
 import { CvMapper } from './mappers/cv.mapper';
 import { CV_TEMPLATES } from './templates/template-registry';
+import { buildCvHtml } from './templates/cv-html-builder';
 import { PaginationQueryDto } from '@/shared/dto/pagination-query.dto';
 import { CreateCvRequestDto } from './dto/request/create-cv.request.dto';
 import { UpdateCvRequestDto } from './dto/request/update-cv.request.dto';
@@ -64,6 +68,7 @@ export class CvController {
   constructor(
     private readonly cvService: CvService,
     private readonly cvImportService: CvImportService,
+    private readonly cvExportService: CvExportService,
     private readonly cvMapper: CvMapper,
   ) {}
 
@@ -207,6 +212,32 @@ export class CvController {
       dto.templateId,
     );
     return this.cvMapper.cvToResponse(cv);
+  }
+
+  @Get(':id/export/pdf')
+  @ApiOperation({
+    summary: 'Export CV as PDF',
+    description: 'Generates a PDF file from the CV data using the assigned template.',
+  })
+  @ApiParam({ name: 'id', description: 'CV UUID' })
+  @ApiResponse({ status: 200, description: 'PDF file', content: { 'application/pdf': {} } })
+  @ApiResponse({ status: 404, description: 'CV not found' })
+  async exportPdf(
+    @GetUser() user: User,
+    @Param('id') id: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const cv = await this.cvService.findOne(id, user.id);
+    const html = buildCvHtml(cv as any);
+    const pdf = await this.cvExportService.generatePdf(html);
+
+    const filename = `${cv.slug || 'cv'}.pdf`;
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': pdf.length,
+    });
+    res.end(pdf);
   }
 
   // ─── Section Endpoints ──────────────────────────────────────────────────
