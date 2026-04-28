@@ -65,7 +65,7 @@ async function main() {
         email: sampleEmail,
         password: await bcrypt.hash('Demo1234!', 12),
         name: 'Demo User',
-        role: 'USER',
+        role: 'REGULAR',
         isMasterAdmin: false,
         provider: null,
       },
