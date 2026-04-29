@@ -15,4 +15,3 @@ docker-compose*.yml
 eslint.config.*
 .prettierrc*
 jest.config.*
-tsconfig.build.json
