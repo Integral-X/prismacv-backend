@@ -1,5 +1,8 @@
 # PrismaCV Backend
 
+[![Main Pipeline](https://github.com/Integral-X/prismacv-backend/actions/workflows/main.yml/badge.svg)](https://github.com/Integral-X/prismacv-backend/actions/workflows/main.yml)
+[![PR Pipeline](https://github.com/Integral-X/prismacv-backend/actions/workflows/pr.yml/badge.svg)](https://github.com/Integral-X/prismacv-backend/actions/workflows/pr.yml)
+
 Backend API for the PrismaCV platform — AI-powered CV building, job application tracking, skill gap analysis, and career management.
 
 ## Tech Stack
