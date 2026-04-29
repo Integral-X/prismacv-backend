@@ -1,12 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/config/prisma.service';
 import { Prisma } from '@prisma/client';
+import { AvatarStorageService } from './avatar-storage.service';
 import { UpdateProfileRequestDto } from './dto/request/update-profile.request.dto';
 import { UserProfileResponseDto } from './dto/response/user-profile.response.dto';
 
 @Injectable()
 export class UsersProfileService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly avatarStorage: AvatarStorageService,
+  ) {}
 
   async getProfile(userId: string): Promise<UserProfileResponseDto> {
     const user = await this.prisma.user.findUnique({
@@ -47,6 +51,7 @@ export class UsersProfileService {
 
   async deleteAccount(userId: string): Promise<void> {
     try {
+      await this.avatarStorage.delete(userId);
       await this.prisma.user.delete({
         where: { id: userId },
       });

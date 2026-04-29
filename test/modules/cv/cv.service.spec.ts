@@ -50,7 +50,7 @@ describe('CvService', () => {
 
   describe('create', () => {
     it('should create a new CV with DRAFT status', async () => {
-      prisma.cv.findFirst.mockResolvedValue(null);
+      prisma.cv.findUnique.mockResolvedValue(null);
       prisma.cv.create.mockResolvedValue(mockCv as any);
 
       const result = await service.create(userId, { title: 'Test CV' });

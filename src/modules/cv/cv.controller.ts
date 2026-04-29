@@ -12,6 +12,7 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import {
@@ -140,7 +141,7 @@ export class CvController {
   @ApiResponse({ status: 404, description: 'CV not found' })
   async findOne(
     @GetUser() user: User,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
   ): Promise<CvResponseDto> {
     const cv = await this.cvService.findOne(id, user.id);
     return this.cvMapper.cvToResponse(cv);
@@ -158,7 +159,7 @@ export class CvController {
   @ApiResponse({ status: 200, description: 'CV updated', type: CvResponseDto })
   async update(
     @GetUser() user: User,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateCvRequestDto,
   ): Promise<CvResponseDto> {
     const cv = await this.cvService.update(id, user.id, dto);
@@ -174,7 +175,10 @@ export class CvController {
   })
   @ApiParam({ name: 'id', description: 'CV UUID' })
   @ApiResponse({ status: 204, description: 'CV deleted' })
-  async remove(@GetUser() user: User, @Param('id') id: string): Promise<void> {
+  async remove(
+    @GetUser() user: User,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<void> {
     await this.cvService.remove(id, user.id);
   }
 
@@ -193,7 +197,7 @@ export class CvController {
   })
   async duplicate(
     @GetUser() user: User,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
   ): Promise<CvResponseDto> {
     const cv = await this.cvService.duplicate(id, user.id);
     return this.cvMapper.cvToResponse(cv);
@@ -243,7 +247,7 @@ export class CvController {
   @ApiResponse({ status: 404, description: 'CV not found' })
   async exportPdf(
     @GetUser() user: User,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Res() res: Response,
   ): Promise<void> {
     const cv = await this.cvService.findOne(id, user.id);
@@ -270,7 +274,7 @@ export class CvController {
   @ApiResponse({ status: 200, type: PersonalInfoResponseDto })
   async upsertPersonalInfo(
     @GetUser() user: User,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpsertPersonalInfoRequestDto,
   ): Promise<PersonalInfoResponseDto> {
     const pi = await this.cvService.upsertPersonalInfo(id, user.id, dto);
@@ -286,7 +290,7 @@ export class CvController {
   @ApiResponse({ status: 200, type: [ExperienceResponseDto] })
   async upsertExperiences(
     @GetUser() user: User,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: BulkUpsertExperienceRequestDto,
   ): Promise<ExperienceResponseDto[]> {
     const items = await this.cvService.bulkUpsertExperiences(id, user.id, dto);
@@ -302,7 +306,7 @@ export class CvController {
   @ApiResponse({ status: 200, type: [EducationResponseDto] })
   async upsertEducation(
     @GetUser() user: User,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: BulkUpsertEducationRequestDto,
   ): Promise<EducationResponseDto[]> {
     const items = await this.cvService.bulkUpsertEducation(id, user.id, dto);
@@ -318,7 +322,7 @@ export class CvController {
   @ApiResponse({ status: 200, type: [SkillResponseDto] })
   async upsertSkills(
     @GetUser() user: User,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: BulkUpsertSkillsRequestDto,
   ): Promise<SkillResponseDto[]> {
     const items = await this.cvService.bulkUpsertSkills(id, user.id, dto);
@@ -334,7 +338,7 @@ export class CvController {
   @ApiResponse({ status: 200, type: [CertificationResponseDto] })
   async upsertCertifications(
     @GetUser() user: User,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: BulkUpsertCertificationsRequestDto,
   ): Promise<CertificationResponseDto[]> {
     const items = await this.cvService.bulkUpsertCertifications(
@@ -354,7 +358,7 @@ export class CvController {
   @ApiResponse({ status: 200, type: [ProjectResponseDto] })
   async upsertProjects(
     @GetUser() user: User,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: BulkUpsertProjectsRequestDto,
   ): Promise<ProjectResponseDto[]> {
     const items = await this.cvService.bulkUpsertProjects(id, user.id, dto);
@@ -370,7 +374,7 @@ export class CvController {
   @ApiResponse({ status: 200, type: [LanguageResponseDto] })
   async upsertLanguages(
     @GetUser() user: User,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: BulkUpsertLanguagesRequestDto,
   ): Promise<LanguageResponseDto[]> {
     const items = await this.cvService.bulkUpsertLanguages(id, user.id, dto);
@@ -386,7 +390,7 @@ export class CvController {
   @ApiResponse({ status: 200, type: [CustomSectionResponseDto] })
   async upsertCustomSections(
     @GetUser() user: User,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: BulkUpsertCustomSectionsRequestDto,
   ): Promise<CustomSectionResponseDto[]> {
     const items = await this.cvService.bulkUpsertCustomSections(
