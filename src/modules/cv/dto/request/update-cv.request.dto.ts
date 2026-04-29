@@ -26,7 +26,7 @@ export class UpdateCvRequestDto {
 
   @ApiPropertyOptional({
     description: 'Template ID',
-    example: '1',
+    example: 'classic',
   })
   @IsOptional()
   @IsString()

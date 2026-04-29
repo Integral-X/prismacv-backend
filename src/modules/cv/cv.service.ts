@@ -108,7 +108,7 @@ export class CvService {
   async update(cvId: string, userId: string, dto: UpdateCvRequestDto) {
     await this.findCvOrThrow(cvId, userId);
 
-    const data: Record<string, unknown> = {};
+    const data: Prisma.CvUpdateInput = {};
     if (dto.title !== undefined) {
       data.title = dto.title;
       data.slug = await ensureUniqueSlug(
@@ -120,20 +120,24 @@ export class CvService {
     }
     if (dto.templateId !== undefined) data.templateId = dto.templateId;
     if (dto.status !== undefined) data.status = dto.status;
+
     if (dto.isDefault !== undefined) {
       data.isDefault = dto.isDefault;
+    }
+
+    const cv = await this.prisma.$transaction(async tx => {
       if (dto.isDefault) {
-        await this.prisma.cv.updateMany({
+        await tx.cv.updateMany({
           where: { userId, isDefault: true, id: { not: cvId } },
           data: { isDefault: false },
         });
       }
-    }
 
-    const cv = await this.prisma.cv.update({
-      where: { id: cvId },
-      data,
-      include: CV_INCLUDE_ALL,
+      return tx.cv.update({
+        where: { id: cvId },
+        data,
+        include: CV_INCLUDE_ALL,
+      });
     });
 
     this.logger.log(`CV updated: ${cvId}`);

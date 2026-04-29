@@ -12,7 +12,7 @@ describe('CvMapper', () => {
     title: 'My CV',
     slug: 'my-cv',
     status: CvStatus.DRAFT,
-    templateId: '1',
+    templateId: 'classic',
     isDefault: false,
     createdAt: now,
     updatedAt: now,

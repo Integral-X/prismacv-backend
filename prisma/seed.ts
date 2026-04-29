@@ -171,14 +171,62 @@ async function main() {
           skills: {
             createMany: {
               data: [
-                { id: uuidv7(), name: 'TypeScript', level: 'EXPERT', category: 'Languages', sortOrder: 0 },
-                { id: uuidv7(), name: 'React', level: 'EXPERT', category: 'Frontend', sortOrder: 1 },
-                { id: uuidv7(), name: 'Node.js', level: 'EXPERT', category: 'Backend', sortOrder: 2 },
-                { id: uuidv7(), name: 'PostgreSQL', level: 'ADVANCED', category: 'Database', sortOrder: 3 },
-                { id: uuidv7(), name: 'Docker', level: 'ADVANCED', category: 'DevOps', sortOrder: 4 },
-                { id: uuidv7(), name: 'AWS', level: 'INTERMEDIATE', category: 'Cloud', sortOrder: 5 },
-                { id: uuidv7(), name: 'GraphQL', level: 'ADVANCED', category: 'API', sortOrder: 6 },
-                { id: uuidv7(), name: 'Prisma', level: 'EXPERT', category: 'ORM', sortOrder: 7 },
+                {
+                  id: uuidv7(),
+                  name: 'TypeScript',
+                  level: 'EXPERT',
+                  category: 'Languages',
+                  sortOrder: 0,
+                },
+                {
+                  id: uuidv7(),
+                  name: 'React',
+                  level: 'EXPERT',
+                  category: 'Frontend',
+                  sortOrder: 1,
+                },
+                {
+                  id: uuidv7(),
+                  name: 'Node.js',
+                  level: 'EXPERT',
+                  category: 'Backend',
+                  sortOrder: 2,
+                },
+                {
+                  id: uuidv7(),
+                  name: 'PostgreSQL',
+                  level: 'ADVANCED',
+                  category: 'Database',
+                  sortOrder: 3,
+                },
+                {
+                  id: uuidv7(),
+                  name: 'Docker',
+                  level: 'ADVANCED',
+                  category: 'DevOps',
+                  sortOrder: 4,
+                },
+                {
+                  id: uuidv7(),
+                  name: 'AWS',
+                  level: 'INTERMEDIATE',
+                  category: 'Cloud',
+                  sortOrder: 5,
+                },
+                {
+                  id: uuidv7(),
+                  name: 'GraphQL',
+                  level: 'ADVANCED',
+                  category: 'API',
+                  sortOrder: 6,
+                },
+                {
+                  id: uuidv7(),
+                  name: 'Prisma',
+                  level: 'EXPERT',
+                  category: 'ORM',
+                  sortOrder: 7,
+                },
               ],
             },
           },
@@ -215,9 +263,24 @@ async function main() {
           languages: {
             createMany: {
               data: [
-                { id: uuidv7(), name: 'English', proficiency: 'NATIVE', sortOrder: 0 },
-                { id: uuidv7(), name: 'German', proficiency: 'FLUENT', sortOrder: 1 },
-                { id: uuidv7(), name: 'French', proficiency: 'INTERMEDIATE', sortOrder: 2 },
+                {
+                  id: uuidv7(),
+                  name: 'English',
+                  proficiency: 'NATIVE',
+                  sortOrder: 0,
+                },
+                {
+                  id: uuidv7(),
+                  name: 'German',
+                  proficiency: 'FLUENT',
+                  sortOrder: 1,
+                },
+                {
+                  id: uuidv7(),
+                  name: 'French',
+                  proficiency: 'INTERMEDIATE',
+                  sortOrder: 2,
+                },
               ],
             },
           },
@@ -228,7 +291,11 @@ async function main() {
                   id: uuidv7(),
                   title: 'Volunteer Work',
                   entries: [
-                    { role: 'Mentor', organization: 'Code for Germany', year: '2022–present' },
+                    {
+                      role: 'Mentor',
+                      organization: 'Code for Germany',
+                      year: '2022–present',
+                    },
                   ],
                   sortOrder: 0,
                 },

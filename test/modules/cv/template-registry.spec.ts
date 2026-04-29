@@ -10,20 +10,20 @@ describe('Template Registry', () => {
   });
 
   it('should have unique IDs', () => {
-    const ids = CV_TEMPLATES.map((t) => t.id);
+    const ids = CV_TEMPLATES.map(t => t.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
 
   describe('findTemplateById', () => {
     it('should return a template by ID', () => {
-      const template = findTemplateById('1');
+      const template = findTemplateById('classic');
       expect(template).toBeDefined();
-      expect(template!.id).toBe('1');
+      expect(template!.id).toBe('classic');
       expect(template!.name).toBe('Classic');
     });
 
     it('should return undefined for non-existent ID', () => {
-      expect(findTemplateById('999')).toBeUndefined();
+      expect(findTemplateById('nonexistent')).toBeUndefined();
     });
   });
 
@@ -34,19 +34,19 @@ describe('Template Registry', () => {
 
     it('should filter by layout', () => {
       const single = filterTemplates({ layout: 'single' });
-      expect(single.every((t) => t.layout === 'single')).toBe(true);
+      expect(single.every(t => t.layout === 'single')).toBe(true);
       expect(single.length).toBeGreaterThan(0);
     });
 
     it('should filter by category', () => {
       const modern = filterTemplates({ category: 'modern' });
-      expect(modern.every((t) => t.category === 'modern')).toBe(true);
+      expect(modern.every(t => t.category === 'modern')).toBe(true);
       expect(modern.length).toBeGreaterThan(0);
     });
 
     it('should filter by hasHeadshot', () => {
       const withHeadshot = filterTemplates({ hasHeadshot: true });
-      expect(withHeadshot.every((t) => t.hasHeadshot === true)).toBe(true);
+      expect(withHeadshot.every(t => t.hasHeadshot === true)).toBe(true);
     });
 
     it('should combine multiple filters', () => {
@@ -56,7 +56,7 @@ describe('Template Registry', () => {
       });
       expect(
         result.every(
-          (t) => t.layout === 'single' && t.category === 'professional',
+          t => t.layout === 'single' && t.category === 'professional',
         ),
       ).toBe(true);
     });

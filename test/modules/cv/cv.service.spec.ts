@@ -42,6 +42,7 @@ describe('CvService', () => {
 
     service = module.get<CvService>(CvService);
     prisma = module.get(PrismaService);
+    prisma.$transaction.mockImplementation(async (fn: any) => fn(prisma));
   });
 
   it('should be defined', () => {

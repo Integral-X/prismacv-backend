@@ -12,7 +12,7 @@ RUN npx prisma generate
 COPY . .
 RUN npm run build
 
-# Prune devDependencies (prisma CLI stays — it's in dependencies)
+# Prune devDependencies after build (prisma CLI is in dependencies, stays available)
 RUN npm prune --omit=dev
 
 # ── Stage 2: Production ──────────────────────────────────────

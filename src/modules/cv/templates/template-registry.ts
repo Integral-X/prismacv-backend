@@ -12,7 +12,7 @@ export interface CvTemplate {
 
 export const CV_TEMPLATES: readonly CvTemplate[] = [
   {
-    id: '1',
+    id: 'classic',
     name: 'Classic',
     thumbnail: '/images/onboarding/resume_thumb_1.svg',
     hasHeadshot: true,
@@ -20,7 +20,7 @@ export const CV_TEMPLATES: readonly CvTemplate[] = [
     category: 'professional',
   },
   {
-    id: '2',
+    id: 'horizon',
     name: 'Horizon',
     thumbnail: '/images/onboarding/resume_thumb_2.svg',
     hasHeadshot: false,
@@ -28,7 +28,7 @@ export const CV_TEMPLATES: readonly CvTemplate[] = [
     category: 'modern',
   },
   {
-    id: '3',
+    id: 'prism',
     name: 'Prism',
     thumbnail: '/images/onboarding/resume_thumb_3.svg',
     hasHeadshot: true,
@@ -36,7 +36,7 @@ export const CV_TEMPLATES: readonly CvTemplate[] = [
     category: 'creative',
   },
   {
-    id: '4',
+    id: 'executive',
     name: 'Executive',
     thumbnail: '/images/onboarding/resume_thumb_1.svg',
     hasHeadshot: false,
@@ -44,7 +44,7 @@ export const CV_TEMPLATES: readonly CvTemplate[] = [
     category: 'professional',
   },
   {
-    id: '5',
+    id: 'nova',
     name: 'Nova',
     thumbnail: '/images/onboarding/resume_thumb_2.svg',
     hasHeadshot: true,
@@ -52,7 +52,7 @@ export const CV_TEMPLATES: readonly CvTemplate[] = [
     category: 'modern',
   },
   {
-    id: '6',
+    id: 'mosaic',
     name: 'Mosaic',
     thumbnail: '/images/onboarding/resume_thumb_3.svg',
     hasHeadshot: false,
@@ -60,7 +60,7 @@ export const CV_TEMPLATES: readonly CvTemplate[] = [
     category: 'creative',
   },
   {
-    id: '7',
+    id: 'pinnacle',
     name: 'Pinnacle',
     thumbnail: '/images/onboarding/resume_thumb_1.svg',
     hasHeadshot: true,
@@ -68,7 +68,7 @@ export const CV_TEMPLATES: readonly CvTemplate[] = [
     category: 'professional',
   },
   {
-    id: '8',
+    id: 'slate',
     name: 'Slate',
     thumbnail: '/images/onboarding/resume_thumb_2.svg',
     hasHeadshot: false,
@@ -76,7 +76,7 @@ export const CV_TEMPLATES: readonly CvTemplate[] = [
     category: 'modern',
   },
   {
-    id: '9',
+    id: 'vivid',
     name: 'Vivid',
     thumbnail: '/images/onboarding/resume_thumb_3.svg',
     hasHeadshot: true,
