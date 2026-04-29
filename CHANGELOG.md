@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/Integral-X/prismacv-backend/compare/v1.5.0...v1.6.0) (2026-04-29)
+
+
+### Features
+
+* CV module with full CRUD, PDF export, templates, LinkedIn import, and user profile ([#154](https://github.com/Integral-X/prismacv-backend/issues/154)) ([bdba509](https://github.com/Integral-X/prismacv-backend/commit/bdba509bac30a3360047f6f03458b0d8a869d7b6))
+
 # [1.5.0](https://github.com/Integral-X/prismacv-backend/compare/v1.4.0...v1.5.0) (2026-04-18)
 
 
