@@ -1,4 +1,5 @@
 import { PrismaService } from '@/config/prisma.service';
+import { Prisma } from '@prisma/client';
 
 export function generateSlug(title: string): string {
   const slug = title
@@ -19,18 +20,35 @@ export async function ensureUniqueSlug(
 ): Promise<string> {
   let candidate = slug;
   let suffix = 1;
+  const maxAttempts = 20;
 
-  while (true) {
-    const existing = await prisma.cv.findUnique({
-      where: { userId_slug: { userId, slug: candidate } },
-      select: { id: true },
-    });
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const existing = await prisma.cv.findUnique({
+        where: { userId_slug: { userId, slug: candidate } },
+        select: { id: true },
+      });
 
-    if (!existing || existing.id === excludeCvId) {
-      return candidate;
+      if (!existing || existing.id === excludeCvId) {
+        return candidate;
+      }
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === 'P2002'
+      ) {
+        // Unique constraint race — retry with next suffix
+        candidate = `${slug}-${suffix}`;
+        suffix++;
+        continue;
+      }
+      throw err;
     }
 
     candidate = `${slug}-${suffix}`;
     suffix++;
   }
+
+  // Fallback: append random suffix to guarantee uniqueness
+  return `${slug}-${Date.now().toString(36)}`;
 }

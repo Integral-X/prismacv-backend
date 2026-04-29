@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '@/config/prisma.service';
 import { generateUuidv7 } from '@/shared/utils/uuid.util';
 import { generateSlug, ensureUniqueSlug } from './slug.util';
+import { CV_INCLUDE_ALL } from './cv.constants';
 
 interface LinkedInProfile {
   fullName?: string | null;
@@ -58,17 +59,6 @@ interface LinkedInLanguage {
   name?: string | null;
   proficiency?: string | null;
 }
-
-const CV_INCLUDE_ALL = {
-  personalInfo: true,
-  experiences: { orderBy: { sortOrder: 'asc' as const } },
-  education: { orderBy: { sortOrder: 'asc' as const } },
-  skills: { orderBy: { sortOrder: 'asc' as const } },
-  certifications: { orderBy: { sortOrder: 'asc' as const } },
-  projects: { orderBy: { sortOrder: 'asc' as const } },
-  languages: { orderBy: { sortOrder: 'asc' as const } },
-  customSections: { orderBy: { sortOrder: 'asc' as const } },
-};
 
 @Injectable()
 export class CvImportService {

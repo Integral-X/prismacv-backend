@@ -10,6 +10,7 @@ import { generateUuidv7 } from '@/shared/utils/uuid.util';
 import { PaginationQueryDto } from '@/shared/dto/pagination-query.dto';
 import { PaginatedResponseDto } from '@/shared/dto/paginated-response.dto';
 import { generateSlug, ensureUniqueSlug } from './slug.util';
+import { CV_INCLUDE_ALL } from './cv.constants';
 import { CreateCvRequestDto } from './dto/request/create-cv.request.dto';
 import { UpdateCvRequestDto } from './dto/request/update-cv.request.dto';
 import { UpsertPersonalInfoRequestDto } from './dto/request/upsert-personal-info.request.dto';
@@ -23,17 +24,6 @@ import {
   BulkUpsertCustomSectionsRequestDto,
 } from './dto/request/upsert-sections.request.dto';
 import type { PersonalInfo, Prisma } from '@prisma/client';
-
-const CV_INCLUDE_ALL = {
-  personalInfo: true,
-  experiences: { orderBy: { sortOrder: 'asc' as const } },
-  education: { orderBy: { sortOrder: 'asc' as const } },
-  skills: { orderBy: { sortOrder: 'asc' as const } },
-  certifications: { orderBy: { sortOrder: 'asc' as const } },
-  projects: { orderBy: { sortOrder: 'asc' as const } },
-  languages: { orderBy: { sortOrder: 'asc' as const } },
-  customSections: { orderBy: { sortOrder: 'asc' as const } },
-};
 
 @Injectable()
 export class CvService {
