@@ -1,3 +1,10 @@
+## [1.6.1](https://github.com/Integral-X/prismacv-backend/compare/v1.6.0...v1.6.1) (2026-04-29)
+
+
+### Bug Fixes
+
+* resolve docker deployment issue ([#155](https://github.com/Integral-X/prismacv-backend/issues/155)) ([644aa8c](https://github.com/Integral-X/prismacv-backend/commit/644aa8cc18388c6c30a554bbf7dbb8d4c6fcbacf))
+
 # [1.6.0](https://github.com/Integral-X/prismacv-backend/compare/v1.5.0...v1.6.0) (2026-04-29)
 
 
