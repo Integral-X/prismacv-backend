@@ -27,6 +27,7 @@ model User {
   oauthRefreshToken String?
   oauthTokenExpiresAt DateTime?
   linkedinCvImports LinkedinCvImport[]
+  cvs               Cv[]
 
   @@unique([provider, providerId])
   @@map("users")
@@ -112,4 +113,178 @@ model AuthToken {
 
   @@index([userId, purpose])
   @@map("auth_tokens")
+}
+
+// ─── CV Models ───────────────────────────────────────────────────────────────
+
+enum CvStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum LanguageProficiency {
+  BASIC
+  INTERMEDIATE
+  ADVANCED
+  FLUENT
+  NATIVE
+}
+
+model Cv {
+  id         String   @id @db.Uuid
+  userId     String   @db.Uuid
+  title      String
+  slug       String
+  status     CvStatus @default(DRAFT)
+  templateId String?
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  personalInfo   PersonalInfo?
+  experiences    Experience[]
+  education      Education[]
+  skills         Skill[]
+  certifications Certification[]
+  projects       Project[]
+  languages      Language[]
+  customSections CustomSection[]
+
+  @@unique([userId, slug])
+  @@index([userId, status])
+  @@index([userId, updatedAt])
+  @@map("cvs")
+}
+
+model PersonalInfo {
+  id          String  @id @db.Uuid
+  cvId        String  @unique @db.Uuid
+  fullName    String?
+  email       String?
+  phone       String?
+  location    String?
+  website     String?
+  linkedinUrl String?
+  summary     String?
+  avatarUrl   String?
+
+  cv Cv @relation(fields: [cvId], references: [id], onDelete: Cascade)
+
+  @@map("personal_info")
+}
+
+model Experience {
+  id          String    @id @db.Uuid
+  cvId        String    @db.Uuid
+  company     String
+  title       String
+  location    String?
+  startDate   DateTime
+  endDate     DateTime?
+  current     Boolean   @default(false)
+  description String?
+  sortOrder   Int       @default(0)
+
+  cv Cv @relation(fields: [cvId], references: [id], onDelete: Cascade)
+
+  @@index([cvId, sortOrder])
+  @@map("experiences")
+}
+
+model Education {
+  id          String    @id @db.Uuid
+  cvId        String    @db.Uuid
+  institution String
+  degree      String
+  field       String?
+  startDate   DateTime
+  endDate     DateTime?
+  gpa         String?
+  description String?
+  sortOrder   Int       @default(0)
+
+  cv Cv @relation(fields: [cvId], references: [id], onDelete: Cascade)
+
+  @@index([cvId, sortOrder])
+  @@map("education")
+}
+
+model Skill {
+  id        String     @id @db.Uuid
+  cvId      String     @db.Uuid
+  name      String
+  level     SkillLevel @default(INTERMEDIATE)
+  category  String?
+  sortOrder Int        @default(0)
+
+  cv Cv @relation(fields: [cvId], references: [id], onDelete: Cascade)
+
+  @@index([cvId, sortOrder])
+  @@map("skills")
+}
+
+model Certification {
+  id            String    @id @db.Uuid
+  cvId          String    @db.Uuid
+  name          String
+  issuer        String?
+  issueDate     DateTime?
+  expiryDate    DateTime?
+  credentialUrl String?
+  sortOrder     Int       @default(0)
+
+  cv Cv @relation(fields: [cvId], references: [id], onDelete: Cascade)
+
+  @@index([cvId, sortOrder])
+  @@map("certifications")
+}
+
+model Project {
+  id          String    @id @db.Uuid
+  cvId        String    @db.Uuid
+  name        String
+  description String?
+  url         String?
+  startDate   DateTime?
+  endDate     DateTime?
+  sortOrder   Int       @default(0)
+
+  cv Cv @relation(fields: [cvId], references: [id], onDelete: Cascade)
+
+  @@index([cvId, sortOrder])
+  @@map("projects")
+}
+
+model Language {
+  id          String              @id @db.Uuid
+  cvId        String              @db.Uuid
+  name        String
+  proficiency LanguageProficiency @default(INTERMEDIATE)
+  sortOrder   Int                 @default(0)
+
+  cv Cv @relation(fields: [cvId], references: [id], onDelete: Cascade)
+
+  @@index([cvId, sortOrder])
+  @@map("languages")
+}
+
+model CustomSection {
+  id        String @id @db.Uuid
+  cvId      String @db.Uuid
+  title     String
+  entries   Json
+  sortOrder Int    @default(0)
+
+  cv Cv @relation(fields: [cvId], references: [id], onDelete: Cascade)
+
+  @@index([cvId, sortOrder])
+  @@map("custom_sections")
 }

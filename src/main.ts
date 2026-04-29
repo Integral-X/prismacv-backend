@@ -1,9 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger, VersioningType } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import * as compression from 'compression';
+import * as path from 'path';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 
 import { AppModule } from './app.module';
@@ -14,15 +16,23 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 const logger = new Logger('Bootstrap');
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
+  });
+
+  // Serve uploaded files (avatars, etc.)
+  app.useStaticAssets(path.join(process.cwd(), 'uploads'), {
+    prefix: '/uploads/',
   });
 
   // Get configuration service
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 3000);
   const apiPrefix = configService.get<string>('API_PREFIX', 'api/v1');
-  const corsOrigin = configService.get<string>('CORS_ORIGIN', '*');
+  const corsOrigin = configService.get<string>(
+    'CORS_ORIGIN',
+    'http://localhost:3001',
+  );
 
   // Use Winston logger
   app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
