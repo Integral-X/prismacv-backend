@@ -1,9 +1,9 @@
-import { ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { JwtAuthGuard } from '../../../src/modules/auth/guards/jwt-auth.guard';
+import { JwtAdminAuthGuard } from '../../../src/modules/auth/guards/jwt-auth.guard';
 
-describe('JwtAuthGuard', () => {
-  let guard: JwtAuthGuard;
+describe('JwtAdminAuthGuard', () => {
+  let guard: JwtAdminAuthGuard;
   let reflector: jest.Mocked<Reflector>;
 
   beforeEach(() => {
@@ -11,7 +11,7 @@ describe('JwtAuthGuard', () => {
       getAllAndOverride: jest.fn(),
     } as any;
 
-    guard = new JwtAuthGuard(reflector);
+    guard = new JwtAdminAuthGuard(reflector);
   });
 
   describe('canActivate', () => {
@@ -32,9 +32,11 @@ describe('JwtAuthGuard', () => {
       const context = createMockExecutionContext();
       reflector.getAllAndOverride.mockReturnValue(false);
 
-      // Mock the parent class canActivate
       const superCanActivateSpy = jest
-        .spyOn(Object.getPrototypeOf(JwtAuthGuard.prototype), 'canActivate')
+        .spyOn(
+          Object.getPrototypeOf(JwtAdminAuthGuard.prototype),
+          'canActivate',
+        )
         .mockReturnValue(true);
 
       const result = guard.canActivate(context);
@@ -50,47 +52,37 @@ describe('JwtAuthGuard', () => {
     it('should return user when authentication is successful', () => {
       const mockUser = { id: '1', email: 'test@example.com' };
 
-      const result = guard.handleRequest(null, mockUser);
+      const result = guard.handleRequest(null, mockUser, null);
 
       expect(result).toEqual(mockUser);
     });
 
-    it('should throw ForbiddenException when user is not provided', () => {
-      expect(() => guard.handleRequest(null, null)).toThrow(ForbiddenException);
-      expect(() => guard.handleRequest(null, null)).toThrow(
-        'Access denied - valid JWT token required',
+    it('should throw UnauthorizedException when user is not provided', () => {
+      expect(() => guard.handleRequest(null, null, null)).toThrow(
+        UnauthorizedException,
       );
     });
 
-    it('should throw ForbiddenException when user is undefined', () => {
-      expect(() => guard.handleRequest(null, undefined)).toThrow(
-        ForbiddenException,
-      );
-      expect(() => guard.handleRequest(null, undefined)).toThrow(
-        'Access denied - valid JWT token required',
+    it('should throw UnauthorizedException when user is undefined', () => {
+      expect(() => guard.handleRequest(null, undefined, null)).toThrow(
+        UnauthorizedException,
       );
     });
 
-    it('should throw ForbiddenException when there is an error', () => {
+    it('should throw UnauthorizedException when there is an error', () => {
       const mockUser = { id: '1', email: 'test@example.com' };
       const error = new Error('Token expired');
 
-      expect(() => guard.handleRequest(error, mockUser)).toThrow(
-        ForbiddenException,
-      );
-      expect(() => guard.handleRequest(error, mockUser)).toThrow(
-        'Access denied - valid JWT token required',
+      expect(() => guard.handleRequest(error, mockUser, null)).toThrow(
+        UnauthorizedException,
       );
     });
 
-    it('should throw ForbiddenException when both error and no user', () => {
+    it('should throw UnauthorizedException when both error and no user', () => {
       const error = new Error('Invalid token');
 
-      expect(() => guard.handleRequest(error, null)).toThrow(
-        ForbiddenException,
-      );
-      expect(() => guard.handleRequest(error, null)).toThrow(
-        'Access denied - valid JWT token required',
+      expect(() => guard.handleRequest(error, null, null)).toThrow(
+        UnauthorizedException,
       );
     });
   });

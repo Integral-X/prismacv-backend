@@ -1,20 +1,37 @@
-FROM node:20
+# ── Stage 1: Build ────────────────────────────────────────────
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files and install dependencies
 COPY package*.json ./
-RUN rm -rf node_modules package-lock.json && npm install
+RUN npm ci
 
-# Copy Prisma schema and generate client
 COPY prisma ./prisma
 RUN npx prisma generate
 
-# Copy source code
 COPY . .
+RUN npm run build
 
-# Make script executable
+# Prune devDependencies after build (prisma CLI is in dependencies, stays available)
+RUN npm prune --omit=dev
+
+# ── Stage 2: Production ──────────────────────────────────────
+FROM node:20-alpine AS production
+
+# Install Chromium for Puppeteer PDF export
+RUN apk add --no-cache chromium
+ENV CHROME_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
+WORKDIR /app
+
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/prisma ./prisma
+COPY start-docker.sh ./
 RUN chmod +x start-docker.sh
+
+RUN mkdir -p uploads
 
 EXPOSE 3000
 

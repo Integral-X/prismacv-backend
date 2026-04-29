@@ -4,14 +4,16 @@
 
 // Base classes
 export { BaseEntity } from './entities/base.entity';
-export { IMapper, BaseMapper } from './mappers/base.mapper';
 
-// Types and interfaces
-export * from './types/mapper.types';
+// DTOs
+export { PaginationQueryDto, SortOrder } from './dto/pagination-query.dto';
+export {
+  PaginatedResponseDto,
+  PaginationMeta,
+} from './dto/paginated-response.dto';
 
 // Utilities
 export * from './utils/uuid.util';
 
 // Existing exports
-export * from './dto/pagination.dto';
 export * from './interfaces/api-response.interface';

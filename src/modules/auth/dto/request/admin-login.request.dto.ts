@@ -7,7 +7,7 @@ export class AdminLoginRequestDto {
     description: 'Platform admin email address',
   })
   @IsEmail()
-  email: string;
+  email!: string;
 
   @ApiProperty({
     example: 'admin123',
@@ -15,5 +15,5 @@ export class AdminLoginRequestDto {
   })
   @IsString()
   @MinLength(4)
-  password: string;
+  password!: string;
 }

@@ -9,7 +9,7 @@ import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../../../src/config/prisma.service';
 import { EmailService } from '../../../src/modules/email/email.service';
 import { mockDeep, DeepMockProxy } from 'jest-mock-extended';
-import { User } from '../../../src/modules/auth/entities/user.entity';
+import { User, UserRole } from '../../../src/modules/auth/entities/user.entity';
 import { AuthCredentials } from '../../../src/modules/auth/entities/auth-credentials.entity';
 import { TokenPair } from '../../../src/modules/auth/entities/token-pair.entity';
 
@@ -37,6 +37,9 @@ describe('AuthService', () => {
                 OTP_EXPIRY_MINUTES: 10,
                 APP_NAME: 'PrismaCV',
                 'security.encryptionKey': '01234567890123456789012345678901',
+                JWT_SECRET: '01234567890123456789012345678901',
+                JWT_REFRESH_SECRET: '01234567890123456789012345678901',
+                'app.name': 'PrismaCV',
               };
               return config[key] ?? defaultValue;
             }),
@@ -92,8 +95,8 @@ describe('AuthService', () => {
       user.id = '1';
       user.email = 'test@example.com';
       user.password = 'hashedpassword';
-      user.name = null;
-      user.refreshToken = null;
+      user.name = undefined;
+      user.refreshToken = undefined;
       user.createdAt = new Date();
       user.updatedAt = new Date();
 
@@ -130,8 +133,8 @@ describe('AuthService', () => {
       user.id = '1';
       user.email = 'test@example.com';
       user.password = 'hashedpassword';
-      user.name = null;
-      user.refreshToken = null;
+      user.name = undefined;
+      user.refreshToken = undefined;
       user.createdAt = new Date();
       user.updatedAt = new Date();
 
@@ -157,7 +160,7 @@ describe('AuthService', () => {
     it('should throw UnauthorizedException if user is not found', async () => {
       jest.spyOn(usersService, 'findById').mockResolvedValue(null);
       await expect(
-        authService.refreshToken('some-refresh-token'),
+        authService.refreshToken('some-refresh-token', 'platform-admin'),
       ).rejects.toThrow(UnauthorizedException);
     });
 
@@ -166,7 +169,8 @@ describe('AuthService', () => {
       user.id = '1';
       user.email = 'test@example.com';
       user.password = 'hashedpassword';
-      user.name = null;
+      user.name = undefined;
+      user.role = UserRole.PLATFORM_ADMIN;
       user.refreshToken = 'hashed-token';
       user.createdAt = new Date();
       user.updatedAt = new Date();
@@ -175,7 +179,24 @@ describe('AuthService', () => {
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(false as never);
 
       await expect(
-        authService.refreshToken('some-refresh-token'),
+        authService.refreshToken('some-refresh-token', 'platform-admin'),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should throw UnauthorizedException if role does not match audience', async () => {
+      const user = new User();
+      user.id = '1';
+      user.email = 'test@example.com';
+      user.password = 'hashedpassword';
+      user.role = UserRole.REGULAR;
+      user.refreshToken = 'hashed-token';
+      user.createdAt = new Date();
+      user.updatedAt = new Date();
+
+      jest.spyOn(usersService, 'findById').mockResolvedValue(user);
+
+      await expect(
+        authService.refreshToken('some-refresh-token', 'platform-admin'),
       ).rejects.toThrow(UnauthorizedException);
     });
 
@@ -184,7 +205,8 @@ describe('AuthService', () => {
       user.id = '1';
       user.email = 'test@example.com';
       user.password = 'hashedpassword';
-      user.name = null;
+      user.name = undefined;
+      user.role = UserRole.PLATFORM_ADMIN;
       user.refreshToken = 'hashed-token';
       user.createdAt = new Date();
       user.updatedAt = new Date();
@@ -200,12 +222,201 @@ describe('AuthService', () => {
         .spyOn(authService, 'updateRefreshToken')
         .mockResolvedValue(undefined);
 
-      const result = await authService.refreshToken('some-refresh-token');
+      const result = await authService.refreshToken(
+        'some-refresh-token',
+        'platform-admin',
+      );
 
       expect(result.user).toEqual(user);
       expect(result.tokens).toBeInstanceOf(TokenPair);
       expect(result.tokens.accessToken).toBe('new-access');
       expect(result.tokens.refreshToken).toBe('new-refresh');
+    });
+  });
+
+  describe('onModuleInit', () => {
+    it('should not throw when secrets are valid', () => {
+      expect(() => authService.onModuleInit()).not.toThrow();
+    });
+
+    it('should throw when JWT_SECRET is missing', () => {
+      const mockConfig = {
+        get: jest.fn((key: string) => {
+          if (key === 'JWT_SECRET') return undefined;
+          if (key === 'JWT_REFRESH_SECRET')
+            return '01234567890123456789012345678901';
+          return undefined;
+        }),
+      } as unknown as ConfigService;
+
+      const service = new AuthService(
+        {} as any,
+        {} as any,
+        mockConfig,
+        {} as any,
+        {} as any,
+        {} as any,
+      );
+
+      expect(() => service.onModuleInit()).toThrow(
+        'JWT_SECRET is not set or too short',
+      );
+    });
+
+    it('should throw when JWT_SECRET is too short', () => {
+      const mockConfig = {
+        get: jest.fn((key: string) => {
+          if (key === 'JWT_SECRET') return 'short';
+          if (key === 'JWT_REFRESH_SECRET')
+            return '01234567890123456789012345678901';
+          return undefined;
+        }),
+      } as unknown as ConfigService;
+
+      const service = new AuthService(
+        {} as any,
+        {} as any,
+        mockConfig,
+        {} as any,
+        {} as any,
+        {} as any,
+      );
+
+      expect(() => service.onModuleInit()).toThrow(
+        'JWT_SECRET is not set or too short',
+      );
+    });
+
+    it('should throw when JWT_REFRESH_SECRET is missing', () => {
+      const mockConfig = {
+        get: jest.fn((key: string) => {
+          if (key === 'JWT_SECRET') return '01234567890123456789012345678901';
+          if (key === 'JWT_REFRESH_SECRET') return undefined;
+          return undefined;
+        }),
+      } as unknown as ConfigService;
+
+      const service = new AuthService(
+        {} as any,
+        {} as any,
+        mockConfig,
+        {} as any,
+        {} as any,
+        {} as any,
+      );
+
+      expect(() => service.onModuleInit()).toThrow(
+        'JWT_REFRESH_SECRET is not set or too short',
+      );
+    });
+  });
+
+  describe('userLogin', () => {
+    it('should return user and tokens for valid REGULAR user with verified email', async () => {
+      const credentials = new AuthCredentials();
+      credentials.email = 'user@example.com';
+      credentials.password = 'password';
+
+      const user = new User();
+      user.id = '1';
+      user.email = 'user@example.com';
+      user.password = 'hashedpassword';
+      user.role = UserRole.REGULAR;
+      user.emailVerified = true;
+      user.isMasterAdmin = false;
+      user.createdAt = new Date();
+      user.updatedAt = new Date();
+
+      jest.spyOn(authService, 'validateUser').mockResolvedValue(user);
+      jest.spyOn(authService, 'getTokens').mockResolvedValue({
+        accessToken: 'access',
+        refreshToken: 'refresh',
+      });
+      jest
+        .spyOn(authService, 'updateRefreshToken')
+        .mockResolvedValue(undefined);
+
+      const result = await authService.userLogin(credentials);
+
+      expect(result.user).toEqual(user);
+      expect(result.tokens).toBeInstanceOf(TokenPair);
+      expect(result.tokens.accessToken).toBe('access');
+      expect(result.tokens.refreshToken).toBe('refresh');
+    });
+
+    it('should throw UnauthorizedException for invalid credentials', async () => {
+      const credentials = new AuthCredentials();
+      credentials.email = 'user@example.com';
+      credentials.password = 'wrong';
+
+      jest.spyOn(authService, 'validateUser').mockResolvedValue(null);
+
+      await expect(authService.userLogin(credentials)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw UnauthorizedException if user is not REGULAR role', async () => {
+      const credentials = new AuthCredentials();
+      credentials.email = 'admin@example.com';
+      credentials.password = 'password';
+
+      const user = new User();
+      user.id = '1';
+      user.email = 'admin@example.com';
+      user.password = 'hashedpassword';
+      user.role = UserRole.PLATFORM_ADMIN;
+      user.emailVerified = true;
+
+      jest.spyOn(authService, 'validateUser').mockResolvedValue(user);
+
+      await expect(authService.userLogin(credentials)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw UnauthorizedException if email is not verified', async () => {
+      const credentials = new AuthCredentials();
+      credentials.email = 'user@example.com';
+      credentials.password = 'password';
+
+      const user = new User();
+      user.id = '1';
+      user.email = 'user@example.com';
+      user.password = 'hashedpassword';
+      user.role = UserRole.REGULAR;
+      user.emailVerified = false;
+
+      jest.spyOn(authService, 'validateUser').mockResolvedValue(user);
+
+      await expect(authService.userLogin(credentials)).rejects.toThrow(
+        'Email address not verified',
+      );
+    });
+  });
+
+  describe('getTokens', () => {
+    it('should return access and refresh tokens', async () => {
+      const result = await authService.getTokens(
+        'user-1',
+        'user@example.com',
+        UserRole.REGULAR,
+        false,
+        'user',
+      );
+
+      expect(result).toHaveProperty('accessToken');
+      expect(result).toHaveProperty('refreshToken');
+      expect(typeof result.accessToken).toBe('string');
+      expect(typeof result.refreshToken).toBe('string');
+    });
+  });
+
+  describe('decodeRefreshToken', () => {
+    it('should throw UnauthorizedException for invalid token', async () => {
+      await expect(
+        authService.decodeRefreshToken('invalid-token', 'user'),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 });

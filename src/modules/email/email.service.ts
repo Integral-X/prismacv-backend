@@ -8,6 +8,11 @@ import {
   generateOtpEmailPlainText,
   OtpEmailTemplateData,
 } from './templates/otp-email.template';
+import {
+  generatePasswordResetEmailTemplate,
+  generatePasswordResetEmailPlainText,
+  PasswordResetEmailTemplateData,
+} from './templates/password-reset-email.template';
 
 @Injectable()
 export class EmailService {
@@ -39,7 +44,7 @@ export class EmailService {
   private initializeTransporter(): void {
     // Check if SMTP credentials are configured
     if (!this.smtpConfig.auth.user || !this.smtpConfig.auth.pass) {
-      this.logger.warn(
+      this.logger.error(
         'SMTP credentials not configured. Email sending is disabled. Set SMTP_USER and SMTP_PASS environment variables.',
       );
       return;
@@ -62,8 +67,14 @@ export class EmailService {
         requireTLS: !isImplicitTLS,
       });
 
+      this.logger.log(`Email transporter initialized successfully:`);
       this.logger.log(
-        `Email transporter initialized with host: ${this.smtpConfig.host}:${this.smtpConfig.port} (${isImplicitTLS ? 'SSL' : 'STARTTLS'})`,
+        `- Host: ${this.smtpConfig.host}:${this.smtpConfig.port}`,
+      );
+      this.logger.log(`- Security: ${isImplicitTLS ? 'SSL' : 'STARTTLS'}`);
+      this.logger.log(`- User: ${this.smtpConfig.auth.user}`);
+      this.logger.log(
+        `- From: ${this.smtpConfig.from.name} <${this.smtpConfig.from.email}>`,
       );
     } catch (error) {
       this.logger.error('Failed to initialize email transporter', error);
@@ -75,11 +86,11 @@ export class EmailService {
    */
   async sendEmail(options: EmailOptions): Promise<boolean> {
     if (!this.transporter) {
-      this.logger.warn(
+      this.logger.error(
         `Email not sent (transporter not configured): to=${options.to}, subject=${options.subject}`,
       );
-      // Return true in development to not block registration
-      return true;
+      this.logger.error('Please check SMTP configuration in .env file');
+      return false;
     }
 
     try {
@@ -138,10 +149,45 @@ export class EmailService {
   }
 
   /**
+   * Send password reset OTP email
+   */
+  async sendPasswordResetEmail(
+    email: string,
+    otpCode: string,
+    userName?: string,
+  ): Promise<boolean> {
+    const appName = this.configService.get<string>('APP_NAME', 'PrismaCV');
+    const expiryMinutes = this.configService.get<number>(
+      'OTP_EXPIRY_MINUTES',
+      10,
+    );
+
+    const templateData: PasswordResetEmailTemplateData = {
+      appName,
+      otpCode,
+      expiryMinutes,
+      userName,
+    };
+
+    const options: EmailOptions = {
+      to: email,
+      subject: `${appName} Password Reset - ${otpCode}`,
+      html: generatePasswordResetEmailTemplate(templateData),
+      text: generatePasswordResetEmailPlainText(templateData),
+    };
+
+    this.logger.log(`Sending password reset email to: ${email}`);
+    return this.sendEmail(options);
+  }
+
+  /**
    * Verify SMTP connection
    */
   async verifyConnection(): Promise<boolean> {
     if (!this.transporter) {
+      this.logger.error(
+        'SMTP transporter not initialized - check SMTP credentials',
+      );
       return false;
     }
 

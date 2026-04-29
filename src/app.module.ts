@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { WinstonModule } from 'nest-winston';
 import { APP_GUARD } from '@nestjs/core';
 
@@ -16,9 +16,11 @@ import { OAuthModule } from './modules/oauth/oauth.module';
 import { UnleashModule } from './modules/unleash/unleash.module';
 import { HealthModule } from './modules/health/health.module';
 import { EmailModule } from './modules/email/email.module';
+import { CvModule } from './modules/cv/cv.module';
+import { UsersModule } from './modules/users/users.module';
 
 // Guards
-import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
+import { JwtAdminAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 
 @Module({
   imports: [
@@ -53,11 +55,17 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
     OAuthModule,
     UnleashModule,
     HealthModule,
+    CvModule,
+    UsersModule,
   ],
   providers: [
     {
       provide: APP_GUARD,
-      useClass: JwtAuthGuard,
+      useClass: JwtAdminAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
   ],
 })

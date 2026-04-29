@@ -9,11 +9,13 @@ import { AuthController } from './auth.controller';
 import { OtpController } from './otp.controller';
 import { UserAuthController } from './user-auth.controller';
 import { LocalStrategy } from './strategies/local.strategy';
-import { JwtStrategy } from './strategies/jwt.strategy';
+import { JwtAdminStrategy } from './strategies/jwt.strategy';
+import { JwtUserStrategy } from './strategies/jwt-user.strategy';
 import { UsersService } from './users.service';
 import { PrismaService } from '@/config/prisma.service';
 import { AuthMapper } from './mappers/auth.mapper';
 import { JWT_EXPIRATION } from '@/shared/constants/jwt.constants';
+import { EmailModule } from '@/modules/email/email.module';
 
 @Module({
   imports: [
@@ -27,18 +29,23 @@ import { JWT_EXPIRATION } from '@/shared/constants/jwt.constants';
           JWT_EXPIRATION.ACCESS_TOKEN;
         return {
           secret: configService.get<string>('JWT_SECRET'),
-          signOptions: { expiresIn: expiresIn as any },
+          signOptions: {
+            expiresIn: expiresIn as any,
+            algorithm: 'HS256',
+          },
         };
       },
       inject: [ConfigService],
     }),
     WinstonModule,
+    EmailModule,
   ],
   providers: [
     AuthService,
     OtpService,
     LocalStrategy,
-    JwtStrategy,
+    JwtAdminStrategy,
+    JwtUserStrategy,
     UsersService,
     PrismaService,
     ConfigService,
@@ -46,6 +53,6 @@ import { JWT_EXPIRATION } from '@/shared/constants/jwt.constants';
     AuthMapper,
   ],
   controllers: [AuthController, OtpController, UserAuthController],
-  exports: [AuthService, OtpService],
+  exports: [AuthService, OtpService, UsersService],
 })
 export class AuthModule {}

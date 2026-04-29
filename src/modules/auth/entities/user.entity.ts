@@ -13,16 +13,13 @@ export enum UserRole {
  * Contains only business properties without validation or API decorators
  */
 export class User extends BaseEntity {
-  email: string;
+  email!: string;
   password?: string; // Optional for OAuth users
   name?: string;
-  role: UserRole;
+  role!: UserRole;
   isMasterAdmin: boolean = false;
   refreshToken?: string;
   emailVerified: boolean = false;
-  otpCode?: string;
-  otpExpiresAt?: Date;
-  otpAttempts: number = 0; // Track failed OTP verification attempts
   avatarUrl?: string;
   provider?: string; // OAuth provider (e.g., 'LINKEDIN', 'GOOGLE')
   providerId?: string; // OAuth provider user ID
@@ -33,6 +30,5 @@ export class User extends BaseEntity {
   constructor() {
     super();
     this.emailVerified = false;
-    this.otpAttempts = 0;
   }
 }

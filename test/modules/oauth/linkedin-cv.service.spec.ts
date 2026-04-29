@@ -4,6 +4,7 @@ import { mockDeep, DeepMockProxy } from 'jest-mock-extended';
 import { LinkedInCvService } from '../../../src/modules/oauth/services/linkedin-cv.service';
 import { UsersService } from '../../../src/modules/auth/users.service';
 import { PrismaService } from '../../../src/config/prisma.service';
+import { ConfigService } from '@nestjs/config';
 import { OAUTH_PROVIDERS } from '../../../src/shared/constants/oauth.constants';
 import { User } from '../../../src/modules/auth/entities/user.entity';
 
@@ -19,6 +20,12 @@ describe('LinkedInCvService', () => {
         LinkedInCvService,
         { provide: UsersService, useValue: mockDeep<UsersService>() },
         { provide: PrismaService, useValue: mockDeep<PrismaService>() },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn((key: string, defaultValue?: any) => defaultValue),
+          },
+        },
       ],
     }).compile();
 

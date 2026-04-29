@@ -1,24 +1,45 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
+import { UsersService } from '../users.service';
+import { User, UserRole } from '../entities/user.entity';
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private configService: ConfigService) {
+export class JwtAdminStrategy extends PassportStrategy(Strategy, 'jwt-admin') {
+  constructor(
+    private configService: ConfigService,
+    private usersService: UsersService,
+  ) {
+    const secret = configService.get<string>('JWT_SECRET');
+    if (!secret) {
+      throw new Error('JWT_SECRET is not configured');
+    }
+
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('JWT_SECRET'),
+      secretOrKey: secret,
+      audience: 'platform-admin',
+      issuer: configService.get<string>('app.name', 'PrismaCV'),
+      algorithms: ['HS256'],
     });
   }
 
-  async validate(payload: any) {
-    return {
-      userId: payload.sub,
-      email: payload.email,
-      role: payload.role,
-      isMasterAdmin: payload.isMasterAdmin ?? false,
-    };
+  async validate(payload: any): Promise<User> {
+    if (payload.role !== UserRole.PLATFORM_ADMIN) {
+      throw new UnauthorizedException('Insufficient permissions');
+    }
+
+    const user = await this.usersService.findById(payload.sub);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    if (user.role !== UserRole.PLATFORM_ADMIN) {
+      throw new UnauthorizedException('Insufficient permissions');
+    }
+
+    return user;
   }
 }

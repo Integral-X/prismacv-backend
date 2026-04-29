@@ -6,5 +6,5 @@ export class AdminSignupResponseDto {
     description: 'Platform admin profile information',
     type: UserProfileResponseDto,
   })
-  user: UserProfileResponseDto;
+  user!: UserProfileResponseDto;
 }

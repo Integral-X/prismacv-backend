@@ -7,12 +7,11 @@ import { LinkedInCvService } from './services/linkedin-cv.service';
 import { LinkedInStrategy } from './strategies/linkedin.strategy';
 import { GoogleOAuthProvider } from './services/google-oauth.provider';
 import { GoogleStrategy } from './strategies/google.strategy';
-import { UsersService } from '@/modules/auth/users.service';
-import { PrismaService } from '@/config/prisma.service';
+import { AuthModule } from '@/modules/auth/auth.module';
 import { AuthMapper } from '@/modules/auth/mappers/auth.mapper';
 
 @Module({
-  imports: [PassportModule],
+  imports: [PassportModule, AuthModule],
   controllers: [OAuthController],
   providers: [
     OAuthService,
@@ -21,8 +20,6 @@ import { AuthMapper } from '@/modules/auth/mappers/auth.mapper';
     LinkedInStrategy,
     GoogleOAuthProvider,
     GoogleStrategy,
-    UsersService,
-    PrismaService,
     AuthMapper,
   ],
   exports: [OAuthService],

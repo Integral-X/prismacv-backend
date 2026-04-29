@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { OAuthService } from '../services/oauth.service';
 import { GoogleOAuthProvider } from '../services/google-oauth.provider';
 import { User } from '@/modules/auth/entities/user.entity';
+import { TokenPair } from '@/modules/auth/entities/token-pair.entity';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
@@ -13,10 +14,19 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     private readonly oauthService: OAuthService,
     private readonly googleProvider: GoogleOAuthProvider,
   ) {
+    const clientID = configService.get<string>('GOOGLE_CLIENT_ID');
+    const clientSecret = configService.get<string>('GOOGLE_CLIENT_SECRET');
+    const callbackURL = configService.get<string>('GOOGLE_CALLBACK_URL');
+    if (!clientID || !clientSecret || !callbackURL) {
+      throw new Error(
+        'Google OAuth requires GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_CALLBACK_URL',
+      );
+    }
+
     super({
-      clientID: configService.get<string>('GOOGLE_CLIENT_ID'),
-      clientSecret: configService.get<string>('GOOGLE_CLIENT_SECRET'),
-      callbackURL: configService.get<string>('GOOGLE_CALLBACK_URL'),
+      clientID,
+      clientSecret,
+      callbackURL,
       scope: ['email', 'profile'],
     });
   }
@@ -25,7 +35,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     accessToken: string,
     refreshToken: string,
     profile: Profile,
-  ): Promise<{ user: User }> {
+  ): Promise<{ user: User; tokens: TokenPair }> {
     // Transform Google profile → our internal format
     const oauthProfile = this.googleProvider.validateProfile(profile);
 

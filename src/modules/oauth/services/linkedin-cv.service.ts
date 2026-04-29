@@ -5,10 +5,12 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  RequestTimeoutException,
 } from '@nestjs/common';
 import { UsersService } from '@/modules/auth/users.service';
 import { LinkedinCvResponseDto } from '../dto/linkedin-cv.response.dto';
 import { OAUTH_PROVIDERS } from '@/shared/constants/oauth.constants';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@/config/prisma.service';
 import { Prisma } from '@prisma/client';
 import { generateUuidv7 } from '@/shared/utils/uuid.util';
@@ -21,6 +23,7 @@ export class LinkedInCvService {
   constructor(
     private readonly usersService: UsersService,
     private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
   ) {}
 
   async importForUser(
@@ -114,11 +117,13 @@ export class LinkedInCvService {
       courses: [],
     };
 
+    const canonicalUrl = resolvedUrl ?? url!;
+
     const persistedImport = await this.prisma.linkedinCvImport.upsert({
       where: {
         userId_linkedinUrl: {
           userId,
-          linkedinUrl: url,
+          linkedinUrl: canonicalUrl,
         },
       },
       create: {
@@ -126,7 +131,7 @@ export class LinkedInCvService {
         userId,
         provider: response.source.provider,
         linkedinHandle: response.source.handle,
-        linkedinUrl: url,
+        linkedinUrl: canonicalUrl,
         fetchedAt: new Date(response.source.fetchedAt),
         dataScope: this.toJson(response.source.dataScope),
         warnings: this.toJson(response.source.warnings ?? null),
@@ -371,7 +376,11 @@ export class LinkedInCvService {
 
   private async fetchJson<T>(url: string, accessToken: string): Promise<T> {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30_000);
+    const timeoutMs = this.configService.get<number>(
+      'LINKEDIN_API_TIMEOUT_MS',
+      30_000,
+    );
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     let response: Response;
     try {
@@ -385,7 +394,9 @@ export class LinkedInCvService {
       });
     } catch (err: any) {
       if (err?.name === 'AbortError') {
-        throw new Error(`LinkedIn API request timed out after 30s (${url})`);
+        throw new RequestTimeoutException(
+          `LinkedIn API request timed out after ${timeoutMs}ms (${url})`,
+        );
       }
       throw err;
     } finally {
