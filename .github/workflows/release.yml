@@ -72,6 +72,11 @@ jobs:
             ghcr.io/${{ steps.repo.outputs.lowercase }}:${{ steps.semantic.outputs.new_release_version }}
             ghcr.io/${{ steps.repo.outputs.lowercase }}:latest
 
+      - name: Deploy to Coolify
+        if: steps.semantic.outputs.new_release_published == 'true'
+        run: |
+          curl -sf -H "Authorization: Bearer ${{ secrets.COOLIFY_API_TOKEN }}" "${{ secrets.COOLIFY_WEBHOOK_URL }}" || { echo "Coolify deploy trigger failed"; exit 1; }
+
       - name: Release Summary
         if: steps.semantic.outputs.new_release_published == 'true'
         run: |
