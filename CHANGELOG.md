@@ -1,3 +1,10 @@
+## [1.6.3](https://github.com/Integral-X/prismacv-backend/compare/v1.6.2...v1.6.3) (2026-04-29)
+
+
+### Bug Fixes
+
+* exclude prisma dir from tsconfig.build to fix dist output path ([#156](https://github.com/Integral-X/prismacv-backend/issues/156)) ([28a4a96](https://github.com/Integral-X/prismacv-backend/commit/28a4a9676e71e1f5e699b20aeb0f77779011b5f8))
+
 ## [1.6.2](https://github.com/Integral-X/prismacv-backend/compare/v1.6.1...v1.6.2) (2026-04-29)
 
 
