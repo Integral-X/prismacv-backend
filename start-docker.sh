@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/bin/sh
 set -e
 
 echo "Starting database migrations..."
-npm run db:deploy
+npx prisma migrate deploy
 
 echo "Starting NestJS server..."
-npm run start:dev
+node dist/main.js

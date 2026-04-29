@@ -16,6 +16,8 @@ import { OAuthModule } from './modules/oauth/oauth.module';
 import { UnleashModule } from './modules/unleash/unleash.module';
 import { HealthModule } from './modules/health/health.module';
 import { EmailModule } from './modules/email/email.module';
+import { CvModule } from './modules/cv/cv.module';
+import { UsersModule } from './modules/users/users.module';
 
 // Guards
 import { JwtAdminAuthGuard } from './modules/auth/guards/jwt-auth.guard';
@@ -53,6 +55,8 @@ import { JwtAdminAuthGuard } from './modules/auth/guards/jwt-auth.guard';
     OAuthModule,
     UnleashModule,
     HealthModule,
+    CvModule,
+    UsersModule,
   ],
   providers: [
     {
