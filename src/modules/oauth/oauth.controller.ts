@@ -9,6 +9,7 @@ import {
   BadRequestException,
   HttpStatus,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   ApiTags,
   ApiOperation,
@@ -32,15 +33,62 @@ import { LinkedInCvService } from './services/linkedin-cv.service';
 @ApiBearerAuth('JWT-auth')
 @Controller('oauth')
 export class OAuthController {
+  private readonly frontendUrl: string;
+
   constructor(
     private readonly authMapper: AuthMapper,
     private readonly linkedInCvService: LinkedInCvService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.frontendUrl = this.resolveFrontendUrl();
+  }
+
+  private resolveFrontendUrl(): string {
+    const defaultFrontendUrl = 'http://localhost:3001';
+    const configuredFrontendUrl =
+      this.configService.get<string>('FRONTEND_URL');
+
+    if (configuredFrontendUrl?.trim()) {
+      try {
+        return new URL(configuredFrontendUrl.trim()).origin;
+      } catch {
+        return defaultFrontendUrl;
+      }
+    }
+
+    const corsOrigin = this.configService.get<string>('CORS_ORIGIN')?.trim();
+    if (!corsOrigin || corsOrigin === '*') {
+      return defaultFrontendUrl;
+    }
+
+    const origins = corsOrigin
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter((origin) => origin.length > 0);
+
+    if (origins.length !== 1) {
+      return defaultFrontendUrl;
+    }
+
+    try {
+      return new URL(origins[0]).origin;
+    } catch {
+      return defaultFrontendUrl;
+    }
+  }
+
+  private buildOAuthRedirectUrl(
+    response: OAuthCallbackResponseDto,
+  ): string {
+    const payload = Buffer.from(JSON.stringify(response)).toString('base64url');
+    return `${this.frontendUrl}/auth/oauth-callback#token=${payload}`;
+  }
 
   /* ---------------------------
         LINKEDIN AUTH FLOW
   ---------------------------- */
 
+  @Public()
   @Get('linkedin')
   @UseGuards(LinkedInAuthGuard)
   @ApiOperation({
@@ -51,10 +99,6 @@ export class OAuthController {
   @ApiResponse({
     status: HttpStatus.FOUND,
     description: 'Redirects to LinkedIn OAuth page',
-  })
-  @ApiResponse({
-    status: HttpStatus.FORBIDDEN,
-    description: 'Forbidden - Missing or invalid JWT token',
   })
   async linkedinAuth() {
     // Handled by Passport
@@ -73,13 +117,14 @@ export class OAuthController {
       refreshToken: tokens.refreshToken,
     };
 
-    return res.status(HttpStatus.OK).json(response);
+    return res.redirect(HttpStatus.FOUND, this.buildOAuthRedirectUrl(response));
   }
 
   /* ---------------------------
             GOOGLE AUTH FLOW
   ---------------------------- */
 
+  @Public()
   @Get('google')
   @UseGuards(GoogleAuthGuard)
   @ApiOperation({
@@ -108,7 +153,7 @@ export class OAuthController {
       refreshToken: tokens.refreshToken,
     };
 
-    return res.status(HttpStatus.OK).json(response);
+    return res.redirect(HttpStatus.FOUND, this.buildOAuthRedirectUrl(response));
   }
 
   /* ---------------------------

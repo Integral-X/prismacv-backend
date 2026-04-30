@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, HttpStatus } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { OAuthController } from '../../../src/modules/oauth/oauth.controller';
 import { AuthMapper } from '../../../src/modules/auth/mappers/auth.mapper';
 import { LinkedInCvService } from '../../../src/modules/oauth/services/linkedin-cv.service';
@@ -45,6 +46,15 @@ describe('OAuthController', () => {
             importForUser: jest.fn(),
           },
         },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn((key: string) => {
+              if (key === 'FRONTEND_URL') return 'http://localhost:3001';
+              return undefined;
+            }),
+          },
+        },
       ],
     }).compile();
 
@@ -58,47 +68,39 @@ describe('OAuthController', () => {
   });
 
   describe('linkedinCallback', () => {
-    it('should return user data and tokens', async () => {
+    it('should redirect to frontend with encoded tokens', async () => {
       const req = {
         user: { user: testUser, tokens: testTokens },
       } as any;
       const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
+        redirect: jest.fn(),
       } as any;
 
       await controller.linkedinCallback(req, res);
 
       expect(authMapper.userToUserAuthResponse).toHaveBeenCalledWith(testUser);
-      expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          accessToken: 'access-token',
-          refreshToken: 'refresh-token',
-        }),
+      expect(res.redirect).toHaveBeenCalledWith(
+        HttpStatus.FOUND,
+        expect.stringContaining('/auth/oauth-callback#token='),
       );
     });
   });
 
   describe('googleCallback', () => {
-    it('should return user data and tokens', async () => {
+    it('should redirect to frontend with encoded tokens', async () => {
       const req = {
         user: { user: testUser, tokens: testTokens },
       } as any;
       const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
+        redirect: jest.fn(),
       } as any;
 
       await controller.googleCallback(req, res);
 
       expect(authMapper.userToUserAuthResponse).toHaveBeenCalledWith(testUser);
-      expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          accessToken: 'access-token',
-          refreshToken: 'refresh-token',
-        }),
+      expect(res.redirect).toHaveBeenCalledWith(
+        HttpStatus.FOUND,
+        expect.stringContaining('/auth/oauth-callback#token='),
       );
     });
   });
