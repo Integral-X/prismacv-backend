@@ -40,9 +40,41 @@ export class OAuthController {
     private readonly linkedInCvService: LinkedInCvService,
     private readonly configService: ConfigService,
   ) {
-    this.frontendUrl = (
-      this.configService.get<string>('CORS_ORIGIN') ?? 'http://localhost:3001'
-    ).replace(/\/$/, '');
+    this.frontendUrl = this.resolveFrontendUrl();
+  }
+
+  private resolveFrontendUrl(): string {
+    const defaultFrontendUrl = 'http://localhost:3001';
+    const configuredFrontendUrl =
+      this.configService.get<string>('FRONTEND_URL');
+
+    if (configuredFrontendUrl?.trim()) {
+      try {
+        return new URL(configuredFrontendUrl.trim()).origin;
+      } catch {
+        return defaultFrontendUrl;
+      }
+    }
+
+    const corsOrigin = this.configService.get<string>('CORS_ORIGIN')?.trim();
+    if (!corsOrigin || corsOrigin === '*') {
+      return defaultFrontendUrl;
+    }
+
+    const origins = corsOrigin
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter((origin) => origin.length > 0);
+
+    if (origins.length !== 1) {
+      return defaultFrontendUrl;
+    }
+
+    try {
+      return new URL(origins[0]).origin;
+    } catch {
+      return defaultFrontendUrl;
+    }
   }
 
   private buildOAuthRedirectUrl(

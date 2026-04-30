@@ -49,7 +49,10 @@ describe('OAuthController', () => {
         {
           provide: ConfigService,
           useValue: {
-            get: jest.fn().mockReturnValue('http://localhost:3001'),
+            get: jest.fn((key: string) => {
+              if (key === 'FRONTEND_URL') return 'http://localhost:3001';
+              return undefined;
+            }),
           },
         },
       ],
