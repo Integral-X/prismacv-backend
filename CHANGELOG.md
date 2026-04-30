@@ -1,3 +1,10 @@
+## [1.6.4](https://github.com/Integral-X/prismacv-backend/compare/v1.6.3...v1.6.4) (2026-04-30)
+
+
+### Bug Fixes
+
+* make OAuth endpoints public and redirect to frontend ([#158](https://github.com/Integral-X/prismacv-backend/issues/158)) ([d67baee](https://github.com/Integral-X/prismacv-backend/commit/d67baeebf0170a7c6df31697a6b4a01f30281095))
+
 ## [1.6.3](https://github.com/Integral-X/prismacv-backend/compare/v1.6.2...v1.6.3) (2026-04-29)
 
 
