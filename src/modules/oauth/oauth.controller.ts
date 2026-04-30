@@ -9,6 +9,7 @@ import {
   BadRequestException,
   HttpStatus,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   ApiTags,
   ApiOperation,
@@ -32,15 +33,30 @@ import { LinkedInCvService } from './services/linkedin-cv.service';
 @ApiBearerAuth('JWT-auth')
 @Controller('oauth')
 export class OAuthController {
+  private readonly frontendUrl: string;
+
   constructor(
     private readonly authMapper: AuthMapper,
     private readonly linkedInCvService: LinkedInCvService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.frontendUrl = (
+      this.configService.get<string>('CORS_ORIGIN') ?? 'http://localhost:3001'
+    ).replace(/\/$/, '');
+  }
+
+  private buildOAuthRedirectUrl(
+    response: OAuthCallbackResponseDto,
+  ): string {
+    const payload = Buffer.from(JSON.stringify(response)).toString('base64url');
+    return `${this.frontendUrl}/auth/oauth-callback#token=${payload}`;
+  }
 
   /* ---------------------------
         LINKEDIN AUTH FLOW
   ---------------------------- */
 
+  @Public()
   @Get('linkedin')
   @UseGuards(LinkedInAuthGuard)
   @ApiOperation({
@@ -51,10 +67,6 @@ export class OAuthController {
   @ApiResponse({
     status: HttpStatus.FOUND,
     description: 'Redirects to LinkedIn OAuth page',
-  })
-  @ApiResponse({
-    status: HttpStatus.FORBIDDEN,
-    description: 'Forbidden - Missing or invalid JWT token',
   })
   async linkedinAuth() {
     // Handled by Passport
@@ -73,13 +85,14 @@ export class OAuthController {
       refreshToken: tokens.refreshToken,
     };
 
-    return res.status(HttpStatus.OK).json(response);
+    return res.redirect(HttpStatus.FOUND, this.buildOAuthRedirectUrl(response));
   }
 
   /* ---------------------------
             GOOGLE AUTH FLOW
   ---------------------------- */
 
+  @Public()
   @Get('google')
   @UseGuards(GoogleAuthGuard)
   @ApiOperation({
@@ -108,7 +121,7 @@ export class OAuthController {
       refreshToken: tokens.refreshToken,
     };
 
-    return res.status(HttpStatus.OK).json(response);
+    return res.redirect(HttpStatus.FOUND, this.buildOAuthRedirectUrl(response));
   }
 
   /* ---------------------------
