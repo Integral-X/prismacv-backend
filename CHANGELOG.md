@@ -1,3 +1,10 @@
+## [1.7.1](https://github.com/Integral-X/prismacv-backend/compare/v1.7.0...v1.7.1) (2026-05-03)
+
+
+### Bug Fixes
+
+* add missing migration for platform tables (jobs, skills, interview) ([#163](https://github.com/Integral-X/prismacv-backend/issues/163)) ([7e04222](https://github.com/Integral-X/prismacv-backend/commit/7e042223bde311cd363f1729caeaac29f28b2ca0))
+
 # [1.7.0](https://github.com/Integral-X/prismacv-backend/compare/v1.6.6...v1.7.0) (2026-05-03)
 
 
