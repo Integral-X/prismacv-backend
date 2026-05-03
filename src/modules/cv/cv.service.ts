@@ -674,4 +674,85 @@ export class CvService {
       });
     });
   }
+
+  // ─── Sharing ─────────────────────────────────────────────────────────────
+
+  async shareCv(cvId: string, userId: string, isPublic: boolean) {
+    await this.findCvOrThrow(cvId, userId);
+
+    const existing = await this.prisma.cvShare.findUnique({
+      where: { cvId },
+    });
+
+    if (existing) {
+      const updated = await this.prisma.cvShare.update({
+        where: { cvId },
+        data: { isPublic },
+      });
+      return this.mapShareResponse(updated);
+    }
+
+    const shareSlug = `${generateUuidv7().slice(0, 8)}-${Date.now().toString(36)}`;
+    const share = await this.prisma.cvShare.create({
+      data: {
+        id: generateUuidv7(),
+        cvId,
+        shareSlug,
+        isPublic,
+      },
+    });
+
+    this.logger.log(`CV ${cvId} shared with slug ${shareSlug}`);
+    return this.mapShareResponse(share);
+  }
+
+  async unshareCv(cvId: string, userId: string) {
+    await this.findCvOrThrow(cvId, userId);
+
+    await this.prisma.cvShare.deleteMany({ where: { cvId } });
+    this.logger.log(`CV ${cvId} unshared`);
+  }
+
+  async getShareInfo(cvId: string, userId: string) {
+    await this.findCvOrThrow(cvId, userId);
+
+    const share = await this.prisma.cvShare.findUnique({ where: { cvId } });
+    return share ? this.mapShareResponse(share) : null;
+  }
+
+  async getPublicCv(shareSlug: string) {
+    const share = await this.prisma.cvShare.findUnique({
+      where: { shareSlug },
+      include: {
+        cv: { include: CV_INCLUDE_ALL },
+      },
+    });
+
+    if (!share || !share.isPublic) {
+      throw new NotFoundException('Shared CV not found');
+    }
+
+    await this.prisma.cvShare.update({
+      where: { shareSlug },
+      data: {
+        viewCount: { increment: 1 },
+        lastViewedAt: new Date(),
+      },
+    });
+
+    return share.cv;
+  }
+
+  private mapShareResponse(share: any) {
+    return {
+      id: share.id,
+      cvId: share.cvId,
+      shareSlug: share.shareSlug,
+      isPublic: share.isPublic,
+      viewCount: share.viewCount,
+      downloadCount: share.downloadCount,
+      lastViewedAt: share.lastViewedAt?.toISOString() ?? undefined,
+      createdAt: share.createdAt.toISOString(),
+    };
+  }
 }
