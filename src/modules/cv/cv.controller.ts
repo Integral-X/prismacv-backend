@@ -61,8 +61,8 @@ import {
 } from './dto/response/cv.response.dto';
 import {
   ShareCvRequestDto,
-  CvShareResponseDto,
 } from './dto/request/share-cv.request.dto';
+import { CvShareResponseDto } from './dto/response/share-cv.response.dto';
 import { PaginatedResponseDto } from '@/shared/dto/paginated-response.dto';
 
 @ApiTags('CV')

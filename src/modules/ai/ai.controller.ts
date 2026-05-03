@@ -30,11 +30,11 @@ import {
 @ApiTags('AI Resume Optimization')
 @ApiBearerAuth('JWT-auth')
 @Public()
-@Controller('cv')
+@Controller('ai')
 export class AiController {
   constructor(private readonly aiService: AiService) {}
 
-  @Post(':id/analyze')
+  @Post('cv/:id/analyze')
   @UseGuards(JwtUserAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -52,7 +52,7 @@ export class AiController {
     return this.aiService.analyzeCv(id, user.id);
   }
 
-  @Post(':id/optimize')
+  @Post('cv/:id/optimize')
   @UseGuards(JwtUserAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({

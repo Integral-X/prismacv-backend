@@ -1,13 +1,17 @@
-import { Module, Logger } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { AiController } from './ai.controller';
 import { AiService } from './ai.service';
 import { CvModule } from '@/modules/cv/cv.module';
-import { PrismaService } from '@/config/prisma.service';
+import { BuiltInAiProvider } from './providers/built-in-ai.provider';
+import { AI_PROVIDER } from './interfaces/ai-provider.interface';
 
 @Module({
   imports: [CvModule],
   controllers: [AiController],
-  providers: [AiService, PrismaService, Logger],
+  providers: [
+    AiService,
+    { provide: AI_PROVIDER, useClass: BuiltInAiProvider },
+  ],
   exports: [AiService],
 })
 export class AiModule {}

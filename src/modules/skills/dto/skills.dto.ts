@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsInt, Min, Max } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsIn, Min, Max } from 'class-validator';
 
 export class AssessSkillsRequestDto {
   @ApiProperty({
@@ -35,7 +35,7 @@ export class UpdateSkillProgressRequestDto {
     default: 'not_started',
   })
   @IsOptional()
-  @IsString()
+  @IsIn(['not_started', 'learning', 'completed'])
   status?: string;
 }
 

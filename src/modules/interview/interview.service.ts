@@ -17,22 +17,31 @@ export class InterviewService {
     difficulty?: InterviewDifficulty,
     random?: boolean,
   ) {
-    const where: any = {};
+    const where: {
+      role?: string;
+      category?: string;
+      difficulty?: InterviewDifficulty;
+    } = {};
     if (role) where.role = role;
     if (category) where.category = category;
     if (difficulty) where.difficulty = difficulty;
 
     if (random) {
-      // For random selection, get all matching and shuffle
-      const all = await this.prisma.interviewQuestion.findMany({ where });
+      // Cap the pool to avoid loading unbounded data into memory
+      const maxPool = 200;
+      const all = await this.prisma.interviewQuestion.findMany({
+        where,
+        take: maxPool,
+      });
       const shuffled = this.shuffleArray(all);
       const paginated = shuffled.slice(
         pagination.skip,
         pagination.skip + pagination.take,
       );
+      const total = await this.prisma.interviewQuestion.count({ where });
       return PaginatedResponseDto.create(
         paginated,
-        all.length,
+        Math.min(total, maxPool),
         pagination.page,
         pagination.limit,
       );

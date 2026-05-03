@@ -1,9 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, MinLength } from 'class-validator';
-
-export class AnalyzeCvRequestDto {
-  // No additional fields needed — CV ID comes from URL param
-}
+import { IsString, MinLength, MaxLength } from 'class-validator';
 
 export class OptimizeCvRequestDto {
   @ApiProperty({
@@ -13,6 +9,7 @@ export class OptimizeCvRequestDto {
   })
   @IsString()
   @MinLength(20)
+  @MaxLength(10000)
   jobDescription!: string;
 }
 

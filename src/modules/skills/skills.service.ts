@@ -130,7 +130,12 @@ export class SkillsService {
     });
 
     const now = new Date();
-    const data: any = {
+    const data: {
+      level?: number;
+      status?: string;
+      startedAt?: Date;
+      completedAt?: Date;
+    } = {
       ...(level !== undefined ? { level } : {}),
       ...(status ? { status } : {}),
     };

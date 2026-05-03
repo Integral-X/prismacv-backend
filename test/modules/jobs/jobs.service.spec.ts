@@ -134,17 +134,19 @@ describe('JobsService', () => {
 
   describe('getStats', () => {
     it('should return aggregated stats', async () => {
-      prisma.job.findMany.mockResolvedValue([
-        { status: 'SAVED', appliedAt: null },
-        { status: 'APPLIED', appliedAt: new Date() },
-        { status: 'INTERVIEW', appliedAt: new Date() },
-      ] as never);
+      prisma.job.count.mockResolvedValueOnce(3); // total
+      (prisma.job.groupBy as jest.Mock).mockResolvedValueOnce([
+        { status: 'SAVED', _count: { status: 1 } },
+        { status: 'APPLIED', _count: { status: 1 } },
+        { status: 'INTERVIEW', _count: { status: 1 } },
+      ]);
+      prisma.job.count.mockResolvedValueOnce(1); // appliedThisWeek
 
       const result = await service.getStats(userId);
       expect(result).toHaveProperty('total', 3);
       expect(result).toHaveProperty('byStatus');
       expect(result.byStatus).toEqual({ SAVED: 1, APPLIED: 1, INTERVIEW: 1 });
-      expect(result).toHaveProperty('appliedThisWeek');
+      expect(result).toHaveProperty('appliedThisWeek', 1);
       expect(result).toHaveProperty('pendingInterviews', 1);
       expect(result).toHaveProperty('activeOffers', 0);
     });

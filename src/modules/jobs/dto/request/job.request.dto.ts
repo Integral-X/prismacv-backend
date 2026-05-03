@@ -7,6 +7,7 @@ import {
   IsInt,
   IsUrl,
   MinLength,
+  MaxLength,
   Min,
 } from 'class-validator';
 import { JobStatus } from '@prisma/client';
@@ -15,11 +16,13 @@ export class CreateJobRequestDto {
   @ApiProperty({ description: 'Job title', example: 'Software Engineer' })
   @IsString()
   @MinLength(1)
+  @MaxLength(200)
   title!: string;
 
   @ApiProperty({ description: 'Company name', example: 'Google' })
   @IsString()
   @MinLength(1)
+  @MaxLength(200)
   company!: string;
 
   @ApiPropertyOptional({ description: 'Job listing URL' })
@@ -66,6 +69,7 @@ export class CreateJobRequestDto {
   @ApiPropertyOptional({ description: 'Notes about this application' })
   @IsOptional()
   @IsString()
+  @MaxLength(5000)
   notes?: string;
 }
 
@@ -74,12 +78,14 @@ export class UpdateJobRequestDto {
   @IsOptional()
   @IsString()
   @MinLength(1)
+  @MaxLength(200)
   title?: string;
 
   @ApiPropertyOptional({ description: 'Company name' })
   @IsOptional()
   @IsString()
   @MinLength(1)
+  @MaxLength(200)
   company?: string;
 
   @ApiPropertyOptional({ description: 'Job listing URL' })
@@ -125,6 +131,7 @@ export class UpdateJobRequestDto {
   @ApiPropertyOptional({ description: 'Notes' })
   @IsOptional()
   @IsString()
+  @MaxLength(5000)
   notes?: string;
 }
 
@@ -138,5 +145,6 @@ export class CreateJobNoteRequestDto {
   @ApiProperty({ description: 'Note content' })
   @IsString()
   @MinLength(1)
+  @MaxLength(5000)
   content!: string;
 }

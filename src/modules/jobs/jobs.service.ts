@@ -108,18 +108,36 @@ export class JobsService {
   }
 
   async update(jobId: string, userId: string, dto: UpdateJobRequestDto) {
-    await this.findJobOrThrow(jobId, userId);
+    const existing = await this.findJobOrThrow(jobId, userId);
 
-    const data: any = { ...dto };
+    const data: {
+      title?: string;
+      company?: string;
+      url?: string;
+      location?: string;
+      isRemote?: boolean;
+      salaryMin?: number;
+      salaryMax?: number;
+      salaryCurrency?: string;
+      status?: JobStatus;
+      notes?: string;
+      appliedAt?: Date;
+    } = {};
+
+    if (dto.title !== undefined) data.title = dto.title;
+    if (dto.company !== undefined) data.company = dto.company;
+    if (dto.url !== undefined) data.url = dto.url;
+    if (dto.location !== undefined) data.location = dto.location;
+    if (dto.isRemote !== undefined) data.isRemote = dto.isRemote;
+    if (dto.salaryMin !== undefined) data.salaryMin = dto.salaryMin;
+    if (dto.salaryMax !== undefined) data.salaryMax = dto.salaryMax;
+    if (dto.salaryCurrency !== undefined) data.salaryCurrency = dto.salaryCurrency;
+    if (dto.status !== undefined) data.status = dto.status;
+    if (dto.notes !== undefined) data.notes = dto.notes;
 
     // Set appliedAt when status changes to APPLIED
-    if (dto.status === 'APPLIED') {
-      const existing = await this.prisma.job.findUnique({
-        where: { id: jobId },
-      });
-      if (existing && !existing.appliedAt) {
-        data.appliedAt = new Date();
-      }
+    if (dto.status === 'APPLIED' && !existing.appliedAt) {
+      data.appliedAt = new Date();
     }
 
     return this.prisma.job.update({
@@ -130,16 +148,11 @@ export class JobsService {
   }
 
   async updateStatus(jobId: string, userId: string, status: JobStatus) {
-    await this.findJobOrThrow(jobId, userId);
+    const existing = await this.findJobOrThrow(jobId, userId);
 
-    const data: any = { status };
-    if (status === 'APPLIED') {
-      const existing = await this.prisma.job.findUnique({
-        where: { id: jobId },
-      });
-      if (existing && !existing.appliedAt) {
-        data.appliedAt = new Date();
-      }
+    const data: { status: JobStatus; appliedAt?: Date } = { status };
+    if (status === 'APPLIED' && !existing.appliedAt) {
+      data.appliedAt = new Date();
     }
 
     return this.prisma.job.update({
@@ -181,25 +194,28 @@ export class JobsService {
   }
 
   async getStats(userId: string): Promise<JobStatsResponseDto> {
-    const jobs = await this.prisma.job.findMany({
-      where: { userId },
-      select: { status: true, appliedAt: true },
-    });
-
-    const byStatus: Record<string, number> = {};
-    for (const job of jobs) {
-      byStatus[job.status] = (byStatus[job.status] || 0) + 1;
-    }
-
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    const appliedThisWeek = jobs.filter(
-      j => j.appliedAt && j.appliedAt >= oneWeekAgo,
-    ).length;
+    const [total, statusCounts, appliedThisWeek] = await Promise.all([
+      this.prisma.job.count({ where: { userId } }),
+      this.prisma.job.groupBy({
+        by: ['status'],
+        where: { userId },
+        _count: { status: true },
+      }),
+      this.prisma.job.count({
+        where: { userId, appliedAt: { gte: oneWeekAgo } },
+      }),
+    ]);
+
+    const byStatus: Record<string, number> = {};
+    for (const row of statusCounts) {
+      byStatus[row.status] = row._count.status;
+    }
 
     return {
-      total: jobs.length,
+      total,
       byStatus,
       appliedThisWeek,
       pendingInterviews: byStatus['INTERVIEW'] || 0,

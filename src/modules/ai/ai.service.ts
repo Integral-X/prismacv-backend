@@ -1,22 +1,21 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CvService } from '@/modules/cv/cv.service';
-import { BuiltInAiProvider } from './providers/built-in-ai.provider';
 import type {
   AiProvider,
   CvContentForAnalysis,
   CvAnalysisResult,
   CvOptimizationResult,
 } from './interfaces/ai-provider.interface';
+import { AI_PROVIDER } from './interfaces/ai-provider.interface';
 
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
-  private readonly provider: AiProvider;
 
-  constructor(private readonly cvService: CvService) {
-    // Provider-agnostic: swap this line to use OpenAI, Anthropic, etc.
-    // For production, inject via ConfigService and factory pattern.
-    this.provider = new BuiltInAiProvider();
+  constructor(
+    private readonly cvService: CvService,
+    @Inject(AI_PROVIDER) private readonly provider: AiProvider,
+  ) {
     this.logger.log(
       `AI provider initialized: ${this.provider.constructor.name}`,
     );

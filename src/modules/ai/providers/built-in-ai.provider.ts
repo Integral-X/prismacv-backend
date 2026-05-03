@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import type {
   AiProvider,
   CvContentForAnalysis,
@@ -13,6 +13,7 @@ import type {
  * Does not require any external API key.
  * Provides baseline analysis for grammar patterns, ATS keywords, and readability.
  */
+@Injectable()
 export class BuiltInAiProvider implements AiProvider {
   private readonly logger = new Logger(BuiltInAiProvider.name);
 

@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AiService } from '@/modules/ai/ai.service';
 import { CvService } from '@/modules/cv/cv.service';
+import { BuiltInAiProvider } from '@/modules/ai/providers/built-in-ai.provider';
+import { AI_PROVIDER } from '@/modules/ai/interfaces/ai-provider.interface';
 
 describe('AiService', () => {
   let service: AiService;
@@ -61,6 +63,7 @@ describe('AiService', () => {
       providers: [
         AiService,
         { provide: CvService, useValue: cvService },
+        { provide: AI_PROVIDER, useClass: BuiltInAiProvider },
       ],
     }).compile();
 
