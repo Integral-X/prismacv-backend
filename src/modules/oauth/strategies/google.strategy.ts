@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, Profile } from 'passport-google-oauth20';
 import { ConfigService } from '@nestjs/config';
@@ -9,6 +9,9 @@ import { TokenPair } from '@/modules/auth/entities/token-pair.entity';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
+  private readonly logger = new Logger(GoogleStrategy.name);
+  private readonly configured: boolean;
+
   constructor(
     private readonly configService: ConfigService,
     private readonly oauthService: OAuthService,
@@ -17,18 +20,22 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     const clientID = configService.get<string>('GOOGLE_CLIENT_ID');
     const clientSecret = configService.get<string>('GOOGLE_CLIENT_SECRET');
     const callbackURL = configService.get<string>('GOOGLE_CALLBACK_URL');
-    if (!clientID || !clientSecret || !callbackURL) {
-      throw new Error(
-        'Google OAuth requires GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_CALLBACK_URL',
-      );
-    }
 
+    // Use placeholders when env vars are missing so the module bootstraps
+    // and routes are registered. Requests will fail gracefully in validate().
     super({
-      clientID,
-      clientSecret,
-      callbackURL,
+      clientID: clientID || 'not-configured',
+      clientSecret: clientSecret || 'not-configured',
+      callbackURL: callbackURL || 'http://localhost/not-configured',
       scope: ['email', 'profile'],
     });
+
+    this.configured = !!(clientID && clientSecret && callbackURL);
+    if (!this.configured) {
+      this.logger.warn(
+        'Google OAuth is not configured. Set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_CALLBACK_URL to enable it.',
+      );
+    }
   }
 
   async validate(
