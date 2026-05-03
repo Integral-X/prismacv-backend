@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, HttpStatus } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { OAuthController } from '../../../src/modules/oauth/oauth.controller';
 import { AuthMapper } from '../../../src/modules/auth/mappers/auth.mapper';
@@ -32,7 +32,7 @@ describe('OAuthController', () => {
         {
           provide: AuthMapper,
           useValue: {
-            userToUserAuthResponse: jest.fn().mockReturnValue({
+            userToProfileResponse: jest.fn().mockReturnValue({
               id: '1',
               email: 'user@example.com',
               name: 'Test User',
@@ -78,7 +78,7 @@ describe('OAuthController', () => {
 
       await controller.linkedinCallback(req, res);
 
-      expect(authMapper.userToUserAuthResponse).toHaveBeenCalledWith(testUser);
+      expect(authMapper.userToProfileResponse).toHaveBeenCalledWith(testUser);
       expect(res.redirect).toHaveBeenCalledWith(
         HttpStatus.FOUND,
         expect.stringContaining('/auth/oauth-callback#token='),
@@ -97,7 +97,7 @@ describe('OAuthController', () => {
 
       await controller.googleCallback(req, res);
 
-      expect(authMapper.userToUserAuthResponse).toHaveBeenCalledWith(testUser);
+      expect(authMapper.userToProfileResponse).toHaveBeenCalledWith(testUser);
       expect(res.redirect).toHaveBeenCalledWith(
         HttpStatus.FOUND,
         expect.stringContaining('/auth/oauth-callback#token='),
@@ -110,40 +110,15 @@ describe('OAuthController', () => {
       const mockResponse = { source: {}, profile: {} } as any;
       linkedInCvService.importForUser.mockResolvedValue(mockResponse);
 
-      const req = { user: { id: 'user-1' } } as any;
       const body = { handleOrUrl: 'john-doe' };
 
-      const result = await controller.importLinkedInProfile(req, body);
+      const result = await controller.importLinkedInProfile(testUser, body);
 
       expect(linkedInCvService.importForUser).toHaveBeenCalledWith(
-        'user-1',
+        '1',
         'john-doe',
       );
       expect(result).toBe(mockResponse);
-    });
-
-    it('should throw BadRequestException when no authenticated user', async () => {
-      const req = { user: undefined } as any;
-      const body = { handleOrUrl: 'john-doe' };
-
-      await expect(controller.importLinkedInProfile(req, body)).rejects.toThrow(
-        BadRequestException,
-      );
-    });
-
-    it('should resolve userId from sub field', async () => {
-      const mockResponse = { source: {}, profile: {} } as any;
-      linkedInCvService.importForUser.mockResolvedValue(mockResponse);
-
-      const req = { user: { sub: 'user-sub' } } as any;
-      const body = { handleOrUrl: 'jane-doe' };
-
-      await controller.importLinkedInProfile(req, body);
-
-      expect(linkedInCvService.importForUser).toHaveBeenCalledWith(
-        'user-sub',
-        'jane-doe',
-      );
     });
   });
 });
