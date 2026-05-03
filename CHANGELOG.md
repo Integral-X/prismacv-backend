@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/Integral-X/prismacv-backend/compare/v1.6.6...v1.7.0) (2026-05-03)
+
+
+### Features
+
+* Complete platform features - Jobs, AI, Skills, Interview modules ([#162](https://github.com/Integral-X/prismacv-backend/issues/162)) ([074fa4f](https://github.com/Integral-X/prismacv-backend/commit/074fa4f19b1e7ef0fd72df396808f8800fd21fa0))
+
 ## [1.6.6](https://github.com/Integral-X/prismacv-backend/compare/v1.6.5...v1.6.6) (2026-05-03)
 
 
