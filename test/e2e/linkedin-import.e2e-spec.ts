@@ -2,10 +2,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
 import { AppModule } from './../../src/app.module';
 import { INestApplication } from '@nestjs/common';
+import { PrismaService } from './../../src/config/prisma.service';
 
 describe('LinkedIn Import URL Validation (e2e)', () => {
   let app: INestApplication;
   let accessToken: string;
+
+  const testUserEmail = 'e2e-linkedin-import@prismacv.test';
+  const testUserPassword = 'Test1234!';
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -15,20 +19,37 @@ describe('LinkedIn Import URL Validation (e2e)', () => {
     app = moduleFixture.createNestApplication();
     await app.init();
 
-    // Login to get an access token
-    const adminEmail =
-      process.env.MASTER_ADMIN_EMAIL?.trim() ?? 'admin@example.com';
-    const adminPassword = process.env.MASTER_ADMIN_PASSWORD ?? 'admin';
+    // Create & verify a regular user so we can obtain a user-audience JWT
+    const prisma = app.get(PrismaService);
+    const bcrypt = await import('bcryptjs');
+    const { uuidv7 } = await import('uuidv7');
+
+    await prisma.user.upsert({
+      where: { email: testUserEmail },
+      update: { emailVerified: true },
+      create: {
+        id: uuidv7(),
+        email: testUserEmail,
+        password: await bcrypt.hash(testUserPassword, 10),
+        name: 'E2E LinkedIn Test User',
+        role: 'REGULAR',
+        isMasterAdmin: false,
+        emailVerified: true,
+        provider: null,
+      },
+    });
 
     const loginResponse = await request(app.getHttpServer())
-      .post('/auth/admin/login')
-      .send({ email: adminEmail, password: adminPassword })
+      .post('/auth/user/login')
+      .send({ email: testUserEmail, password: testUserPassword })
       .expect(200);
 
     accessToken = loginResponse.body.accessToken;
   });
 
   afterAll(async () => {
+    const prisma = app.get(PrismaService);
+    await prisma.user.deleteMany({ where: { email: testUserEmail } });
     await app.close();
   });
 
