@@ -26,34 +26,68 @@ cp .env.example .env    # fill in required values
 
 Stop everything: `./stop.sh`
 
-### Required Environment Variables
+### Environment Variables
 
-| Variable | Purpose |
-| --- | --- |
-| `DATABASE_URL` | PostgreSQL connection string |
-| `JWT_SECRET` | Access token signing (≥ 32 chars) |
-| `JWT_REFRESH_SECRET` | Refresh token signing (≥ 32 chars) |
+Copy `.env.example` to `.env` and fill in the values.
 
-See `.env.example` for the full list (SMTP, OAuth, Unleash, etc.).
+#### Core (required)
+
+| Variable | Purpose | Example |
+| --- | --- | --- |
+| `NODE_ENV` | Environment | `production` |
+| `PORT` | Server port | `3210` |
+| `API_PREFIX` | Global route prefix | `api` |
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@host:5432/prismacv` |
+| `JWT_SECRET` | Access token signing (≥ 32 chars) | *(random)* |
+| `JWT_REFRESH_SECRET` | Refresh token signing (≥ 32 chars) | *(random, different)* |
+| `ENCRYPTION_KEY` | OAuth token encryption (≥ 32 chars) | `openssl rand -base64 32` |
+| `MASTER_ADMIN_EMAIL` | Seed admin email | `admin@prismacv.com` |
+| `MASTER_ADMIN_PASSWORD` | Seed admin password | *(strong password)* |
+| `CORS_ORIGIN` | Allowed frontend origin(s) | `https://www.prismacv.com` |
+| `FRONTEND_URL` | Frontend URL for OAuth redirects | `https://www.prismacv.com` |
+
+#### Email / OTP (required for user registration)
+
+| Variable | Purpose | Example |
+| --- | --- | --- |
+| `SMTP_HOST` | SMTP server | `smtp.gmail.com` |
+| `SMTP_PORT` | SMTP port | `587` |
+| `SMTP_USER` | SMTP username | `noreply@prismacv.com` |
+| `SMTP_PASS` | SMTP password / app password | *(app password)* |
+| `SMTP_FROM_NAME` | Sender display name | `PrismaCV` |
+| `SMTP_FROM_EMAIL` | Sender email | `noreply@prismacv.com` |
+
+#### Google OAuth (optional — gracefully disabled if unset)
+
+| Variable | Purpose | Example |
+| --- | --- | --- |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID | `*.apps.googleusercontent.com` |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | *(from Google Cloud Console)* |
+| `GOOGLE_CALLBACK_URL` | OAuth callback URL | `https://api.prismacv.com/api/v1/oauth/google/callback` |
+
+#### LinkedIn OAuth (optional — gracefully disabled if unset)
+
+| Variable | Purpose | Example |
+| --- | --- | --- |
+| `LINKEDIN_CLIENT_ID` | LinkedIn OAuth client ID | *(from LinkedIn Dev Portal)* |
+| `LINKEDIN_CLIENT_SECRET` | LinkedIn OAuth client secret | *(from LinkedIn Dev Portal)* |
+| `LINKEDIN_CALLBACK_URL` | OAuth callback URL | `https://api.prismacv.com/api/v1/oauth/linkedin/callback` |
+
+#### Optional
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `JWT_EXPIRES_IN` | `15m` | Access token TTL |
+| `JWT_REFRESH_EXPIRES_IN` | `7d` | Refresh token TTL |
+| `BCRYPT_ROUNDS` | `12` | Password hash rounds |
+| `DISABLE_CORS` | `false` | Disable CORS (dev only) |
+| `UNLEASH_URL` | — | Unleash server URL (mock mode if unset) |
+| `UNLEASH_API_TOKEN` | — | Unleash server-side token |
+| `LOG_LEVEL` | `info` | Logging verbosity |
 
 ## API Documentation
 
 Swagger UI: [https://api.prismacv.com/api/docs](https://api.prismacv.com/api/docs)
-
-### Core Endpoints
-
-| Method | Path | Description |
-| --- | --- | --- |
-| POST | `/api/v1/auth/user/signup` | Register + send OTP |
-| POST | `/api/v1/auth/user/login` | Login → tokens |
-| GET | `/api/v1/cv` | List user's CVs (paginated) |
-| POST | `/api/v1/cv` | Create CV |
-| GET | `/api/v1/cv/:id` | Get CV with all sections |
-| PATCH | `/api/v1/cv/:id` | Update CV metadata |
-| DELETE | `/api/v1/cv/:id` | Delete CV |
-| POST | `/api/v1/cv/:id/duplicate` | Duplicate CV |
-| POST | `/api/v1/cv/import/linkedin` | Import from LinkedIn data |
-| GET | `/api/v1/cv/:id/export/pdf` | Export CV as PDF |
 
 ## Development
 
