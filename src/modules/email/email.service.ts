@@ -13,6 +13,21 @@ import {
   generatePasswordResetEmailPlainText,
   PasswordResetEmailTemplateData,
 } from './templates/password-reset-email.template';
+import {
+  generateWelcomeEmailTemplate,
+  generateWelcomeEmailPlainText,
+  WelcomeEmailTemplateData,
+} from './templates/welcome-email.template';
+import {
+  generatePasswordChangeEmailTemplate,
+  generatePasswordChangeEmailPlainText,
+  PasswordChangeEmailTemplateData,
+} from './templates/password-change-email.template';
+import {
+  generateAccountDeletionEmailTemplate,
+  generateAccountDeletionEmailPlainText,
+  AccountDeletionEmailTemplateData,
+} from './templates/account-deletion-email.template';
 
 @Injectable()
 export class EmailService {
@@ -177,6 +192,91 @@ export class EmailService {
     };
 
     this.logger.log(`Sending password reset email to: ${email}`);
+    return this.sendEmail(options);
+  }
+
+  /**
+   * Send welcome email after successful verification
+   */
+  async sendWelcomeEmail(
+    email: string,
+    userName?: string,
+  ): Promise<boolean> {
+    const appName = this.configService.get<string>('APP_NAME', 'PrismaCV');
+    const frontendUrl = this.configService.get<string>(
+      'FRONTEND_URL',
+      'http://localhost:3000',
+    );
+
+    const templateData: WelcomeEmailTemplateData = {
+      appName,
+      userName,
+      loginUrl: `${frontendUrl}/login`,
+    };
+
+    const options: EmailOptions = {
+      to: email,
+      subject: `Welcome to ${appName}!`,
+      html: generateWelcomeEmailTemplate(templateData),
+      text: generateWelcomeEmailPlainText(templateData),
+    };
+
+    this.logger.log(`Sending welcome email to: ${email}`);
+    return this.sendEmail(options);
+  }
+
+  /**
+   * Send password change confirmation email
+   */
+  async sendPasswordChangeEmail(
+    email: string,
+    userName?: string,
+  ): Promise<boolean> {
+    const appName = this.configService.get<string>('APP_NAME', 'PrismaCV');
+    const supportEmail = this.configService.get<string>(
+      'SUPPORT_EMAIL',
+      'support@prismacv.com',
+    );
+
+    const templateData: PasswordChangeEmailTemplateData = {
+      appName,
+      userName,
+      supportEmail,
+    };
+
+    const options: EmailOptions = {
+      to: email,
+      subject: `${appName} - Password Changed`,
+      html: generatePasswordChangeEmailTemplate(templateData),
+      text: generatePasswordChangeEmailPlainText(templateData),
+    };
+
+    this.logger.log(`Sending password change email to: ${email}`);
+    return this.sendEmail(options);
+  }
+
+  /**
+   * Send account deletion confirmation email
+   */
+  async sendAccountDeletionEmail(
+    email: string,
+    userName?: string,
+  ): Promise<boolean> {
+    const appName = this.configService.get<string>('APP_NAME', 'PrismaCV');
+
+    const templateData: AccountDeletionEmailTemplateData = {
+      appName,
+      userName,
+    };
+
+    const options: EmailOptions = {
+      to: email,
+      subject: `${appName} - Account Deleted`,
+      html: generateAccountDeletionEmailTemplate(templateData),
+      text: generateAccountDeletionEmailPlainText(templateData),
+    };
+
+    this.logger.log(`Sending account deletion email to: ${email}`);
     return this.sendEmail(options);
   }
 

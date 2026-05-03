@@ -59,6 +59,10 @@ import {
   LanguageResponseDto,
   CustomSectionResponseDto,
 } from './dto/response/cv.response.dto';
+import {
+  ShareCvRequestDto,
+} from './dto/request/share-cv.request.dto';
+import { CvShareResponseDto } from './dto/response/share-cv.response.dto';
 import { PaginatedResponseDto } from '@/shared/dto/paginated-response.dto';
 
 @ApiTags('CV')
@@ -261,6 +265,79 @@ export class CvController {
       'Content-Length': pdf.length,
     });
     res.end(pdf);
+  }
+
+  // ─── Sharing ─────────────────────────────────────────────────────────────
+
+  @Post(':id/share')
+  @UseGuards(JwtUserAuthGuard)
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Share a CV',
+    description: 'Generates a public share link for the CV.',
+  })
+  @ApiParam({ name: 'id', description: 'CV UUID' })
+  @ApiBody({ type: ShareCvRequestDto })
+  @ApiResponse({
+    status: 201,
+    description: 'CV shared',
+    type: CvShareResponseDto,
+  })
+  async share(
+    @GetUser() user: User,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ShareCvRequestDto,
+  ): Promise<CvShareResponseDto> {
+    return this.cvService.shareCv(id, user.id, dto.isPublic ?? true);
+  }
+
+  @Delete(':id/share')
+  @UseGuards(JwtUserAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Unshare a CV',
+    description: 'Removes the public share link.',
+  })
+  @ApiParam({ name: 'id', description: 'CV UUID' })
+  @ApiResponse({ status: 204, description: 'Share removed' })
+  async unshare(
+    @GetUser() user: User,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<void> {
+    await this.cvService.unshareCv(id, user.id);
+  }
+
+  @Get(':id/share')
+  @UseGuards(JwtUserAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get share info for a CV',
+    description: 'Returns share details including analytics.',
+  })
+  @ApiParam({ name: 'id', description: 'CV UUID' })
+  @ApiResponse({ status: 200, type: CvShareResponseDto })
+  async getShareInfo(
+    @GetUser() user: User,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<CvShareResponseDto | null> {
+    return this.cvService.getShareInfo(id, user.id);
+  }
+
+  @Get('public/:slug')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'View a shared CV (public)',
+    description: 'Returns CV data for a public share link. No auth required.',
+  })
+  @ApiParam({ name: 'slug', description: 'Share slug' })
+  @ApiResponse({ status: 200, type: CvResponseDto })
+  @ApiResponse({ status: 404, description: 'Shared CV not found' })
+  async getPublicCv(
+    @Param('slug') slug: string,
+  ): Promise<CvResponseDto> {
+    const cv = await this.cvService.getPublicCv(slug);
+    return this.cvMapper.cvToResponse(cv);
   }
 
   // ─── Section Endpoints ──────────────────────────────────────────────────
