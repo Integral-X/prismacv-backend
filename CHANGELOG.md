@@ -1,3 +1,10 @@
+## [1.6.6](https://github.com/Integral-X/prismacv-backend/compare/v1.6.5...v1.6.6) (2026-05-03)
+
+
+### Bug Fixes
+
+* prevent OAuth strategies from crashing DI on missing env vars ([#160](https://github.com/Integral-X/prismacv-backend/issues/160)) ([3fc3885](https://github.com/Integral-X/prismacv-backend/commit/3fc3885e64d7a44ee4392996eb73ac6a17d9dbb2))
+
 ## [1.6.5](https://github.com/Integral-X/prismacv-backend/compare/v1.6.4...v1.6.5) (2026-05-03)
 
 
