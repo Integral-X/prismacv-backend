@@ -6,7 +6,6 @@ import {
   Res,
   Post,
   Body,
-  BadRequestException,
   HttpStatus,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -20,7 +19,9 @@ import {
 import { Request, Response } from 'express';
 import { LinkedInAuthGuard } from './guards/linkedin-auth.guard';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
+import { JwtUserAuthGuard } from '@/modules/auth/guards/jwt-user-auth.guard';
 import { Public } from '@/common/decorators/public.decorator';
+import { GetUser } from '@/common/decorators/get-user.decorator';
 import { OAuthCallbackResponseDto } from './dto/oauth-callback.response.dto';
 import { LinkedinImportRequestDto } from './dto/linkedin-import.request.dto';
 import { LinkedinCvResponseDto } from './dto/linkedin-cv.response.dto';
@@ -63,8 +64,8 @@ export class OAuthController {
 
     const origins = corsOrigin
       .split(',')
-      .map((origin) => origin.trim())
-      .filter((origin) => origin.length > 0);
+      .map(origin => origin.trim())
+      .filter(origin => origin.length > 0);
 
     if (origins.length !== 1) {
       return defaultFrontendUrl;
@@ -77,9 +78,7 @@ export class OAuthController {
     }
   }
 
-  private buildOAuthRedirectUrl(
-    response: OAuthCallbackResponseDto,
-  ): string {
+  private buildOAuthRedirectUrl(response: OAuthCallbackResponseDto): string {
     const payload = Buffer.from(JSON.stringify(response)).toString('base64url');
     return `${this.frontendUrl}/auth/oauth-callback#token=${payload}`;
   }
@@ -112,7 +111,7 @@ export class OAuthController {
     const { user, tokens } = req.user as { user: User; tokens: TokenPair };
 
     const response: OAuthCallbackResponseDto = {
-      user: this.authMapper.userToUserAuthResponse(user),
+      user: this.authMapper.userToProfileResponse(user),
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
     };
@@ -148,7 +147,7 @@ export class OAuthController {
     const { user, tokens } = req.user as { user: User; tokens: TokenPair };
 
     const response: OAuthCallbackResponseDto = {
-      user: this.authMapper.userToUserAuthResponse(user),
+      user: this.authMapper.userToProfileResponse(user),
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
     };
@@ -160,6 +159,8 @@ export class OAuthController {
         LINKEDIN CV IMPORT
   ---------------------------- */
 
+  @Public()
+  @UseGuards(JwtUserAuthGuard)
   @Post('linkedin/import')
   @ApiOperation({
     summary: 'Import LinkedIn profile data for CV generation',
@@ -180,20 +181,9 @@ export class OAuthController {
     description: 'Conflict - LinkedIn account not connected or missing token',
   })
   async importLinkedInProfile(
-    @Req() req: Request,
+    @GetUser() user: User,
     @Body() body: LinkedinImportRequestDto,
   ): Promise<LinkedinCvResponseDto> {
-    const authUser =
-      (req.user as { id?: string; userId?: string; sub?: string } | undefined)
-        ?.id ??
-      (req.user as { id?: string; userId?: string; sub?: string } | undefined)
-        ?.userId ??
-      (req.user as { id?: string; userId?: string; sub?: string } | undefined)
-        ?.sub;
-    if (!authUser) {
-      throw new BadRequestException('Authenticated user is required');
-    }
-
-    return this.linkedInCvService.importForUser(authUser, body.handleOrUrl);
+    return this.linkedInCvService.importForUser(user.id, body.handleOrUrl);
   }
 }
