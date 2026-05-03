@@ -28,6 +28,8 @@ model User {
   oauthTokenExpiresAt DateTime?
   linkedinCvImports LinkedinCvImport[]
   cvs               Cv[]
+  jobs              Job[]
+  skillProgress     UserSkillProgress[]
 
   @@unique([provider, providerId])
   @@map("users")
@@ -157,6 +159,7 @@ model Cv {
   projects       Project[]
   languages      Language[]
   customSections CustomSection[]
+  share          CvShare?
 
   @@unique([userId, slug])
   @@index([userId, status])
@@ -287,4 +290,155 @@ model CustomSection {
 
   @@index([cvId, sortOrder])
   @@map("custom_sections")
+}
+
+// ─── CV Sharing ──────────────────────────────────────────────────────────────
+
+model CvShare {
+  id            String    @id @db.Uuid
+  cvId          String    @unique @db.Uuid
+  shareSlug     String    @unique
+  isPublic      Boolean   @default(true)
+  viewCount     Int       @default(0)
+  downloadCount Int       @default(0)
+  lastViewedAt  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  cv Cv @relation(fields: [cvId], references: [id], onDelete: Cascade)
+
+  @@index([shareSlug])
+  @@map("cv_shares")
+}
+
+// ─── Job Application Tracker ─────────────────────────────────────────────────
+
+enum JobStatus {
+  SAVED
+  APPLIED
+  INTERVIEW
+  OFFER
+  REJECTED
+}
+
+model Job {
+  id          String    @id @db.Uuid
+  userId      String    @db.Uuid
+  title       String
+  company     String
+  url         String?
+  location    String?
+  isRemote    Boolean   @default(false)
+  salaryMin   Int?
+  salaryMax   Int?
+  salaryCurrency String?
+  status      JobStatus @default(SAVED)
+  appliedAt   DateTime?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobNotes  JobNote[]
+
+  @@index([userId, status])
+  @@index([userId, updatedAt])
+  @@map("jobs")
+}
+
+model JobNote {
+  id        String   @id @db.Uuid
+  jobId     String   @db.Uuid
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, createdAt])
+  @@map("job_notes")
+}
+
+// ─── Skills & Career Development ─────────────────────────────────────────────
+
+model SkillCategory {
+  id          String @id @db.Uuid
+  name        String @unique
+  description String?
+  icon        String?
+
+  skills RoleSkillMap[]
+
+  @@map("skill_categories")
+}
+
+model RoleSkillMap {
+  id              String @id @db.Uuid
+  role            String
+  skillName       String
+  categoryId      String @db.Uuid
+  importance      Int    @default(3) // 1-5
+  description     String?
+
+  category SkillCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([role, skillName])
+  @@index([role])
+  @@map("role_skill_maps")
+}
+
+model UserSkillProgress {
+  id         String   @id @db.Uuid
+  userId     String   @db.Uuid
+  skillName  String
+  level      Int      @default(0) // 0-100
+  status     String   @default("not_started") // not_started, learning, completed
+  startedAt  DateTime?
+  completedAt DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skillName])
+  @@index([userId])
+  @@map("user_skill_progress")
+}
+
+model LearningResource {
+  id          String @id @db.Uuid
+  skillName   String
+  title       String
+  url         String
+  platform    String // Coursera, Udemy, YouTube, etc.
+  difficulty  String @default("beginner") // beginner, intermediate, advanced
+  duration    String? // "2 hours", "4 weeks", etc.
+  isFree      Boolean @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([skillName])
+  @@map("learning_resources")
+}
+
+// ─── Interview Preparation ───────────────────────────────────────────────────
+
+enum InterviewDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model InterviewQuestion {
+  id            String              @id @db.Uuid
+  question      String
+  sampleAnswer  String?
+  category      String              // Behavioral, Technical, System Design, etc.
+  role          String              // Software Engineer, Product Manager, etc.
+  difficulty    InterviewDifficulty @default(MEDIUM)
+  tips          String?
+  createdAt     DateTime            @default(now())
+
+  @@index([role, category])
+  @@index([difficulty])
+  @@map("interview_questions")
 }

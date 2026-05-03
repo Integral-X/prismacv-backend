@@ -18,6 +18,10 @@ import { HealthModule } from './modules/health/health.module';
 import { EmailModule } from './modules/email/email.module';
 import { CvModule } from './modules/cv/cv.module';
 import { UsersModule } from './modules/users/users.module';
+import { JobsModule } from './modules/jobs/jobs.module';
+import { AiModule } from './modules/ai/ai.module';
+import { SkillsModule } from './modules/skills/skills.module';
+import { InterviewModule } from './modules/interview/interview.module';
 
 // Guards
 import { JwtAdminAuthGuard } from './modules/auth/guards/jwt-auth.guard';
@@ -57,6 +61,10 @@ import { JwtAdminAuthGuard } from './modules/auth/guards/jwt-auth.guard';
     HealthModule,
     CvModule,
     UsersModule,
+    JobsModule,
+    AiModule,
+    SkillsModule,
+    InterviewModule,
   ],
   providers: [
     {
