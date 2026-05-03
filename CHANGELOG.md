@@ -1,3 +1,10 @@
+## [1.6.5](https://github.com/Integral-X/prismacv-backend/compare/v1.6.4...v1.6.5) (2026-05-03)
+
+
+### Bug Fixes
+
+* correct OAuth callback response shape and LinkedIn import auth ([#159](https://github.com/Integral-X/prismacv-backend/issues/159)) ([3553902](https://github.com/Integral-X/prismacv-backend/commit/3553902d872c5d1f6363f21e1dfa7b0f3ee77b26))
+
 ## [1.6.4](https://github.com/Integral-X/prismacv-backend/compare/v1.6.3...v1.6.4) (2026-04-30)
 
 
