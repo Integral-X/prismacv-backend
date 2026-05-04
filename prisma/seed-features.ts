@@ -1,11 +1,12 @@
 /**
  * Seed data for skills taxonomy, learning resources, and interview questions.
- * Run with: npx ts-node prisma/seed-features.ts
+ * Can be run standalone: npx ts-node prisma/seed-features.ts
+ * Also imported by seed.ts for unified seeding.
  */
 import { PrismaClient } from '@prisma/client';
 import { uuidv7 } from 'uuidv7';
 
-const prisma = new PrismaClient();
+let prisma = new PrismaClient();
 
 async function seedSkillCategories() {
   const categories = [
@@ -322,7 +323,8 @@ async function seedInterviewQuestions() {
   }
 }
 
-async function main() {
+export async function seedFeatures(client?: PrismaClient) {
+  if (client) prisma = client;
   console.log('Seeding skills taxonomy...');
   const categoryIds = await seedSkillCategories();
 
@@ -335,14 +337,17 @@ async function main() {
   console.log('Seeding interview questions...');
   await seedInterviewQuestions();
 
-  console.log('Seed complete!');
+  console.log('Feature seed complete!');
 }
 
-main()
-  .catch(e => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+// Allow standalone execution
+if (require.main === module) {
+  seedFeatures()
+    .catch(e => {
+      console.error(e);
+      process.exit(1);
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });
+}

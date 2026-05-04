@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { createLogger, format, transports } from 'winston';
 import { uuidv7 } from 'uuidv7';
+import { seedFeatures } from './seed-features';
 
 const logger = createLogger({
   level: 'info',
@@ -309,6 +310,9 @@ async function main() {
       logger.info('Demo user already has CVs — skipping sample CV seed');
     }
   }
+
+  // ── Seed platform feature data (skills, interview questions, etc.) ──
+  await seedFeatures(prisma);
 
   logger.info('Database seeding completed!');
 }
