@@ -20,6 +20,10 @@ const prisma = new PrismaClient();
 async function main() {
   logger.info('Starting database seeding...');
 
+  // ── Seed platform feature data (skills, interview questions, etc.) ──
+  // Always seed features regardless of admin env vars
+  await seedFeatures(prisma);
+
   const masterAdminEmail = process.env.MASTER_ADMIN_EMAIL?.trim();
   const masterAdminPassword = process.env.MASTER_ADMIN_PASSWORD;
   const masterAdminName = process.env.MASTER_ADMIN_NAME?.trim();
@@ -310,9 +314,6 @@ async function main() {
       logger.info('Demo user already has CVs — skipping sample CV seed');
     }
   }
-
-  // ── Seed platform feature data (skills, interview questions, etc.) ──
-  await seedFeatures(prisma);
 
   logger.info('Database seeding completed!');
 }
