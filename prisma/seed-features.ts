@@ -1,13 +1,12 @@
 /**
  * Seed data for skills taxonomy, learning resources, and interview questions.
- * Run with: npx ts-node prisma/seed-features.ts
+ * Can be run standalone: npx ts-node prisma/seed-features.ts
+ * Also imported by seed.ts for unified seeding.
  */
 import { PrismaClient } from '@prisma/client';
 import { uuidv7 } from 'uuidv7';
 
-const prisma = new PrismaClient();
-
-async function seedSkillCategories() {
+async function seedSkillCategories(prisma: PrismaClient) {
   const categories = [
     { name: 'Programming Languages', description: 'Core programming languages', icon: 'code' },
     { name: 'Frontend', description: 'Frontend frameworks and tools', icon: 'layout' },
@@ -34,7 +33,7 @@ async function seedSkillCategories() {
   return created;
 }
 
-async function seedRoleSkillMaps(categoryIds: Record<string, string>) {
+async function seedRoleSkillMaps(prisma: PrismaClient, categoryIds: Record<string, string>) {
   const roles: Array<{ role: string; skills: Array<{ name: string; cat: string; importance: number }> }> = [
     {
       role: 'Software Engineer',
@@ -222,7 +221,7 @@ async function seedRoleSkillMaps(categoryIds: Record<string, string>) {
   }
 }
 
-async function seedLearningResources() {
+async function seedLearningResources(prisma: PrismaClient) {
   const resources = [
     { skillName: 'TypeScript', title: 'TypeScript Handbook', url: 'https://www.typescriptlang.org/docs/handbook/', platform: 'Official Docs', difficulty: 'beginner', duration: '10 hours', isFree: true },
     { skillName: 'TypeScript', title: 'Total TypeScript', url: 'https://www.totaltypescript.com/', platform: 'Total TypeScript', difficulty: 'advanced', duration: '40 hours', isFree: false },
@@ -258,7 +257,7 @@ async function seedLearningResources() {
   }
 }
 
-async function seedInterviewQuestions() {
+async function seedInterviewQuestions(prisma: PrismaClient) {
   const questions = [
     // Behavioral
     { question: 'Tell me about a time you faced a significant technical challenge. How did you approach it?', category: 'Behavioral', role: 'Software Engineer', difficulty: 'MEDIUM' as const, sampleAnswer: 'Use the STAR method: Situation, Task, Action, Result. Describe a specific technical problem, your role in solving it, the steps you took, and the measurable outcome.', tips: 'Be specific about the technology and quantify your impact.' },
@@ -322,27 +321,31 @@ async function seedInterviewQuestions() {
   }
 }
 
-async function main() {
+export async function seedFeatures(client: PrismaClient) {
   console.log('Seeding skills taxonomy...');
-  const categoryIds = await seedSkillCategories();
+  const categoryIds = await seedSkillCategories(client);
 
   console.log('Seeding role-skill mappings...');
-  await seedRoleSkillMaps(categoryIds);
+  await seedRoleSkillMaps(client, categoryIds);
 
   console.log('Seeding learning resources...');
-  await seedLearningResources();
+  await seedLearningResources(client);
 
   console.log('Seeding interview questions...');
-  await seedInterviewQuestions();
+  await seedInterviewQuestions(client);
 
-  console.log('Seed complete!');
+  console.log('Feature seed complete!');
 }
 
-main()
-  .catch(e => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+// Allow standalone execution
+if (require.main === module) {
+  const prisma = new PrismaClient();
+  seedFeatures(prisma)
+    .catch(e => {
+      console.error(e);
+      process.exit(1);
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });
+}
