@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { createLogger, format, transports } from 'winston';
 import { uuidv7 } from 'uuidv7';
+import { seedFeatures } from './seed-features';
 
 const logger = createLogger({
   level: 'info',
@@ -18,6 +19,10 @@ const prisma = new PrismaClient();
 
 async function main() {
   logger.info('Starting database seeding...');
+
+  // ── Seed platform feature data (skills, interview questions, etc.) ──
+  // Always seed features regardless of admin env vars
+  await seedFeatures(prisma);
 
   const masterAdminEmail = process.env.MASTER_ADMIN_EMAIL?.trim();
   const masterAdminPassword = process.env.MASTER_ADMIN_PASSWORD;
