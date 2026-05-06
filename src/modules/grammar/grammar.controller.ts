@@ -1,12 +1,14 @@
 import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtUserAuthGuard } from '@/modules/auth/guards/jwt-user-auth.guard';
+import { Public } from '@/common/decorators/public.decorator';
 import { GrammarService } from './grammar.service';
 import { CheckGrammarRequestDto } from './dto/check-grammar.request.dto';
 import { CheckGrammarResponseDto } from './dto/check-grammar.response.dto';
 
 @ApiTags('grammar')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
+@Public()
 @UseGuards(JwtUserAuthGuard)
 @Controller('grammar')
 export class GrammarController {

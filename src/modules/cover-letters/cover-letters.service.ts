@@ -14,6 +14,8 @@ import {
   GenerateCoverLetterRequestDto,
 } from './dto/request/cover-letter.request.dto';
 import { CvService } from '@/modules/cv/cv.service';
+import { Prisma } from '@prisma/client';
+import { CV_INCLUDE_ALL } from '@/modules/cv/cv.constants';
 
 @Injectable()
 export class CoverLettersService {
@@ -123,7 +125,7 @@ export class CoverLettersService {
   }
 
   private buildCoverLetter(
-    cv: any,
+    cv: Prisma.CvGetPayload<{ include: typeof CV_INCLUDE_ALL }>,
     dto: GenerateCoverLetterRequestDto,
   ): string {
     const name = cv.personalInfo?.fullName ?? 'there';
@@ -133,9 +135,9 @@ export class CoverLettersService {
 
     // Gather experience details
     const experiences = cv.experiences ?? [];
-    const totalYears = experiences.length > 0 ? experiences.length : 1;
+    const totalYears = this.computeTotalYears(experiences);
     const topRole = experiences[0];
-    const skills = (cv.skills ?? []).map((s: any) => s.name);
+    const skills = (cv.skills ?? []).map((s) => s.name);
     const topSkills = skills.slice(0, 5).join(', ');
 
     const greeting = this.getGreeting(tone);
@@ -145,8 +147,10 @@ export class CoverLettersService {
 
     // Opening paragraph
     paragraphs.push(
-      `${greeting} I am writing to express my interest in ${jobTitle} at ${company}. ` +
-        `With ${totalYears}+ years of professional experience${topSkills ? ` and expertise in ${topSkills}` : ''}, ` +
+      `I am writing to express my interest in ${jobTitle} at ${company}. ` +
+        (totalYears > 0
+          ? `With ${totalYears}+ years of professional experience${topSkills ? ` and expertise in ${topSkills}` : ''}, `
+          : (topSkills ? `With expertise in ${topSkills}, ` : '')) +
         `I am confident in my ability to contribute meaningfully to your team.`,
     );
 
@@ -167,13 +171,27 @@ export class CoverLettersService {
       );
     }
 
+    // Job description tailoring paragraph
+    if (dto.jobDescription) {
+      const keywords = this.extractJobKeywords(dto.jobDescription);
+      const matchedSkills = skills.filter((s: string) =>
+        keywords.some((k) => s.toLowerCase().includes(k)),
+      );
+      if (matchedSkills.length > 0) {
+        paragraphs.push(
+          `Based on the role requirements, I bring direct experience with ${matchedSkills.slice(0, 5).join(', ')}, ` +
+            `which I believe aligns well with what you are looking for.`,
+        );
+      }
+    }
+
     // Closing paragraph
     paragraphs.push(
       `I would welcome the opportunity to discuss how my background, skills, and enthusiasm align with the needs of ${company}. ` +
         `${closing}`,
     );
 
-    return `Dear Hiring Manager,\n\n${paragraphs.join('\n\n')}\n\nSincerely,\n${name}`;
+    return `${greeting}\n\n${paragraphs.join('\n\n')}\n\nSincerely,\n${name}`;
   }
 
   private getGreeting(tone: string): string {
@@ -198,20 +216,47 @@ export class CoverLettersService {
     }
   }
 
+  private computeTotalYears(
+    experiences: { startDate?: Date | null; endDate?: Date | null }[],
+  ): number {
+    if (experiences.length === 0) return 0;
+    let totalMonths = 0;
+    for (const exp of experiences) {
+      const start = exp.startDate ? new Date(exp.startDate) : null;
+      const end = exp.endDate ? new Date(exp.endDate) : new Date();
+      if (start) {
+        totalMonths +=
+          (end.getFullYear() - start.getFullYear()) * 12 +
+          (end.getMonth() - start.getMonth());
+      }
+    }
+    return Math.max(1, Math.floor(totalMonths / 12));
+  }
+
+  private extractJobKeywords(jobDescription: string): string[] {
+    const words = jobDescription
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter((w) => w.length > 3);
+    return [...new Set(words)];
+  }
+
   private extractHighlights(
-    cv: any,
+    cv: Prisma.CvGetPayload<{ include: typeof CV_INCLUDE_ALL }>,
     dto: GenerateCoverLetterRequestDto,
   ): string[] {
     const highlights: string[] = [];
 
     const experiences = cv.experiences ?? [];
     if (experiences.length > 0) {
+      const years = this.computeTotalYears(experiences);
       highlights.push(
-        `${experiences.length}+ years of professional experience`,
+        `${years}+ years of professional experience across ${experiences.length} role(s)`,
       );
     }
 
-    const skills = (cv.skills ?? []).map((s: any) => s.name);
+    const skills = (cv.skills ?? []).map((s) => s.name);
     if (skills.length > 0) {
       highlights.push(`Key skills: ${skills.slice(0, 4).join(', ')}`);
     }

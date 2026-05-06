@@ -2,7 +2,7 @@ import {
   Controller,
   Get,
   Post,
-  Put,
+  Patch,
   Delete,
   Body,
   Param,
@@ -21,6 +21,7 @@ import {
 } from '@nestjs/swagger';
 import { JwtUserAuthGuard } from '@/modules/auth/guards/jwt-user-auth.guard';
 import { GetUser } from '@/common/decorators/get-user.decorator';
+import { Public } from '@/common/decorators/public.decorator';
 import { User } from '@/modules/auth/entities/user.entity';
 import { PaginationQueryDto } from '@/shared/dto/pagination-query.dto';
 import { CoverLettersService } from './cover-letters.service';
@@ -36,6 +37,7 @@ import {
 
 @ApiTags('Cover Letters')
 @ApiBearerAuth('JWT-auth')
+@Public()
 @UseGuards(JwtUserAuthGuard)
 @Controller('cover-letters')
 export class CoverLettersController {
@@ -73,7 +75,7 @@ export class CoverLettersController {
     return this.coverLettersService.findOne(id, user.id);
   }
 
-  @Put(':id')
+  @Patch(':id')
   @ApiOperation({ summary: 'Update a cover letter' })
   @ApiParam({ name: 'id', description: 'Cover letter UUID' })
   @ApiResponse({ status: 200, type: CoverLetterResponseDto })
