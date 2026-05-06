@@ -237,10 +237,10 @@ export class AtsService {
       // Direct match
       let found = cvLower.includes(keyword);
 
-      // Check in skills array
+      // Check in skills array (use word boundary matching to avoid false positives)
       if (!found && skillsLower.length > 0) {
         found = skillsLower.some(
-          (s) => s.includes(keyword) || keyword.includes(s),
+          (s) => s === keyword || s.includes(keyword),
         );
       }
 
@@ -315,8 +315,8 @@ export class AtsService {
     let score = 0;
     const checks: string[] = [];
 
-    // Email
-    if (/[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}/.test(cvLower)) {
+    // Email (atomic grouping via possessive-like pattern to avoid backtracking)
+    if (/[a-z0-9][a-z0-9._%+\-]*@[a-z0-9][a-z0-9.\-]*\.[a-z]{2,}/.test(cvLower)) {
       score += 25;
     } else {
       checks.push('email');
@@ -362,7 +362,7 @@ export class AtsService {
     }
 
     // Has quantifiable achievements (numbers, percentages)
-    const quantifiers = cvLower.match(/\d+%|\$\d+|\d+\+?\s*(years?|months?|clients?|users?|projects?)/g);
+    const quantifiers = cvLower.match(/\d{1,10}%|\$\d{1,10}|\d{1,10}\+?\s{0,3}(?:years?|months?|clients?|users?|projects?)/g);
     if (quantifiers && quantifiers.length >= 3) {
       score += 40;
     } else if (quantifiers && quantifiers.length >= 1) {
@@ -484,6 +484,7 @@ export class AtsService {
     // Look at first 500 chars as proxy for summary section
     const summarySection = cvLower.slice(0, 500);
     const jdWords = jdLower
+      .replace(/[^a-z0-9\s]/g, ' ')
       .split(/\s+/)
       .filter((w) => w.length > 3 && !STOP_WORDS.has(w));
     const uniqueJdWords = [...new Set(jdWords)].slice(0, 20);
@@ -522,8 +523,8 @@ export class AtsService {
       score += 20;
     }
 
-    // No excessive special characters (ATS-unfriendly)
-    const specialChars = (cvText.match(/[^\w\s.,;:!?@#$%&*()\-+/'"]/g) || [])
+    // No excessive special characters (ATS-unfriendly), excluding common bullets
+    const specialChars = (cvText.match(/[^\w\s.,;:!?@#$%&*()\-+/'"•▪◦\-*]/g) || [])
       .length;
     if (specialChars < cvText.length * 0.02) {
       score += 25;
@@ -550,7 +551,7 @@ export class AtsService {
     const impactCount = IMPACT_WORDS.filter((w) => cvLower.includes(w)).length;
 
     // Has numbers/metrics
-    const metrics = (cvLower.match(/\d+%|\$[\d,]+|\d+x|\d+\+/g) || []).length;
+    const metrics = (cvLower.match(/\d{1,10}%|\$[\d,]{1,15}|\d{1,10}x|\d{1,10}\+/g) || []).length;
 
     let score = 0;
 
