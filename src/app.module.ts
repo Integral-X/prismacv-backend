@@ -23,6 +23,7 @@ import { AiModule } from './modules/ai/ai.module';
 import { SkillsModule } from './modules/skills/skills.module';
 import { InterviewModule } from './modules/interview/interview.module';
 import { GrammarModule } from './modules/grammar/grammar.module';
+import { CoverLettersModule } from './modules/cover-letters/cover-letters.module';
 
 // Guards
 import { JwtAdminAuthGuard } from './modules/auth/guards/jwt-auth.guard';
@@ -67,6 +68,7 @@ import { JwtAdminAuthGuard } from './modules/auth/guards/jwt-auth.guard';
     SkillsModule,
     InterviewModule,
     GrammarModule,
+    CoverLettersModule,
   ],
   providers: [
     {
