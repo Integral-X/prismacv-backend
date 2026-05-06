@@ -1,3 +1,10 @@
+## [1.7.2](https://github.com/Integral-X/prismacv-backend/compare/v1.7.1...v1.7.2) (2026-05-06)
+
+
+### Bug Fixes
+
+* wire seed-features into main seed script ([#169](https://github.com/Integral-X/prismacv-backend/issues/169)) ([479ab35](https://github.com/Integral-X/prismacv-backend/commit/479ab35b3fd01f0714ddcc4457d4113d8c8458da))
+
 ## [1.7.1](https://github.com/Integral-X/prismacv-backend/compare/v1.7.0...v1.7.1) (2026-05-03)
 
 
