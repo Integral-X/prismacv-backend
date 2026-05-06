@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/Integral-X/prismacv-backend/compare/v1.7.2...v1.8.0) (2026-05-06)
+
+
+### Features
+
+* add cover letters module ([#171](https://github.com/Integral-X/prismacv-backend/issues/171)) ([8681499](https://github.com/Integral-X/prismacv-backend/commit/8681499efcd7cffe374b5ea42d856c7cfa77f6c2))
+
 ## [1.7.2](https://github.com/Integral-X/prismacv-backend/compare/v1.7.1...v1.7.2) (2026-05-06)
 
 
