@@ -16,6 +16,7 @@ import {
   ApiBearerAuth,
   ApiParam,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { JwtUserAuthGuard } from '@/modules/auth/guards/jwt-user-auth.guard';
 import { GetUser } from '@/common/decorators/get-user.decorator';
 import { Public } from '@/common/decorators/public.decorator';
@@ -36,6 +37,7 @@ export class AiController {
 
   @Post('cv/:id/analyze')
   @UseGuards(JwtUserAuthGuard)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Analyze a CV',
@@ -54,6 +56,7 @@ export class AiController {
 
   @Post('cv/:id/optimize')
   @UseGuards(JwtUserAuthGuard)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Optimize a CV for a job description',
