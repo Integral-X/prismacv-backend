@@ -23,12 +23,8 @@ import { AiModule } from './modules/ai/ai.module';
 import { SkillsModule } from './modules/skills/skills.module';
 import { InterviewModule } from './modules/interview/interview.module';
 import { AtsModule } from './modules/ats/ats.module';
-<<<<<<< HEAD
 import { GrammarModule } from './modules/grammar/grammar.module';
 import { CoverLettersModule } from './modules/cover-letters/cover-letters.module';
-=======
-import { AtsModule } from './modules/ats/ats.module';
->>>>>>> 6fec9aa (feat: add ATS score module with keyword matching and section analysis)
 
 // Guards
 import { JwtAdminAuthGuard } from './modules/auth/guards/jwt-auth.guard';
@@ -72,12 +68,9 @@ import { JwtAdminAuthGuard } from './modules/auth/guards/jwt-auth.guard';
     AiModule,
     SkillsModule,
     InterviewModule,
-<<<<<<< HEAD
+    AtsModule,
     GrammarModule,
     CoverLettersModule,
-=======
-    AtsModule,
->>>>>>> 6fec9aa (feat: add ATS score module with keyword matching and section analysis)
   ],
   providers: [
     {
