@@ -323,7 +323,7 @@ export class AtsService {
     }
 
     // Phone
-    if (/(\+?\d[\d\s\-()]{7,}\d)/.test(cvLower)) {
+    if (/(\+?\d[\d\s\-()]{7,20}\d)/.test(cvLower)) {
       score += 25;
     } else {
       checks.push('phone number');
