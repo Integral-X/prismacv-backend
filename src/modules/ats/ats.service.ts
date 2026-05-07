@@ -315,8 +315,8 @@ export class AtsService {
     let score = 0;
     const checks: string[] = [];
 
-    // Email check: simplified to avoid polynomial backtracking
-    if (/[a-z0-9]+(?:[._%+\-][a-z0-9]+)*@[a-z0-9]+(?:[.\-][a-z0-9]+)*\.[a-z]{2,}/.test(cvLower)) {
+    // Email check: bounded quantifiers prevent polynomial backtracking
+    if (/[a-z0-9]{1,64}(?:[._%+\-][a-z0-9]{1,64}){0,10}@[a-z0-9]{1,253}(?:[.\-][a-z0-9]{1,63}){0,10}\.[a-z]{2,6}/.test(cvLower)) {
       score += 25;
     } else {
       checks.push('email');
@@ -362,7 +362,7 @@ export class AtsService {
     }
 
     // Has quantifiable achievements (numbers, percentages)
-    const quantifiers = cvLower.match(/\d+%|\$\d+|\d+ ?(?:years?|months?|clients?|users?|projects?)/g);
+    const quantifiers = cvLower.match(/\d{1,10}%|\$\d{1,10}|\d{1,6} ?(?:years?|months?|clients?|users?|projects?)/g);
     if (quantifiers && quantifiers.length >= 3) {
       score += 40;
     } else if (quantifiers && quantifiers.length >= 1) {
@@ -551,7 +551,7 @@ export class AtsService {
     const impactCount = IMPACT_WORDS.filter((w) => cvLower.includes(w)).length;
 
     // Has numbers/metrics
-    const metrics = (cvLower.match(/\d+%|\$[\d,]+|\d+x|\d+\+/g) || []).length;
+    const metrics = (cvLower.match(/\d{1,10}%|\$[\d,]{1,15}|\d{1,10}x|\d{1,10}\+/g) || []).length;
 
     let score = 0;
 
