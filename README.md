@@ -8,11 +8,13 @@ Backend API for the PrismaCV platform — AI-powered CV building, job applicatio
 ## Tech Stack
 
 - **Runtime**: Node.js 20 + TypeScript
-- **Framework**: NestJS 10
-- **Database**: PostgreSQL + Prisma ORM
+- **Framework**: NestJS 11
+- **Database**: PostgreSQL + Prisma ORM 6
 - **Auth**: JWT (dual-audience: admin + user), Google & LinkedIn OAuth
 - **PDF Export**: Puppeteer (Chromium)
+- **AI**: Built-in rule-based analysis & optimization (no external LLM)
 - **Feature Flags**: Unleash
+- **Security**: Helmet, rate limiting (Throttler), AllExceptionsFilter (no stack trace leaks)
 
 ## Getting Started
 
@@ -87,7 +89,10 @@ Copy `.env.example` to `.env` and fill in the values.
 
 ## API Documentation
 
-Swagger UI: [https://api.prismacv.com/api/docs](https://api.prismacv.com/api/docs)
+Swagger UI available in development/staging:  
+[https://api.prismacv.com/api/docs](https://api.prismacv.com/api/docs)
+
+> **Note**: Swagger is automatically disabled when `NODE_ENV=production`.
 
 ## Development
 
