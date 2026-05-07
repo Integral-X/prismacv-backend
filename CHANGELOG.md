@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/Integral-X/prismacv-backend/compare/v1.8.1...v1.9.0) (2026-05-07)
+
+
+### Features
+
+* add ATS score module ([#170](https://github.com/Integral-X/prismacv-backend/issues/170)) ([efaa4c9](https://github.com/Integral-X/prismacv-backend/commit/efaa4c9a416fa21e04a99719c71652e1c12593b6))
+
 ## [1.8.1](https://github.com/Integral-X/prismacv-backend/compare/v1.8.0...v1.8.1) (2026-05-07)
 
 
