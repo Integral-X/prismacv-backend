@@ -1,3 +1,10 @@
+## [1.8.1](https://github.com/Integral-X/prismacv-backend/compare/v1.8.0...v1.8.1) (2026-05-07)
+
+
+### Bug Fixes
+
+* backend hardening — all-exceptions filter, AI rate limits, disable Swagger in prod ([#172](https://github.com/Integral-X/prismacv-backend/issues/172)) ([56d3e4b](https://github.com/Integral-X/prismacv-backend/commit/56d3e4b1a3f46b04dc2bc044107fa9cec33a5090))
+
 # [1.8.0](https://github.com/Integral-X/prismacv-backend/compare/v1.7.2...v1.8.0) (2026-05-06)
 
 
