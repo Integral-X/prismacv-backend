@@ -1,3 +1,15 @@
+# [1.10.0](https://github.com/Integral-X/prismacv-backend/compare/v1.9.0...v1.10.0) (2026-05-08)
+
+
+### Bug Fixes
+
+* provide shadow database for prisma drift check ([#176](https://github.com/Integral-X/prismacv-backend/issues/176)) ([f03ac56](https://github.com/Integral-X/prismacv-backend/commit/f03ac56ffafbd0bb7272597b92e71f2fcbd93588))
+
+
+### Features
+
+* complete feature-ready backend implementation plan ([#175](https://github.com/Integral-X/prismacv-backend/issues/175)) ([77eaa2a](https://github.com/Integral-X/prismacv-backend/commit/77eaa2a445c3f6806608a26457aa97701f448b9a))
+
 # [1.9.0](https://github.com/Integral-X/prismacv-backend/compare/v1.8.1...v1.9.0) (2026-05-07)
 
 
