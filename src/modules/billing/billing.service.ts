@@ -9,7 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@/config/prisma.service';
 import { generateUuidv7 } from '@/shared/utils/uuid.util';
 import { Plan, UserPlan } from '@prisma/client';
-import Stripe from 'stripe';
+import * as Stripe from 'stripe';
 import {
   BillingCycle,
   BillingProfileResponseDto,
