@@ -12,6 +12,7 @@ import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { initializeSentry } from './config/sentry.config';
 
 const logger = new Logger('Bootstrap');
 
@@ -28,11 +29,16 @@ async function bootstrap() {
   // Get configuration service
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 3000);
-  const apiPrefix = configService.get<string>('API_PREFIX', 'api/v1');
+  const apiPrefix = configService.get<string>('API_PREFIX', 'api');
   const corsOrigin = configService.get<string>(
     'CORS_ORIGIN',
     'http://localhost:3001',
   );
+
+  const sentryEnabled = initializeSentry(configService);
+  if (sentryEnabled) {
+    logger.log('Sentry monitoring enabled');
+  }
 
   // Use Winston logger
   app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
@@ -53,7 +59,9 @@ async function bootstrap() {
   });
 
   // Global prefix
-  app.setGlobalPrefix(apiPrefix);
+  app.setGlobalPrefix(apiPrefix, {
+    exclude: ['metrics'],
+  });
 
   // Enable URI versioning
   app.enableVersioning({

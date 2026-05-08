@@ -42,11 +42,22 @@ export const AppConfig = () => ({
   },
   monitoring: {
     logLevel: process.env.LOG_LEVEL || 'info',
+    sentry: {
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV,
+      release: process.env.SENTRY_RELEASE || process.env.APP_VERSION,
+      tracesSampleRate: process.env.SENTRY_TRACES_SAMPLE_RATE || '0.05',
+    },
   },
   unleash: {
     mock: process.env.UNLEASH_MOCK === 'true',
   },
   security: {
     encryptionKey: process.env.ENCRYPTION_KEY,
+  },
+  queue: {
+    enabled: process.env.QUEUE_ENABLED === 'true',
+    name: process.env.QUEUE_NAME || 'prismacv-jobs',
+    redisUrl: process.env.REDIS_URL,
   },
 });

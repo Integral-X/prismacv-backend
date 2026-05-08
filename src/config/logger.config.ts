@@ -1,13 +1,18 @@
 import * as winston from 'winston';
 import { WinstonModuleOptions } from 'nest-winston';
+import { sanitizeForLogging } from '@/common/logging/log-sanitizer';
 
 export const LoggerConfig = (): WinstonModuleOptions => {
   const logLevel = process.env.LOG_LEVEL || 'info';
   const isDevelopment = process.env.NODE_ENV === 'development';
+  const redactFormat = winston.format(info => {
+    return sanitizeForLogging(info) as winston.Logform.TransformableInfo;
+  });
 
   const transports: winston.transport[] = [
     new winston.transports.Console({
       format: winston.format.combine(
+        redactFormat(),
         winston.format.timestamp(),
         winston.format.ms(),
         winston.format.colorize({ all: true }),
@@ -25,6 +30,7 @@ export const LoggerConfig = (): WinstonModuleOptions => {
         filename: 'logs/error.log',
         level: 'error',
         format: winston.format.combine(
+          redactFormat(),
           winston.format.timestamp(),
           winston.format.json(),
         ),
@@ -32,6 +38,7 @@ export const LoggerConfig = (): WinstonModuleOptions => {
       new winston.transports.File({
         filename: 'logs/combined.log',
         format: winston.format.combine(
+          redactFormat(),
           winston.format.timestamp(),
           winston.format.json(),
         ),
@@ -42,6 +49,7 @@ export const LoggerConfig = (): WinstonModuleOptions => {
   return {
     level: logLevel,
     format: winston.format.combine(
+      redactFormat(),
       winston.format.timestamp(),
       winston.format.errors({ stack: true }),
       winston.format.json(),

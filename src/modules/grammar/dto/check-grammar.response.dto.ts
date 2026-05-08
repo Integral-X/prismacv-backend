@@ -36,7 +36,11 @@ export class CheckGrammarResponseDto {
   @ApiProperty({ type: [GrammarIssueDto] })
   issues!: GrammarIssueDto[];
 
-  @ApiProperty({ description: 'Content quality score', minimum: 0, maximum: 100 })
+  @ApiProperty({
+    description: 'Content quality score',
+    minimum: 0,
+    maximum: 100,
+  })
   score!: number;
 
   @ApiProperty({ description: 'Summary of the analysis' })

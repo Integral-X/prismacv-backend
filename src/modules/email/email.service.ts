@@ -28,14 +28,28 @@ import {
   generateAccountDeletionEmailPlainText,
   AccountDeletionEmailTemplateData,
 } from './templates/account-deletion-email.template';
+import {
+  BillingReceiptEmailTemplateData,
+  generateBillingReceiptEmailTemplate,
+  generateBillingReceiptEmailPlainText,
+} from './templates/billing-receipt-email.template';
+import {
+  CvShareViewEmailTemplateData,
+  generateCvShareViewEmailTemplate,
+  generateCvShareViewEmailPlainText,
+} from './templates/cv-share-view-email.template';
 
 @Injectable()
 export class EmailService {
   private transporter: Transporter | null = null;
   private smtpConfig: SmtpConfig;
+  private readonly smtpSkipAuth: boolean;
   private readonly logger = new Logger(EmailService.name);
 
   constructor(private readonly configService: ConfigService) {
+    this.smtpSkipAuth = this.toBoolean(
+      this.configService.get<string | boolean>('SMTP_SKIP_AUTH', false),
+    );
     this.smtpConfig = {
       host: this.configService.get<string>('SMTP_HOST', 'smtp.gmail.com'),
       port: this.configService.get<number>('SMTP_PORT', 587),
@@ -57,10 +71,13 @@ export class EmailService {
   }
 
   private initializeTransporter(): void {
+    const hasAuthCredentials =
+      Boolean(this.smtpConfig.auth.user) && Boolean(this.smtpConfig.auth.pass);
+
     // Check if SMTP credentials are configured
-    if (!this.smtpConfig.auth.user || !this.smtpConfig.auth.pass) {
+    if (!hasAuthCredentials && !this.smtpSkipAuth) {
       this.logger.error(
-        'SMTP credentials not configured. Email sending is disabled. Set SMTP_USER and SMTP_PASS environment variables.',
+        'SMTP credentials not configured. Email sending is disabled. Set SMTP_USER/SMTP_PASS or SMTP_SKIP_AUTH=true.',
       );
       return;
     }
@@ -74,12 +91,16 @@ export class EmailService {
         host: this.smtpConfig.host,
         port: this.smtpConfig.port,
         secure: isImplicitTLS, // true for 465, false for 587
-        auth: {
-          user: this.smtpConfig.auth.user,
-          pass: this.smtpConfig.auth.pass,
-        },
+        ...(hasAuthCredentials
+          ? {
+              auth: {
+                user: this.smtpConfig.auth.user,
+                pass: this.smtpConfig.auth.pass,
+              },
+            }
+          : {}),
         // For port 587, require STARTTLS upgrade
-        requireTLS: !isImplicitTLS,
+        requireTLS: !isImplicitTLS && !this.smtpSkipAuth,
       });
 
       this.logger.log(`Email transporter initialized successfully:`);
@@ -87,7 +108,9 @@ export class EmailService {
         `- Host: ${this.smtpConfig.host}:${this.smtpConfig.port}`,
       );
       this.logger.log(`- Security: ${isImplicitTLS ? 'SSL' : 'STARTTLS'}`);
-      this.logger.log(`- User: ${this.smtpConfig.auth.user}`);
+      this.logger.log(
+        `- Auth: ${hasAuthCredentials ? this.smtpConfig.auth.user : 'disabled (SMTP_SKIP_AUTH=true)'}`,
+      );
       this.logger.log(
         `- From: ${this.smtpConfig.from.name} <${this.smtpConfig.from.email}>`,
       );
@@ -198,10 +221,7 @@ export class EmailService {
   /**
    * Send welcome email after successful verification
    */
-  async sendWelcomeEmail(
-    email: string,
-    userName?: string,
-  ): Promise<boolean> {
+  async sendWelcomeEmail(email: string, userName?: string): Promise<boolean> {
     const appName = this.configService.get<string>('APP_NAME', 'PrismaCV');
     const frontendUrl = this.configService.get<string>(
       'FRONTEND_URL',
@@ -280,6 +300,72 @@ export class EmailService {
     return this.sendEmail(options);
   }
 
+  async sendCvShareViewedEmail(
+    email: string,
+    input: {
+      cvTitle: string;
+      shareUrl: string;
+      viewCount: number;
+      viewerLocation?: string;
+      userName?: string;
+    },
+  ): Promise<boolean> {
+    const appName = this.configService.get<string>('APP_NAME', 'PrismaCV');
+
+    const templateData: CvShareViewEmailTemplateData = {
+      appName,
+      cvTitle: input.cvTitle,
+      shareUrl: input.shareUrl,
+      viewCount: input.viewCount,
+      viewerLocation: input.viewerLocation,
+      userName: input.userName,
+    };
+
+    const options: EmailOptions = {
+      to: email,
+      subject: `${appName} - Your shared CV was viewed`,
+      html: generateCvShareViewEmailTemplate(templateData),
+      text: generateCvShareViewEmailPlainText(templateData),
+    };
+
+    this.logger.log(`Sending CV share view notification to: ${email}`);
+    return this.sendEmail(options);
+  }
+
+  async sendBillingReceiptEmail(
+    email: string,
+    input: {
+      planName: string;
+      amountDisplay: string;
+      billingCycle: 'monthly' | 'yearly' | 'one_time';
+      receiptDate: string;
+      invoiceUrl?: string;
+      userName?: string;
+    },
+  ): Promise<boolean> {
+    const appName = this.configService.get<string>('APP_NAME', 'PrismaCV');
+
+    const templateData: BillingReceiptEmailTemplateData = {
+      appName,
+      planName: input.planName,
+      amountDisplay: input.amountDisplay,
+      billingCycle: input.billingCycle,
+      receiptDate: input.receiptDate,
+      invoiceUrl: input.invoiceUrl,
+      userName: input.userName,
+    };
+
+    const options: EmailOptions = {
+      to: email,
+      subject: `${appName} - Billing Receipt`,
+      html: generateBillingReceiptEmailTemplate(templateData),
+      text: generateBillingReceiptEmailPlainText(templateData),
+    };
+
+    this.logger.log(`Sending billing receipt email to: ${email}`);
+    return this.sendEmail(options);
+  }
+
   /**
    * Verify SMTP connection
    */
@@ -299,5 +385,11 @@ export class EmailService {
       this.logger.error('SMTP connection verification failed', error);
       return false;
     }
+  }
+
+  private toBoolean(value: string | boolean | undefined): boolean {
+    if (typeof value === 'boolean') return value;
+    if (typeof value !== 'string') return false;
+    return ['true', '1', 'yes', 'on'].includes(value.toLowerCase().trim());
   }
 }

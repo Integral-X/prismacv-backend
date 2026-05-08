@@ -6,6 +6,7 @@ export enum GrammarContext {
   EXPERIENCE = 'experience',
   EDUCATION = 'education',
   COVER_LETTER = 'cover_letter',
+  PROJECT = 'project',
 }
 
 export class CheckGrammarRequestDto {

@@ -69,7 +69,11 @@ describe('JobsService', () => {
     });
 
     it('should set appliedAt when status is APPLIED', async () => {
-      const appliedJob = { ...mockJob, status: 'APPLIED' as const, appliedAt: new Date() };
+      const appliedJob = {
+        ...mockJob,
+        status: 'APPLIED' as const,
+        appliedAt: new Date(),
+      };
       prisma.job.create.mockResolvedValue(appliedJob);
 
       await service.create(userId, {
@@ -106,7 +110,10 @@ describe('JobsService', () => {
     });
 
     it('should throw ForbiddenException when user does not own the job', async () => {
-      prisma.job.findUnique.mockResolvedValue({ ...mockJob, userId: 'other-user' });
+      prisma.job.findUnique.mockResolvedValue({
+        ...mockJob,
+        userId: 'other-user',
+      });
 
       await expect(service.findOne(jobId, userId)).rejects.toThrow(
         ForbiddenException,

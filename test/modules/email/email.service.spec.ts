@@ -73,6 +73,31 @@ describe('EmailService', () => {
       expect(result).toBe(true);
     });
 
+    it('should send CV share view notification email', async () => {
+      const result = await service.sendCvShareViewedEmail('user@test.com', {
+        cvTitle: 'Senior Engineer CV',
+        shareUrl: 'https://prismacv.dev/public/cv/senior-engineer',
+        viewCount: 12,
+        viewerLocation: 'Berlin, Germany',
+        userName: 'Test User',
+      });
+
+      expect(result).toBe(true);
+    });
+
+    it('should send billing receipt email', async () => {
+      const result = await service.sendBillingReceiptEmail('user@test.com', {
+        planName: 'Pro',
+        amountDisplay: '19.00 USD',
+        billingCycle: 'monthly',
+        receiptDate: '2026-05-07',
+        invoiceUrl: 'https://dashboard.stripe.com/invoices/test',
+        userName: 'Test User',
+      });
+
+      expect(result).toBe(true);
+    });
+
     it('should verify SMTP connection', async () => {
       const result = await service.verifyConnection();
       expect(result).toBe(true);

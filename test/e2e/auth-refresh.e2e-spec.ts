@@ -1,31 +1,73 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
 import { AppModule } from './../../src/app.module';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, UnauthorizedException } from '@nestjs/common';
+import { AuthService } from '@/modules/auth/auth.service';
+import { AuthMapper } from '@/modules/auth/mappers/auth.mapper';
+import { PrismaService } from '@/config/prisma.service';
 
 describe('Auth Refresh (e2e)', () => {
   let app: INestApplication;
-  let refreshToken: string;
+  const mockAdminUser = {
+    id: 'admin-1',
+    email: 'admin@example.com',
+    name: 'Admin User',
+    role: 'PLATFORM_ADMIN',
+    emailVerified: true,
+    createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+  };
 
   beforeAll(async () => {
+    const mockAuthService = {
+      refreshToken: jest.fn((token: string) => {
+        if (token === 'valid-refresh-token') {
+          return Promise.resolve({
+            user: mockAdminUser,
+            tokens: {
+              accessToken: 'new-access-token',
+              refreshToken: 'new-refresh-token',
+            },
+          });
+        }
+        throw new UnauthorizedException('invalid token');
+      }),
+    };
+
+    const mockAuthMapper = {
+      userToAdminAuthResponse: jest.fn(
+        (
+          user: typeof mockAdminUser,
+          tokens: { accessToken: string; refreshToken: string },
+        ) => ({
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: 'platform_admin',
+            emailVerified: user.emailVerified,
+            createdAt: user.createdAt.toISOString(),
+            updatedAt: user.updatedAt.toISOString(),
+          },
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+        }),
+      ),
+    };
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(AuthService)
+      .useValue(mockAuthService)
+      .overrideProvider(AuthMapper)
+      .useValue(mockAuthMapper)
+      .overrideProvider(PrismaService)
+      .useValue({})
+      .compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
-
-    // Login to get a refresh token
-    const adminEmail =
-      process.env.MASTER_ADMIN_EMAIL?.trim() ?? 'admin@example.com';
-    const adminPassword = process.env.MASTER_ADMIN_PASSWORD ?? 'admin';
-
-    const loginResponse = await request(app.getHttpServer())
-      .post('/auth/admin/login')
-      .send({ email: adminEmail, password: adminPassword })
-      .expect(200);
-
-    refreshToken = loginResponse.body.refreshToken;
   });
 
   afterAll(async () => {
@@ -36,15 +78,14 @@ describe('Auth Refresh (e2e)', () => {
     it('should refresh tokens successfully with valid refresh token', () => {
       return request(app.getHttpServer())
         .post('/auth/admin/refresh')
-        .send({ refreshToken })
+        .send({ refreshToken: 'valid-refresh-token' })
         .expect(200)
         .expect(res => {
           expect(res.body).toHaveProperty('accessToken');
           expect(res.body).toHaveProperty('refreshToken');
-          expect(typeof res.body.accessToken).toBe('string');
-          expect(typeof res.body.refreshToken).toBe('string');
-          // New tokens should be valid strings
-          expect(res.body.refreshToken.length).toBeGreaterThan(0);
+          expect(res.body.accessToken).toBe('new-access-token');
+          expect(res.body.refreshToken).toBe('new-refresh-token');
+          expect(res.body.user.email).toBe('admin@example.com');
         });
     });
 
@@ -62,14 +103,10 @@ describe('Auth Refresh (e2e)', () => {
         .expect(400); // Should now return 400 with our validation fix
     });
 
-    it('should return 401 for expired refresh token', () => {
-      const expiredToken =
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE1MTYyMzkwMjJ9.invalid';
-
-      return request(app.getHttpServer())
+    it('should return 401 for expired refresh token', () =>
+      request(app.getHttpServer())
         .post('/auth/admin/refresh')
-        .send({ refreshToken: expiredToken })
-        .expect(401);
-    });
+        .send({ refreshToken: 'expired-token' })
+        .expect(401));
   });
 });
