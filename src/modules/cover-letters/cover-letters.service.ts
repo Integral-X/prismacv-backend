@@ -4,6 +4,7 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@/config/prisma.service';
 import { generateUuidv7 } from '@/shared/utils/uuid.util';
 import { PaginationQueryDto } from '@/shared/dto/pagination-query.dto';
@@ -14,8 +15,27 @@ import {
   GenerateCoverLetterRequestDto,
 } from './dto/request/cover-letter.request.dto';
 import { CvService } from '@/modules/cv/cv.service';
-import { Prisma } from '@prisma/client';
+import { AiUsageService } from '@/modules/ai/ai-usage.service';
+import { OpenAiProvider } from '@/modules/ai/providers/openai.provider';
+import { UnleashService } from '@/modules/unleash/unleash.service';
+import { AI_LLM_COVER_LETTER_FLAG } from '@/modules/ai/ai-feature-flags';
+import { AiUsageFeature, Prisma } from '@prisma/client';
 import { CV_INCLUDE_ALL } from '@/modules/cv/cv.constants';
+import { MetricsService } from '@/modules/metrics/metrics.service';
+
+type CoverLetterTemplate =
+  | 'classic_professional'
+  | 'impact_story'
+  | 'concise_modern';
+
+const DEFAULT_COVER_LETTER_TEMPLATE: CoverLetterTemplate =
+  'classic_professional';
+
+const COVER_LETTER_TEMPLATE_LABELS: Record<CoverLetterTemplate, string> = {
+  classic_professional: 'Classic Professional',
+  impact_story: 'Impact Story',
+  concise_modern: 'Concise Modern',
+};
 
 @Injectable()
 export class CoverLettersService {
@@ -24,6 +44,11 @@ export class CoverLettersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cvService: CvService,
+    private readonly configService: ConfigService,
+    private readonly openAiProvider: OpenAiProvider,
+    private readonly aiUsageService: AiUsageService,
+    private readonly unleashService: UnleashService,
+    private readonly metricsService: MetricsService,
   ) {}
 
   private async findOrThrow(id: string, userId: string) {
@@ -117,16 +142,78 @@ export class CoverLettersService {
   async generate(userId: string, dto: GenerateCoverLetterRequestDto) {
     // Fetch CV content to base the cover letter on
     const cv = await this.cvService.findOne(dto.cvId, userId);
+    const template = this.normalizeTemplate(dto.template);
 
-    const content = this.buildCoverLetter(cv, dto);
     const highlights = this.extractHighlights(cv, dto);
+    if (this.shouldUseLlm(userId)) {
+      const startedAt = Date.now();
+      try {
+        await this.aiUsageService.consumeQuota(
+          userId,
+          AiUsageFeature.COVER_LETTER_GENERATE,
+        );
+        const content = await this.openAiProvider.generateCoverLetter({
+          fullName: cv.personalInfo?.fullName ?? undefined,
+          summary: cv.personalInfo?.summary ?? undefined,
+          topExperience: (cv.experiences ?? [])
+            .slice(0, 3)
+            .map(
+              exp =>
+                `${exp.title} at ${exp.company}${exp.description ? `: ${exp.description.slice(0, 180)}` : ''}`,
+            ),
+          topSkills: (cv.skills ?? []).map(skill => skill.name).slice(0, 10),
+          jobTitle: dto.jobTitle,
+          company: dto.company,
+          tone: dto.tone,
+          jobDescription: dto.jobDescription,
+          template,
+        });
+        this.metricsService.recordAiCall({
+          feature: 'cover_letter_generate',
+          provider: 'openai',
+          status: 'success',
+          durationMs: Date.now() - startedAt,
+        });
+        return { content, highlights };
+      } catch (error) {
+        this.metricsService.recordAiCall({
+          feature: 'cover_letter_generate',
+          provider: 'openai',
+          status: 'error',
+          durationMs: Date.now() - startedAt,
+        });
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.warn(
+          `OpenAI cover letter generation failed; falling back to template builder. ${message}`,
+        );
+      }
+    }
+
+    const content = this.buildCoverLetter(cv, dto, template);
 
     return { content, highlights };
+  }
+
+  private shouldUseLlm(userId: string): boolean {
+    const provider = this.configService
+      .get<string>('AI_PROVIDER', 'builtin')
+      ?.trim()
+      .toLowerCase();
+    if (provider !== 'openai') {
+      return false;
+    }
+
+    if (!this.openAiProvider.isAvailable()) {
+      return false;
+    }
+
+    return this.unleashService.isEnabled(AI_LLM_COVER_LETTER_FLAG, { userId });
   }
 
   private buildCoverLetter(
     cv: Prisma.CvGetPayload<{ include: typeof CV_INCLUDE_ALL }>,
     dto: GenerateCoverLetterRequestDto,
+    template: CoverLetterTemplate,
   ): string {
     const name = cv.personalInfo?.fullName ?? 'there';
     const company = dto.company ?? 'your company';
@@ -137,7 +224,7 @@ export class CoverLettersService {
     const experiences = cv.experiences ?? [];
     const totalYears = this.computeTotalYears(experiences);
     const topRole = experiences[0];
-    const skills = (cv.skills ?? []).map((s) => s.name);
+    const skills = (cv.skills ?? []).map(s => s.name);
     const topSkills = skills.slice(0, 5).join(', ');
 
     const greeting = this.getGreeting(tone);
@@ -145,37 +232,54 @@ export class CoverLettersService {
 
     const paragraphs: string[] = [];
 
-    // Opening paragraph
-    paragraphs.push(
-      `I am writing to express my interest in ${jobTitle} at ${company}. ` +
-        (totalYears > 0
-          ? `With ${totalYears}+ years of professional experience${topSkills ? ` and expertise in ${topSkills}` : ''}, `
-          : (topSkills ? `With expertise in ${topSkills}, ` : '')) +
-        `I am confident in my ability to contribute meaningfully to your team.`,
-    );
+    if (template === 'impact_story' && topRole?.description) {
+      paragraphs.push(
+        `${topRole.description.slice(0, 220)}. This result reflects the impact I aim to bring to ${company} as ${jobTitle}.`,
+      );
+    } else {
+      // Opening paragraph
+      paragraphs.push(
+        `I am writing to express my interest in ${jobTitle} at ${company}. ` +
+          (totalYears > 0
+            ? `With ${totalYears}+ years of professional experience${topSkills ? ` and expertise in ${topSkills}` : ''}, `
+            : topSkills
+              ? `With expertise in ${topSkills}, `
+              : '') +
+          `I am confident in my ability to contribute meaningfully to your team.`,
+      );
+    }
 
-    // Experience paragraph
     if (topRole) {
-      paragraphs.push(
-        `In my most recent role as ${topRole.title} at ${topRole.company}, ` +
-          `${topRole.description ? topRole.description.slice(0, 200) : 'I have developed strong skills and delivered impactful results'}. ` +
-          `This experience has prepared me well for the challenges and opportunities at ${company}.`,
-      );
+      const experienceSentence =
+        topRole.description?.slice(0, 200) ??
+        'I have developed strong skills and delivered impactful results';
+      if (template === 'concise_modern') {
+        paragraphs.push(
+          `${topRole.title} at ${topRole.company}: ${experienceSentence}.`,
+        );
+      } else {
+        paragraphs.push(
+          `In my most recent role as ${topRole.title} at ${topRole.company}, ${experienceSentence}. ` +
+            `This experience has prepared me well for the challenges and opportunities at ${company}.`,
+        );
+      }
     }
 
-    // Skills paragraph
     if (skills.length > 0) {
-      paragraphs.push(
-        `My technical toolkit includes ${skills.slice(0, 8).join(', ')}${skills.length > 8 ? ', among others' : ''}. ` +
-          `I continuously invest in expanding my skill set to stay current with industry trends.`,
-      );
+      const skillLine = `My technical toolkit includes ${skills.slice(0, 8).join(', ')}${skills.length > 8 ? ', among others' : ''}.`;
+      if (template === 'concise_modern') {
+        paragraphs.push(skillLine);
+      } else {
+        paragraphs.push(
+          `${skillLine} I continuously invest in expanding my skill set to stay current with industry trends.`,
+        );
+      }
     }
 
-    // Job description tailoring paragraph
     if (dto.jobDescription) {
       const keywords = this.extractJobKeywords(dto.jobDescription);
       const matchedSkills = skills.filter((s: string) =>
-        keywords.some((k) => s.toLowerCase().includes(k)),
+        keywords.some(k => s.toLowerCase().includes(k)),
       );
       if (matchedSkills.length > 0) {
         paragraphs.push(
@@ -238,7 +342,7 @@ export class CoverLettersService {
       .toLowerCase()
       .replace(/[^a-z0-9\s]/g, ' ')
       .split(/\s+/)
-      .filter((w) => w.length > 3);
+      .filter(w => w.length > 3);
     return [...new Set(words)];
   }
 
@@ -247,6 +351,7 @@ export class CoverLettersService {
     dto: GenerateCoverLetterRequestDto,
   ): string[] {
     const highlights: string[] = [];
+    const template = this.normalizeTemplate(dto.template);
 
     const experiences = cv.experiences ?? [];
     if (experiences.length > 0) {
@@ -256,7 +361,7 @@ export class CoverLettersService {
       );
     }
 
-    const skills = (cv.skills ?? []).map((s) => s.name);
+    const skills = (cv.skills ?? []).map(s => s.name);
     if (skills.length > 0) {
       highlights.push(`Key skills: ${skills.slice(0, 4).join(', ')}`);
     }
@@ -265,11 +370,25 @@ export class CoverLettersService {
       highlights.push(`Tailored for ${dto.company}`);
     }
 
+    highlights.push(`Template: ${COVER_LETTER_TEMPLATE_LABELS[template]}`);
+
     const certs = cv.certifications ?? [];
     if (certs.length > 0) {
       highlights.push(`${certs.length} certification(s)`);
     }
 
     return highlights;
+  }
+
+  private normalizeTemplate(input?: string): CoverLetterTemplate {
+    if (!input) {
+      return DEFAULT_COVER_LETTER_TEMPLATE;
+    }
+
+    if (input in COVER_LETTER_TEMPLATE_LABELS) {
+      return input as CoverLetterTemplate;
+    }
+
+    return DEFAULT_COVER_LETTER_TEMPLATE;
   }
 }

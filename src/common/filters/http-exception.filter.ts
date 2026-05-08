@@ -6,6 +6,8 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { ensureCorrelationId } from '@/common/http/correlation-id';
+import { sanitizeForLogging } from '@/common/logging/log-sanitizer';
 
 @Catch(HttpException)
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -15,6 +17,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
+    const correlationId = ensureCorrelationId(request, response);
     const status = exception.getStatus();
 
     const exceptionResponse = exception.getResponse();
@@ -33,9 +36,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     // Log error details
     this.logger.error(
-      `HTTP ${status} Error: ${request.method} ${request.url}`,
-      `Error Details: ${JSON.stringify(exceptionResponse)}`,
-      JSON.stringify(errorResponse),
+      `[${correlationId}] HTTP ${status} Error: ${request.method} ${request.url}`,
+      `Error Details: ${JSON.stringify(sanitizeForLogging(exceptionResponse))}`,
+      JSON.stringify(sanitizeForLogging(errorResponse)),
     );
 
     response.status(status).json(errorResponse);

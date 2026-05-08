@@ -1,5 +1,31 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsInt, IsIn, Min, Max } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsString,
+  IsOptional,
+  IsInt,
+  IsIn,
+  Min,
+  Max,
+  ValidateNested,
+} from 'class-validator';
+
+export class AssessSkillInputDto {
+  @ApiProperty({
+    description: 'Skill name',
+    example: 'TypeScript',
+  })
+  @IsString()
+  name!: string;
+
+  @ApiPropertyOptional({ description: 'Self-assessed level from 0 to 100' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(100)
+  level?: number;
+}
 
 export class AssessSkillsRequestDto {
   @ApiProperty({
@@ -10,12 +36,18 @@ export class AssessSkillsRequestDto {
   targetRole!: string;
 
   @ApiPropertyOptional({
-    description: 'Current skills (comma-separated or from CV)',
-    example: ['TypeScript', 'React', 'Node.js'],
+    description: 'Current skills with optional level scores',
+    example: [
+      { name: 'TypeScript', level: 80 },
+      { name: 'React', level: 70 },
+      { name: 'Node.js', level: 60 },
+    ],
   })
   @IsOptional()
-  @IsString({ each: true })
-  currentSkills?: string[];
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AssessSkillInputDto)
+  currentSkills?: AssessSkillInputDto[];
 }
 
 export class UpdateSkillProgressRequestDto {

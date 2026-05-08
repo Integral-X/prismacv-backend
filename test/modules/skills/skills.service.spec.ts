@@ -78,11 +78,10 @@ describe('SkillsService', () => {
       ] as never);
       prisma.userSkillProgress.findMany.mockResolvedValue([]);
 
-      const result = await service.assessSkills(
-        userId,
-        'Software Engineer',
-        ['TypeScript', 'React'],
-      );
+      const result = await service.assessSkills(userId, 'Software Engineer', [
+        { name: 'TypeScript', level: 90 },
+        { name: 'React', level: 80 },
+      ]);
 
       expect(result).toHaveProperty('targetRole', 'Software Engineer');
       expect(result).toHaveProperty('overallReadiness');
@@ -100,16 +99,35 @@ describe('SkillsService', () => {
       ] as never);
       prisma.userSkillProgress.findMany.mockResolvedValue([]);
 
-      const result = await service.assessSkills(
-        userId,
-        'Software Engineer',
-        ['TypeScript'],
-      );
+      const result = await service.assessSkills(userId, 'Software Engineer', [
+        { name: 'TypeScript', level: 75 },
+      ]);
 
       // Should have gaps for React and Docker (not in currentSkills)
       expect(result.gaps).toContain('React');
       expect(result.gaps).toContain('Docker');
       expect(result.strengths).toContain('TypeScript');
+    });
+
+    it('should factor provided skill levels into readiness score', async () => {
+      prisma.roleSkillMap.findMany.mockResolvedValue([
+        { ...mockRoleSkillMap, skillName: 'TypeScript', importance: 5 },
+      ] as never);
+      prisma.userSkillProgress.findMany.mockResolvedValue([]);
+
+      const lowLevel = await service.assessSkills(userId, 'Software Engineer', [
+        { name: 'TypeScript', level: 20 },
+      ]);
+      const highLevel = await service.assessSkills(
+        userId,
+        'Software Engineer',
+        [{ name: 'TypeScript', level: 90 }],
+      );
+
+      expect(lowLevel.overallReadiness).toBeLessThan(
+        highLevel.overallReadiness,
+      );
+      expect(highLevel.requiredSkills[0]?.userLevel).toBe(90);
     });
   });
 

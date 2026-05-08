@@ -17,12 +17,264 @@ const logger = createLogger({
 
 const prisma = new PrismaClient();
 
+async function seedBillingPlans(client: PrismaClient): Promise<void> {
+  const plans = [
+    {
+      code: 'FREE' as const,
+      name: 'Free',
+      description: 'Core resume builder features',
+      priceMonthlyCents: 0,
+      priceYearlyCents: 0,
+      stripePriceMonthly: null,
+      stripePriceYearly: null,
+    },
+    {
+      code: 'PRO' as const,
+      name: 'Pro',
+      description: 'Advanced AI and optimization features',
+      priceMonthlyCents: 1900,
+      priceYearlyCents: 19000,
+      stripePriceMonthly: process.env.STRIPE_PRICE_PRO_MONTHLY ?? null,
+      stripePriceYearly: process.env.STRIPE_PRICE_PRO_YEARLY ?? null,
+    },
+    {
+      code: 'TEAM' as const,
+      name: 'Team',
+      description: 'Collaboration and team management features',
+      priceMonthlyCents: 4900,
+      priceYearlyCents: 49000,
+      stripePriceMonthly: process.env.STRIPE_PRICE_TEAM_MONTHLY ?? null,
+      stripePriceYearly: process.env.STRIPE_PRICE_TEAM_YEARLY ?? null,
+    },
+  ];
+
+  for (const plan of plans) {
+    await client.plan.upsert({
+      where: { code: plan.code },
+      update: {
+        name: plan.name,
+        description: plan.description,
+        priceMonthlyCents: plan.priceMonthlyCents,
+        priceYearlyCents: plan.priceYearlyCents,
+        stripePriceMonthly: plan.stripePriceMonthly,
+        stripePriceYearly: plan.stripePriceYearly,
+        isActive: true,
+      },
+      create: {
+        id: uuidv7(),
+        code: plan.code,
+        name: plan.name,
+        description: plan.description,
+        priceMonthlyCents: plan.priceMonthlyCents,
+        priceYearlyCents: plan.priceYearlyCents,
+        stripePriceMonthly: plan.stripePriceMonthly,
+        stripePriceYearly: plan.stripePriceYearly,
+        isActive: true,
+      },
+    });
+  }
+}
+
+interface ResumeExampleSeed {
+  slug: string;
+  title: string;
+  fullName: string;
+  location: string;
+  summary: string;
+  headlineRole: string;
+  skills: string[];
+}
+
+async function seedPublicResumeExamples(
+  client: PrismaClient,
+  userId: string,
+): Promise<void> {
+  const examples: ResumeExampleSeed[] = [
+    {
+      slug: 'software-engineer-example',
+      title: 'Backend platform engineer resume',
+      fullName: 'Taylor Nguyen',
+      location: 'Berlin, Germany',
+      summary:
+        'Backend engineer focused on reliability, distributed systems, and measurable platform improvements.',
+      headlineRole: 'Senior Backend Engineer',
+      skills: ['TypeScript', 'Node.js', 'PostgreSQL', 'Kafka', 'AWS'],
+    },
+    {
+      slug: 'product-manager-example',
+      title: 'B2B SaaS product manager resume',
+      fullName: 'Samira Rahman',
+      location: 'Amsterdam, Netherlands',
+      summary:
+        'Product manager with a track record of turning customer insights into high-impact roadmap outcomes.',
+      headlineRole: 'Senior Product Manager',
+      skills: [
+        'Roadmapping',
+        'Experimentation',
+        'User Interviews',
+        'SQL',
+        'Stakeholder Management',
+      ],
+    },
+    {
+      slug: 'data-analyst-example',
+      title: 'Analytics and insights specialist resume',
+      fullName: 'Jordan Lee',
+      location: 'Dublin, Ireland',
+      summary:
+        'Data analyst delivering business outcomes through clear metrics, trusted dashboards, and actionable reporting.',
+      headlineRole: 'Data Analyst',
+      skills: ['SQL', 'Python', 'Looker', 'A/B Testing', 'Data Modeling'],
+    },
+    {
+      slug: 'ux-designer-example',
+      title: 'Product design portfolio resume',
+      fullName: 'Morgan Silva',
+      location: 'Lisbon, Portugal',
+      summary:
+        'UX designer improving activation and retention through user-centered product design and experimentation.',
+      headlineRole: 'Senior UX Designer',
+      skills: [
+        'Figma',
+        'Design Systems',
+        'User Research',
+        'Interaction Design',
+        'Usability Testing',
+      ],
+    },
+  ];
+
+  for (const [index, example] of examples.entries()) {
+    const existingCv = await client.cv.findUnique({
+      where: { userId_slug: { userId, slug: example.slug } },
+      select: { id: true },
+    });
+
+    const cvId = existingCv?.id ?? uuidv7();
+    if (!existingCv) {
+      await client.cv.create({
+        data: {
+          id: cvId,
+          userId,
+          title: example.title,
+          slug: example.slug,
+          status: 'PUBLISHED',
+          templateId: String((index % 3) + 1),
+          isDefault: false,
+          personalInfo: {
+            create: {
+              id: uuidv7(),
+              fullName: example.fullName,
+              email: `examples+${example.slug}@prismacv.dev`,
+              location: example.location,
+              summary: example.summary,
+            },
+          },
+          experiences: {
+            createMany: {
+              data: [
+                {
+                  id: uuidv7(),
+                  company: 'PrismaCV Labs',
+                  title: example.headlineRole,
+                  location: example.location,
+                  startDate: new Date('2021-01-01'),
+                  current: true,
+                  description:
+                    'Delivered measurable business outcomes, improved cross-functional delivery quality, and mentored teammates.',
+                  sortOrder: 0,
+                },
+                {
+                  id: uuidv7(),
+                  company: 'GrowthWorks',
+                  title: `${example.headlineRole} II`,
+                  location: example.location,
+                  startDate: new Date('2018-01-01'),
+                  endDate: new Date('2020-12-31'),
+                  current: false,
+                  description:
+                    'Led initiatives with data-informed decisions and shipped customer-facing improvements across product cycles.',
+                  sortOrder: 1,
+                },
+              ],
+            },
+          },
+          education: {
+            createMany: {
+              data: [
+                {
+                  id: uuidv7(),
+                  institution: 'European Institute of Technology',
+                  degree: 'B.Sc.',
+                  field: 'Information Systems',
+                  startDate: new Date('2011-09-01'),
+                  endDate: new Date('2015-06-30'),
+                  sortOrder: 0,
+                },
+              ],
+            },
+          },
+          skills: {
+            createMany: {
+              data: example.skills.map((skill, skillIndex) => ({
+                id: uuidv7(),
+                name: skill,
+                level: skillIndex < 2 ? 'EXPERT' : 'ADVANCED',
+                category: 'Core',
+                sortOrder: skillIndex,
+              })),
+            },
+          },
+          projects: {
+            createMany: {
+              data: [
+                {
+                  id: uuidv7(),
+                  name: 'Cross-functional impact initiative',
+                  description:
+                    'Designed and delivered an initiative that improved conversion and user retention over two quarters.',
+                  sortOrder: 0,
+                },
+              ],
+            },
+          },
+        },
+      });
+      logger.info(`Seeded resume example CV for slug: ${example.slug}`);
+    } else {
+      logger.info(`Resume example CV already exists for slug: ${example.slug}`);
+    }
+
+    await client.cvShare.deleteMany({
+      where: {
+        shareSlug: example.slug,
+        NOT: { cvId },
+      },
+    });
+
+    await client.cvShare.upsert({
+      where: { cvId },
+      update: {
+        shareSlug: example.slug,
+        isPublic: true,
+      },
+      create: {
+        id: uuidv7(),
+        cvId,
+        shareSlug: example.slug,
+        isPublic: true,
+      },
+    });
+  }
+}
+
 async function main() {
   logger.info('Starting database seeding...');
 
   // ── Seed platform feature data (skills, interview questions, etc.) ──
   // Always seed features regardless of admin env vars
   await seedFeatures(prisma);
+  await seedBillingPlans(prisma);
 
   const masterAdminEmail = process.env.MASTER_ADMIN_EMAIL?.trim();
   const masterAdminPassword = process.env.MASTER_ADMIN_PASSWORD;
@@ -313,6 +565,8 @@ async function main() {
     } else {
       logger.info('Demo user already has CVs — skipping sample CV seed');
     }
+
+    await seedPublicResumeExamples(prisma, sampleUser.id);
   }
 
   logger.info('Database seeding completed!');

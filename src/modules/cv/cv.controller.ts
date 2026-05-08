@@ -13,8 +13,13 @@ import {
   HttpStatus,
   UseGuards,
   ParseUUIDPipe,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
-import type { Response } from 'express';
+import type { Express, Response } from 'express';
+import { memoryStorage } from 'multer';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
@@ -23,12 +28,17 @@ import {
   ApiBearerAuth,
   ApiParam,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { UserPlan } from '@prisma/client';
 import { JwtUserAuthGuard } from '@/modules/auth/guards/jwt-user-auth.guard';
 import { GetUser } from '@/common/decorators/get-user.decorator';
 import { Public } from '@/common/decorators/public.decorator';
 import { User } from '@/modules/auth/entities/user.entity';
 import { CvService } from './cv.service';
 import { CvImportService } from './cv-import.service';
+import { CvFileImportService } from './cv-file-import.service';
+import { RequiresPlan } from '@/modules/billing/decorators/requires-plan.decorator';
+import { RequiresPlanGuard } from '@/modules/billing/requires-plan.guard';
 import { CvExportService } from './cv-export.service';
 import { CvMapper } from './mappers/cv.mapper';
 import { CV_TEMPLATES } from './templates/template-registry';
@@ -59,9 +69,7 @@ import {
   LanguageResponseDto,
   CustomSectionResponseDto,
 } from './dto/response/cv.response.dto';
-import {
-  ShareCvRequestDto,
-} from './dto/request/share-cv.request.dto';
+import { ShareCvRequestDto } from './dto/request/share-cv.request.dto';
 import { CvShareResponseDto } from './dto/response/share-cv.response.dto';
 import { PaginatedResponseDto } from '@/shared/dto/paginated-response.dto';
 
@@ -73,6 +81,7 @@ export class CvController {
   constructor(
     private readonly cvService: CvService,
     private readonly cvImportService: CvImportService,
+    private readonly cvFileImportService: CvFileImportService,
     private readonly cvExportService: CvExportService,
     private readonly cvMapper: CvMapper,
   ) {}
@@ -235,8 +244,65 @@ export class CvController {
     return this.cvMapper.cvToResponse(cv);
   }
 
-  @Get(':id/export/pdf')
+  @Post('import/file')
   @UseGuards(JwtUserAuthGuard)
+  @Throttle({ default: { limit: 8, ttl: 60000 } })
+  @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (
+        _req: unknown,
+        file: Express.Multer.File,
+        cb: (error: Error | null, acceptFile: boolean) => void,
+      ) => {
+        const name = file.originalname.toLowerCase();
+        const okMime =
+          file.mimetype === 'application/pdf' ||
+          file.mimetype ===
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        const okExt = name.endsWith('.pdf') || name.endsWith('.docx');
+        if (!okMime && !okExt) {
+          cb(
+            new BadRequestException(
+              'Only PDF or DOCX files are supported.',
+            ) as unknown as Error,
+            false,
+          );
+          return;
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  @ApiOperation({
+    summary: 'Import resume from PDF or DOCX',
+    description:
+      'Extracts text from an uploaded file, creates a new CV, and stores the text in the summary plus basic contact hints when detected.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'CV created from file',
+    type: CvResponseDto,
+  })
+  async importFromFile(
+    @GetUser() user: User,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<CvResponseDto> {
+    if (!file) {
+      throw new BadRequestException('File field "file" is required');
+    }
+    const cv = await this.cvFileImportService.importFromFile(user.id, file);
+    return this.cvMapper.cvToResponse(cv);
+  }
+
+  @Get(':id/export/pdf')
+  @UseGuards(JwtUserAuthGuard, RequiresPlanGuard)
+  @RequiresPlan({
+    plans: [UserPlan.PRO, UserPlan.TEAM],
+    feature: 'cv_pdf_export',
+  })
   @ApiOperation({
     summary: 'Export CV as PDF',
     description:
@@ -270,7 +336,11 @@ export class CvController {
   // ─── Sharing ─────────────────────────────────────────────────────────────
 
   @Post(':id/share')
-  @UseGuards(JwtUserAuthGuard)
+  @UseGuards(JwtUserAuthGuard, RequiresPlanGuard)
+  @RequiresPlan({
+    plans: [UserPlan.PRO, UserPlan.TEAM],
+    feature: 'cv_share',
+  })
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Share a CV',
@@ -325,6 +395,7 @@ export class CvController {
 
   @Get('public/:slug')
   @Public()
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'View a shared CV (public)',
@@ -333,9 +404,7 @@ export class CvController {
   @ApiParam({ name: 'slug', description: 'Share slug' })
   @ApiResponse({ status: 200, type: CvResponseDto })
   @ApiResponse({ status: 404, description: 'Shared CV not found' })
-  async getPublicCv(
-    @Param('slug') slug: string,
-  ): Promise<CvResponseDto> {
+  async getPublicCv(@Param('slug') slug: string): Promise<CvResponseDto> {
     const cv = await this.cvService.getPublicCv(slug);
     return this.cvMapper.cvToResponse(cv);
   }

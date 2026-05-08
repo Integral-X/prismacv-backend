@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@/config/prisma.service';
 import { generateUuidv7 } from '@/shared/utils/uuid.util';
 import type {
+  AssessSkillInputDto,
   SkillGapResponseDto,
   LearningRoadmapResponseDto,
   UserSkillProgressResponseDto,
@@ -31,7 +32,7 @@ export class SkillsService {
   async assessSkills(
     userId: string,
     targetRole: string,
-    currentSkills: string[],
+    currentSkills: AssessSkillInputDto[],
   ): Promise<SkillGapResponseDto> {
     const roleSkills = await this.prisma.roleSkillMap.findMany({
       where: { role: targetRole },
@@ -47,18 +48,28 @@ export class SkillsService {
       userProgress.map(p => [p.skillName.toLowerCase(), p]),
     );
 
-    const currentSkillsLower = new Set(currentSkills.map(s => s.toLowerCase()));
+    const currentSkillsMap = new Map<string, number>();
+    for (const skill of currentSkills) {
+      const normalizedName = skill.name.trim().toLowerCase();
+      if (!normalizedName) continue;
+
+      const normalizedLevel = Math.max(0, Math.min(100, skill.level ?? 50));
+      currentSkillsMap.set(normalizedName, normalizedLevel);
+    }
 
     const requiredSkills = roleSkills.map(rs => {
-      const hasSkill = currentSkillsLower.has(rs.skillName.toLowerCase());
+      const normalizedSkillName = rs.skillName.toLowerCase();
+      const inputLevel = currentSkillsMap.get(normalizedSkillName);
       const progress = progressMap.get(rs.skillName.toLowerCase());
+      const userLevel = inputLevel ?? progress?.level ?? 0;
+      const hasSkill = userLevel > 0;
 
       return {
         skillName: rs.skillName,
         category: rs.category.name,
         importance: rs.importance,
         hasSkill,
-        userLevel: progress?.level ?? (hasSkill ? 50 : 0),
+        userLevel,
       };
     });
 
@@ -72,9 +83,10 @@ export class SkillsService {
       (sum, s) => sum + s.importance,
       0,
     );
-    const achievedImportance = requiredSkills
-      .filter(s => s.hasSkill)
-      .reduce((sum, s) => sum + s.importance, 0);
+    const achievedImportance = requiredSkills.reduce(
+      (sum, skill) => sum + skill.importance * ((skill.userLevel ?? 0) / 100),
+      0,
+    );
 
     const overallReadiness =
       totalImportance > 0

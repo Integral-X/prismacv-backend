@@ -1,4 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { AiUsageFeature } from '@prisma/client';
+import { AiUsageService } from '@/modules/ai/ai-usage.service';
+import { OpenAiProvider } from '@/modules/ai/providers/openai.provider';
+import { UnleashService } from '@/modules/unleash/unleash.service';
+import { AI_LLM_ATS_FLAG } from '@/modules/ai/ai-feature-flags';
+import { MetricsService } from '@/modules/metrics/metrics.service';
 import { AtsScoreRequestDto } from './dto/ats-score.request.dto';
 import {
   AtsScoreResponseDto,
@@ -7,73 +14,383 @@ import {
 } from './dto/ats-score.response.dto';
 
 const STOP_WORDS = new Set([
-  'a', 'an', 'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
-  'of', 'with', 'by', 'from', 'is', 'are', 'was', 'were', 'be', 'been',
-  'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
-  'could', 'should', 'may', 'might', 'shall', 'can', 'need', 'dare',
-  'ought', 'used', 'this', 'that', 'these', 'those', 'i', 'me', 'my',
-  'myself', 'we', 'our', 'ours', 'ourselves', 'you', 'your', 'yours',
-  'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', 'her',
-  'hers', 'herself', 'it', 'its', 'itself', 'they', 'them', 'their',
-  'theirs', 'themselves', 'what', 'which', 'who', 'whom', 'when', 'where',
-  'why', 'how', 'all', 'each', 'every', 'both', 'few', 'more', 'most',
-  'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same',
-  'so', 'than', 'too', 'very', 'just', 'because', 'as', 'until', 'while',
-  'about', 'between', 'through', 'during', 'before', 'after', 'above',
-  'below', 'up', 'down', 'out', 'off', 'over', 'under', 'again', 'further',
-  'then', 'once', 'here', 'there', 'any', 'if', 'also', 'etc', 'per',
-  'able', 'must', 'well', 'including', 'within', 'using', 'work', 'working',
-  'experience', 'years', 'year', 'team', 'role', 'job', 'company',
-  'requirements', 'required', 'preferred', 'responsibilities', 'looking',
-  'join', 'strong', 'knowledge', 'understanding', 'minimum', 'plus',
-  'ideal', 'candidate', 'position', 'opportunity', 'based',
+  'a',
+  'an',
+  'the',
+  'and',
+  'or',
+  'but',
+  'in',
+  'on',
+  'at',
+  'to',
+  'for',
+  'of',
+  'with',
+  'by',
+  'from',
+  'is',
+  'are',
+  'was',
+  'were',
+  'be',
+  'been',
+  'being',
+  'have',
+  'has',
+  'had',
+  'do',
+  'does',
+  'did',
+  'will',
+  'would',
+  'could',
+  'should',
+  'may',
+  'might',
+  'shall',
+  'can',
+  'need',
+  'dare',
+  'ought',
+  'used',
+  'this',
+  'that',
+  'these',
+  'those',
+  'i',
+  'me',
+  'my',
+  'myself',
+  'we',
+  'our',
+  'ours',
+  'ourselves',
+  'you',
+  'your',
+  'yours',
+  'yourself',
+  'yourselves',
+  'he',
+  'him',
+  'his',
+  'himself',
+  'she',
+  'her',
+  'hers',
+  'herself',
+  'it',
+  'its',
+  'itself',
+  'they',
+  'them',
+  'their',
+  'theirs',
+  'themselves',
+  'what',
+  'which',
+  'who',
+  'whom',
+  'when',
+  'where',
+  'why',
+  'how',
+  'all',
+  'each',
+  'every',
+  'both',
+  'few',
+  'more',
+  'most',
+  'other',
+  'some',
+  'such',
+  'no',
+  'nor',
+  'not',
+  'only',
+  'own',
+  'same',
+  'so',
+  'than',
+  'too',
+  'very',
+  'just',
+  'because',
+  'as',
+  'until',
+  'while',
+  'about',
+  'between',
+  'through',
+  'during',
+  'before',
+  'after',
+  'above',
+  'below',
+  'up',
+  'down',
+  'out',
+  'off',
+  'over',
+  'under',
+  'again',
+  'further',
+  'then',
+  'once',
+  'here',
+  'there',
+  'any',
+  'if',
+  'also',
+  'etc',
+  'per',
+  'able',
+  'must',
+  'well',
+  'including',
+  'within',
+  'using',
+  'work',
+  'working',
+  'experience',
+  'years',
+  'year',
+  'team',
+  'role',
+  'job',
+  'company',
+  'requirements',
+  'required',
+  'preferred',
+  'responsibilities',
+  'looking',
+  'join',
+  'strong',
+  'knowledge',
+  'understanding',
+  'minimum',
+  'plus',
+  'ideal',
+  'candidate',
+  'position',
+  'opportunity',
+  'based',
 ]);
 
 const TECHNICAL_TERMS = new Set([
-  'javascript', 'typescript', 'python', 'java', 'c#', 'c++', 'ruby', 'go',
-  'rust', 'swift', 'kotlin', 'php', 'scala', 'r', 'matlab', 'perl',
-  'react', 'angular', 'vue', 'svelte', 'nextjs', 'next.js', 'nuxt',
-  'node.js', 'nodejs', 'express', 'nestjs', 'django', 'flask', 'fastapi',
-  'spring', 'spring boot', '.net', 'rails', 'laravel',
-  'aws', 'azure', 'gcp', 'docker', 'kubernetes', 'k8s', 'terraform',
-  'jenkins', 'github actions', 'ci/cd', 'cicd',
-  'postgresql', 'mysql', 'mongodb', 'redis', 'elasticsearch', 'kafka',
-  'rabbitmq', 'graphql', 'rest', 'restful', 'grpc', 'microservices',
-  'sql', 'nosql', 'dynamodb', 'cassandra', 'oracle',
-  'html', 'css', 'sass', 'scss', 'tailwind', 'bootstrap', 'webpack',
-  'vite', 'babel', 'eslint', 'prettier',
-  'git', 'jira', 'confluence', 'figma', 'sketch',
-  'agile', 'scrum', 'kanban', 'devops', 'sre',
-  'machine learning', 'ml', 'ai', 'deep learning', 'nlp', 'tensorflow',
-  'pytorch', 'pandas', 'numpy', 'scikit-learn',
-  'linux', 'unix', 'windows', 'macos',
-  'oauth', 'jwt', 'saml', 'sso', 'ldap',
-  'pmp', 'aws certified', 'azure certified', 'cka', 'ckad', 'cissp',
-  'data structures', 'algorithms', 'oop', 'solid', 'design patterns',
-  'tdd', 'bdd', 'unit testing', 'integration testing', 'e2e',
-  'jest', 'mocha', 'cypress', 'playwright', 'selenium',
-  'prisma', 'typeorm', 'sequelize', 'hibernate',
-  'storybook', 'responsive design', 'accessibility', 'a11y',
-  'api', 'sdk', 'cli', 'saas', 'paas', 'iaas',
+  'javascript',
+  'typescript',
+  'python',
+  'java',
+  'c#',
+  'c++',
+  'ruby',
+  'go',
+  'rust',
+  'swift',
+  'kotlin',
+  'php',
+  'scala',
+  'r',
+  'matlab',
+  'perl',
+  'react',
+  'angular',
+  'vue',
+  'svelte',
+  'nextjs',
+  'next.js',
+  'nuxt',
+  'node.js',
+  'nodejs',
+  'express',
+  'nestjs',
+  'django',
+  'flask',
+  'fastapi',
+  'spring',
+  'spring boot',
+  '.net',
+  'rails',
+  'laravel',
+  'aws',
+  'azure',
+  'gcp',
+  'docker',
+  'kubernetes',
+  'k8s',
+  'terraform',
+  'jenkins',
+  'github actions',
+  'ci/cd',
+  'cicd',
+  'postgresql',
+  'mysql',
+  'mongodb',
+  'redis',
+  'elasticsearch',
+  'kafka',
+  'rabbitmq',
+  'graphql',
+  'rest',
+  'restful',
+  'grpc',
+  'microservices',
+  'sql',
+  'nosql',
+  'dynamodb',
+  'cassandra',
+  'oracle',
+  'html',
+  'css',
+  'sass',
+  'scss',
+  'tailwind',
+  'bootstrap',
+  'webpack',
+  'vite',
+  'babel',
+  'eslint',
+  'prettier',
+  'git',
+  'jira',
+  'confluence',
+  'figma',
+  'sketch',
+  'agile',
+  'scrum',
+  'kanban',
+  'devops',
+  'sre',
+  'machine learning',
+  'ml',
+  'ai',
+  'deep learning',
+  'nlp',
+  'tensorflow',
+  'pytorch',
+  'pandas',
+  'numpy',
+  'scikit-learn',
+  'linux',
+  'unix',
+  'windows',
+  'macos',
+  'oauth',
+  'jwt',
+  'saml',
+  'sso',
+  'ldap',
+  'pmp',
+  'aws certified',
+  'azure certified',
+  'cka',
+  'ckad',
+  'cissp',
+  'data structures',
+  'algorithms',
+  'oop',
+  'solid',
+  'design patterns',
+  'tdd',
+  'bdd',
+  'unit testing',
+  'integration testing',
+  'e2e',
+  'jest',
+  'mocha',
+  'cypress',
+  'playwright',
+  'selenium',
+  'prisma',
+  'typeorm',
+  'sequelize',
+  'hibernate',
+  'storybook',
+  'responsive design',
+  'accessibility',
+  'a11y',
+  'api',
+  'sdk',
+  'cli',
+  'saas',
+  'paas',
+  'iaas',
 ]);
 
 const IMPORTANCE_INDICATORS = {
-  required: ['must have', 'required', 'essential', 'mandatory', 'must be', 'need to have'],
-  preferred: ['preferred', 'nice to have', 'ideally', 'strongly preferred', 'highly desired'],
-  bonus: ['bonus', 'plus', 'advantage', 'asset', 'beneficial', 'would be great'],
+  required: [
+    'must have',
+    'required',
+    'essential',
+    'mandatory',
+    'must be',
+    'need to have',
+  ],
+  preferred: [
+    'preferred',
+    'nice to have',
+    'ideally',
+    'strongly preferred',
+    'highly desired',
+  ],
+  bonus: [
+    'bonus',
+    'plus',
+    'advantage',
+    'asset',
+    'beneficial',
+    'would be great',
+  ],
 };
 
 const IMPACT_WORDS = [
-  'achieved', 'improved', 'increased', 'reduced', 'led', 'managed',
-  'delivered', 'built', 'created', 'designed', 'implemented', 'developed',
-  'launched', 'optimized', 'streamlined', 'automated', 'mentored',
-  'spearheaded', 'orchestrated', 'transformed', 'scaled', 'drove',
-  'generated', 'saved', 'accelerated', 'pioneered', 'established',
+  'achieved',
+  'improved',
+  'increased',
+  'reduced',
+  'led',
+  'managed',
+  'delivered',
+  'built',
+  'created',
+  'designed',
+  'implemented',
+  'developed',
+  'launched',
+  'optimized',
+  'streamlined',
+  'automated',
+  'mentored',
+  'spearheaded',
+  'orchestrated',
+  'transformed',
+  'scaled',
+  'drove',
+  'generated',
+  'saved',
+  'accelerated',
+  'pioneered',
+  'established',
 ];
 
 @Injectable()
 export class AtsService {
-  analyze(dto: AtsScoreRequestDto): AtsScoreResponseDto {
+  private readonly logger = new Logger(AtsService.name);
+
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly openAiProvider: OpenAiProvider,
+    private readonly aiUsageService: AiUsageService,
+    private readonly unleashService: UnleashService,
+    private readonly metricsService: MetricsService,
+  ) {}
+
+  async analyze(
+    dto: AtsScoreRequestDto,
+    userId: string,
+  ): Promise<AtsScoreResponseDto> {
     const { cvText, jobDescription, skills } = dto;
     const cvLower = cvText.toLowerCase();
     const jdLower = jobDescription.toLowerCase();
@@ -88,7 +405,7 @@ export class AtsService {
     const sectionScores = this.scoreSections(cvLower, jdLower, keywordMatches);
 
     // Calculate keyword match rate
-    const matchedCount = keywordMatches.filter((k) => k.found).length;
+    const matchedCount = keywordMatches.filter(k => k.found).length;
     const keywordMatchRate =
       keywordMatches.length > 0
         ? Math.round((matchedCount / keywordMatches.length) * 100)
@@ -116,8 +433,8 @@ export class AtsService {
 
     // Find missing keywords
     const missingKeywords = keywordMatches
-      .filter((k) => !k.found)
-      .map((k) => k.keyword);
+      .filter(k => !k.found)
+      .map(k => k.keyword);
 
     // Generate suggestions
     const suggestions = this.generateSuggestions(
@@ -127,7 +444,7 @@ export class AtsService {
       impactScore,
     );
 
-    return {
+    const result: AtsScoreResponseDto = {
       overallScore: Math.min(100, Math.max(0, overallScore)),
       keywordMatches,
       sectionScores,
@@ -135,16 +452,89 @@ export class AtsService {
       missingKeywords,
       keywordMatchRate,
     };
+
+    if (this.shouldUseLlm(userId)) {
+      const startedAt = Date.now();
+      try {
+        await this.aiUsageService.consumeQuota(
+          userId,
+          AiUsageFeature.ATS_SCORE,
+        );
+        const llmSuggestions = await this.openAiProvider.generateAtsSuggestions(
+          {
+            cvText,
+            jobDescription,
+            missingKeywords: result.missingKeywords,
+            existingSuggestions: result.suggestions,
+          },
+        );
+        result.suggestions = this.mergeSuggestions(
+          result.suggestions,
+          llmSuggestions,
+        );
+        this.metricsService.recordAiCall({
+          feature: 'ats_score',
+          provider: 'openai',
+          status: 'success',
+          durationMs: Date.now() - startedAt,
+        });
+      } catch (error) {
+        this.metricsService.recordAiCall({
+          feature: 'ats_score',
+          provider: 'openai',
+          status: 'error',
+          durationMs: Date.now() - startedAt,
+        });
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.warn(
+          `OpenAI ATS suggestions failed; using heuristic suggestions only. ${message}`,
+        );
+      }
+    }
+
+    return result;
+  }
+
+  private shouldUseLlm(userId: string): boolean {
+    const provider = this.configService
+      .get<string>('AI_PROVIDER', 'builtin')
+      ?.trim()
+      .toLowerCase();
+    if (provider !== 'openai') {
+      return false;
+    }
+
+    if (!this.openAiProvider.isAvailable()) {
+      return false;
+    }
+
+    return this.unleashService.isEnabled(AI_LLM_ATS_FLAG, { userId });
+  }
+
+  private mergeSuggestions(
+    heuristicSuggestions: string[],
+    llmSuggestions: string[],
+  ): string[] {
+    const merged = [...heuristicSuggestions, ...llmSuggestions].map(s =>
+      s.trim(),
+    );
+    const unique = new Set<string>();
+    for (const suggestion of merged) {
+      if (!suggestion) continue;
+      unique.add(suggestion);
+      if (unique.size >= 10) break;
+    }
+    return [...unique];
   }
 
   private extractKeywords(
     jdLower: string,
     jdOriginal: string,
-  ): Array<{ keyword: string; importance: 'required' | 'preferred' | 'bonus' }> {
-    const keywords: Map<
-      string,
-      'required' | 'preferred' | 'bonus'
-    > = new Map();
+  ): Array<{
+    keyword: string;
+    importance: 'required' | 'preferred' | 'bonus';
+  }> {
+    const keywords: Map<string, 'required' | 'preferred' | 'bonus'> = new Map();
 
     // Extract multi-word technical terms first
     for (const term of TECHNICAL_TERMS) {
@@ -165,7 +555,8 @@ export class AtsService {
     }
 
     // Also extract capitalized phrases that may be product/tool names
-    const capitalizedPattern = /\b([A-Z][a-zA-Z0-9]*(?:\s[A-Z][a-zA-Z0-9]*)*)\b/g;
+    const capitalizedPattern =
+      /\b([A-Z][a-zA-Z0-9]*(?:\s[A-Z][a-zA-Z0-9]*)*)\b/g;
     let match: RegExpExecArray | null;
     while ((match = capitalizedPattern.exec(jdOriginal)) !== null) {
       const term = match[1];
@@ -208,7 +599,10 @@ export class AtsService {
     if (keywordIndex === -1) return 'bonus';
 
     const contextStart = Math.max(0, keywordIndex - 100);
-    const contextEnd = Math.min(jdLower.length, keywordIndex + keyword.length + 100);
+    const contextEnd = Math.min(
+      jdLower.length,
+      keywordIndex + keyword.length + 100,
+    );
     const context = jdLower.slice(contextStart, contextEnd);
 
     for (const indicator of IMPORTANCE_INDICATORS.required) {
@@ -227,11 +621,14 @@ export class AtsService {
   }
 
   private matchKeywords(
-    keywords: Array<{ keyword: string; importance: 'required' | 'preferred' | 'bonus' }>,
+    keywords: Array<{
+      keyword: string;
+      importance: 'required' | 'preferred' | 'bonus';
+    }>,
     cvLower: string,
     skills?: string[],
   ): KeywordMatchDto[] {
-    const skillsLower = (skills || []).map((s) => s.toLowerCase());
+    const skillsLower = (skills || []).map(s => s.toLowerCase());
 
     return keywords.map(({ keyword, importance }) => {
       // Use word boundary matching to avoid false positives (e.g. "go" matching "ongoing")
@@ -241,7 +638,7 @@ export class AtsService {
 
       // Check in skills array (exact match only)
       if (!found && skillsLower.length > 0) {
-        found = skillsLower.some((s) => s === keyword);
+        found = skillsLower.some(s => s === keyword);
       }
 
       // Handle common variations
@@ -271,17 +668,17 @@ export class AtsService {
     }
     // Common abbreviation mappings
     const abbrevMap: Record<string, string[]> = {
-      'javascript': ['js'],
-      'typescript': ['ts'],
-      'kubernetes': ['k8s'],
-      'postgresql': ['postgres', 'psql'],
+      javascript: ['js'],
+      typescript: ['ts'],
+      kubernetes: ['k8s'],
+      postgresql: ['postgres', 'psql'],
       'continuous integration': ['ci'],
       'continuous deployment': ['cd'],
       'ci/cd': ['cicd', 'ci cd'],
     };
     const variants = abbrevMap[keyword];
     if (variants) {
-      return variants.some((v) => cvLower.includes(v));
+      return variants.some(v => cvLower.includes(v));
     }
     return false;
   }
@@ -316,7 +713,11 @@ export class AtsService {
     const checks: string[] = [];
 
     // Email check: bounded quantifiers prevent polynomial backtracking
-    if (/[a-z0-9]{1,64}(?:[._%+\-][a-z0-9]{1,64}){0,10}@[a-z0-9]{1,253}(?:[.\-][a-z0-9]{1,63}){0,10}\.[a-z]{2,6}/.test(cvLower)) {
+    if (
+      /[a-z0-9]{1,64}(?:[._%+\-][a-z0-9]{1,64}){0,10}@[a-z0-9]{1,253}(?:[.\-][a-z0-9]{1,63}){0,10}\.[a-z]{2,6}/.test(
+        cvLower,
+      )
+    ) {
       score += 25;
     } else {
       checks.push('email');
@@ -362,7 +763,9 @@ export class AtsService {
     }
 
     // Has quantifiable achievements (numbers, percentages)
-    const quantifiers = cvLower.match(/\d{1,10}%|\$\d{1,10}|\d{1,6} ?(?:years?|months?|clients?|users?|projects?)/g);
+    const quantifiers = cvLower.match(
+      /\d{1,10}%|\$\d{1,10}|\d{1,6} ?(?:years?|months?|clients?|users?|projects?)/g,
+    );
     if (quantifiers && quantifiers.length >= 3) {
       score += 40;
     } else if (quantifiers && quantifiers.length >= 1) {
@@ -370,7 +773,7 @@ export class AtsService {
     }
 
     // Has action verbs / impact language
-    const impactCount = IMPACT_WORDS.filter((w) => cvLower.includes(w)).length;
+    const impactCount = IMPACT_WORDS.filter(w => cvLower.includes(w)).length;
     if (impactCount >= 5) {
       score += 30;
     } else if (impactCount >= 2) {
@@ -404,16 +807,16 @@ export class AtsService {
 
     // Keyword overlap
     const requiredMatches = keywordMatches.filter(
-      (k) => k.importance === 'required',
+      k => k.importance === 'required',
     );
-    const requiredFound = requiredMatches.filter((k) => k.found).length;
+    const requiredFound = requiredMatches.filter(k => k.found).length;
     const requiredTotal = requiredMatches.length;
 
     if (requiredTotal > 0) {
       score += Math.round((requiredFound / requiredTotal) * 80);
     } else {
       // No required keywords identified, score on overall match
-      const allFound = keywordMatches.filter((k) => k.found).length;
+      const allFound = keywordMatches.filter(k => k.found).length;
       const allTotal = keywordMatches.length;
       if (allTotal > 0) {
         score += Math.round((allFound / allTotal) * 80);
@@ -443,8 +846,18 @@ export class AtsService {
     }
 
     // Degree mentioned
-    const degrees = ['bachelor', 'master', 'phd', 'mba', 'b.s.', 'm.s.', 'b.a.', 'm.a.', 'associate'];
-    if (degrees.some((d) => cvLower.includes(d))) {
+    const degrees = [
+      'bachelor',
+      'master',
+      'phd',
+      'mba',
+      'b.s.',
+      'm.s.',
+      'b.a.',
+      'm.a.',
+      'associate',
+    ];
+    if (degrees.some(d => cvLower.includes(d))) {
       score += 30;
     }
 
@@ -486,9 +899,9 @@ export class AtsService {
     const jdWords = jdLower
       .replace(/[^a-z0-9\s]/g, ' ')
       .split(/\s+/)
-      .filter((w) => w.length > 3 && !STOP_WORDS.has(w));
+      .filter(w => w.length > 3 && !STOP_WORDS.has(w));
     const uniqueJdWords = [...new Set(jdWords)].slice(0, 20);
-    const matchCount = uniqueJdWords.filter((w) =>
+    const matchCount = uniqueJdWords.filter(w =>
       summarySection.includes(w),
     ).length;
 
@@ -518,14 +931,15 @@ export class AtsService {
     }
 
     // Has clear section separators (newlines, headings pattern)
-    const lines = cvText.split('\n').filter((l) => l.trim().length > 0);
+    const lines = cvText.split('\n').filter(l => l.trim().length > 0);
     if (lines.length >= 10) {
       score += 20;
     }
 
     // No excessive special characters (ATS-unfriendly), excluding common bullets
-    const specialChars = (cvText.match(/[^\w\s.,;:!?@#$%&*()\-+/'"•▪◦\-*]/g) || [])
-      .length;
+    const specialChars = (
+      cvText.match(/[^\w\s.,;:!?@#$%&*()\-+/'"•▪◦\-*]/g) || []
+    ).length;
     if (specialChars < cvText.length * 0.02) {
       score += 25;
     } else {
@@ -533,9 +947,7 @@ export class AtsService {
     }
 
     // Consistent bullet points or structured content
-    const bulletLines = lines.filter((l) =>
-      /^\s*[-•*▪◦]\s/.test(l),
-    ).length;
+    const bulletLines = lines.filter(l => /^\s*[-•*▪◦]\s/.test(l)).length;
     if (bulletLines >= 5) {
       score += 25;
     } else if (bulletLines >= 2) {
@@ -548,10 +960,12 @@ export class AtsService {
   }
 
   private scoreImpactLanguage(cvLower: string): number {
-    const impactCount = IMPACT_WORDS.filter((w) => cvLower.includes(w)).length;
+    const impactCount = IMPACT_WORDS.filter(w => cvLower.includes(w)).length;
 
     // Has numbers/metrics
-    const metrics = (cvLower.match(/\d{1,10}%|\$[\d,]{1,15}|\d{1,10}x|\d{1,10}\+/g) || []).length;
+    const metrics = (
+      cvLower.match(/\d{1,10}%|\$[\d,]{1,15}|\d{1,10}x|\d{1,10}\+/g) || []
+    ).length;
 
     let score = 0;
 
@@ -574,7 +988,7 @@ export class AtsService {
 
     // Missing required keywords
     const missingRequired = keywordMatches.filter(
-      (k) => !k.found && k.importance === 'required',
+      k => !k.found && k.importance === 'required',
     );
     for (const kw of missingRequired.slice(0, 5)) {
       suggestions.push(
@@ -584,7 +998,7 @@ export class AtsService {
 
     // Missing preferred keywords
     const missingPreferred = keywordMatches.filter(
-      (k) => !k.found && k.importance === 'preferred',
+      k => !k.found && k.importance === 'preferred',
     );
     for (const kw of missingPreferred.slice(0, 3)) {
       suggestions.push(
@@ -595,7 +1009,9 @@ export class AtsService {
     // Section-specific suggestions
     for (const section of sectionScores) {
       if (section.score < 50) {
-        suggestions.push(`Improve your ${section.name} section: ${section.feedback}`);
+        suggestions.push(
+          `Improve your ${section.name} section: ${section.feedback}`,
+        );
       }
     }
 
