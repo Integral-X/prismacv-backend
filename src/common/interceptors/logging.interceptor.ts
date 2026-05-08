@@ -8,7 +8,7 @@ import {
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { Request, Response } from 'express';
-import { randomUUID } from 'crypto';
+import { ensureCorrelationId } from '@/common/http/correlation-id';
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
@@ -19,11 +19,8 @@ export class LoggingInterceptor implements NestInterceptor {
     const response = context.switchToHttp().getResponse<Response>();
     const { method, url, ip } = request;
     const userAgent = request.get('User-Agent') || '';
-    const correlationId =
-      (request.headers['x-correlation-id'] as string) || randomUUID();
+    const correlationId = ensureCorrelationId(request, response);
     const startTime = Date.now();
-
-    response.setHeader('x-correlation-id', correlationId);
 
     this.logger.log(
       `[${correlationId}] Incoming Request: ${method} ${url} - ${ip} ${userAgent}`,

@@ -7,6 +7,7 @@ import {
   ForbiddenException,
   HttpCode,
   HttpStatus,
+  UseGuards,
   Req,
 } from '@nestjs/common';
 import {
@@ -27,6 +28,7 @@ import { AuthMapper } from './mappers/auth.mapper';
 import { Public } from '../../common/decorators/public.decorator';
 import { Throttle } from '@nestjs/throttler';
 import { UserRole } from './entities/user.entity';
+import { JwtAdminAuthGuard } from './guards/jwt-auth.guard';
 
 @ApiTags('Admin Authentication')
 @Controller('auth')
@@ -67,6 +69,7 @@ export class AuthController {
   }
 
   @Post('admin/create')
+  @UseGuards(JwtAdminAuthGuard)
   @HttpCode(HttpStatus.CREATED)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({

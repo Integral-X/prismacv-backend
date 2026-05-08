@@ -131,7 +131,8 @@ export class JobsService {
     if (dto.isRemote !== undefined) data.isRemote = dto.isRemote;
     if (dto.salaryMin !== undefined) data.salaryMin = dto.salaryMin;
     if (dto.salaryMax !== undefined) data.salaryMax = dto.salaryMax;
-    if (dto.salaryCurrency !== undefined) data.salaryCurrency = dto.salaryCurrency;
+    if (dto.salaryCurrency !== undefined)
+      data.salaryCurrency = dto.salaryCurrency;
     if (dto.status !== undefined) data.status = dto.status;
     if (dto.notes !== undefined) data.notes = dto.notes;
 

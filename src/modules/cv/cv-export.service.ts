@@ -1,30 +1,34 @@
 import { Injectable, Logger } from '@nestjs/common';
-import puppeteer from 'puppeteer-core';
+import puppeteer, { Browser } from 'puppeteer-core';
 import { ConfigService } from '@nestjs/config';
 import { existsSync } from 'fs';
+import { MetricsService } from '@/modules/metrics/metrics.service';
 
 @Injectable()
 export class CvExportService {
   private readonly logger = new Logger(CvExportService.name);
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly metricsService: MetricsService,
+  ) {}
 
   async generatePdf(html: string): Promise<Buffer> {
+    const startedAt = Date.now();
     const executablePath = this.resolveChromePath();
     this.logger.debug(`Launching Chrome from: ${executablePath}`);
-
-    const browser = await puppeteer.launch({
-      executablePath,
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-      ],
-    });
-
+    let browser: Browser | null = null;
     try {
+      browser = await puppeteer.launch({
+        executablePath,
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+        ],
+      });
       const page = await browser.newPage();
       await page.setContent(html, { waitUntil: 'networkidle0' });
 
@@ -34,9 +38,21 @@ export class CvExportService {
         margin: { top: '12mm', right: '12mm', bottom: '12mm', left: '12mm' },
       });
 
+      this.metricsService.recordPdfExport({
+        status: 'success',
+        durationMs: Date.now() - startedAt,
+      });
       return Buffer.from(pdf);
+    } catch (error) {
+      this.metricsService.recordPdfExport({
+        status: 'error',
+        durationMs: Date.now() - startedAt,
+      });
+      throw error;
     } finally {
-      await browser.close();
+      if (browser) {
+        await browser.close();
+      }
     }
   }
 

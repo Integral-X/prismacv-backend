@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsUUID, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsUUID, MaxLength, IsIn } from 'class-validator';
+
+const COVER_LETTER_TEMPLATES = [
+  'classic_professional',
+  'impact_story',
+  'concise_modern',
+] as const;
 
 export class CreateCoverLetterRequestDto {
   @ApiProperty({ example: 'Software Engineer at Google' })
@@ -108,4 +114,14 @@ export class GenerateCoverLetterRequestDto {
   @IsString()
   @MaxLength(50)
   tone?: string;
+
+  @ApiPropertyOptional({
+    description: 'Template style for generated output',
+    enum: COVER_LETTER_TEMPLATES,
+    example: 'classic_professional',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(COVER_LETTER_TEMPLATES)
+  template?: (typeof COVER_LETTER_TEMPLATES)[number];
 }

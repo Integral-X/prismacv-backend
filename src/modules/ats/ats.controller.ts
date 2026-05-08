@@ -13,8 +13,14 @@ import {
   ApiBody,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { UserPlan } from '@prisma/client';
 import { JwtUserAuthGuard } from '@/modules/auth/guards/jwt-user-auth.guard';
 import { Public } from '@/common/decorators/public.decorator';
+import { GetUser } from '@/common/decorators/get-user.decorator';
+import { User } from '@/modules/auth/entities/user.entity';
+import { RequiresPlan } from '@/modules/billing/decorators/requires-plan.decorator';
+import { RequiresPlanGuard } from '@/modules/billing/requires-plan.guard';
 import { AtsService } from './ats.service';
 import { AtsScoreRequestDto } from './dto/ats-score.request.dto';
 import { AtsScoreResponseDto } from './dto/ats-score.response.dto';
@@ -27,7 +33,12 @@ export class AtsController {
   constructor(private readonly atsService: AtsService) {}
 
   @Post('score')
-  @UseGuards(JwtUserAuthGuard)
+  @UseGuards(JwtUserAuthGuard, RequiresPlanGuard)
+  @RequiresPlan({
+    plans: [UserPlan.PRO, UserPlan.TEAM],
+    feature: 'ats_score',
+  })
+  @Throttle({ default: { limit: 12, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Analyze CV against job description',
@@ -40,7 +51,10 @@ export class AtsController {
     description: 'ATS analysis result',
     type: AtsScoreResponseDto,
   })
-  async score(@Body() dto: AtsScoreRequestDto): Promise<AtsScoreResponseDto> {
-    return this.atsService.analyze(dto);
+  async score(
+    @GetUser() user: User,
+    @Body() dto: AtsScoreRequestDto,
+  ): Promise<AtsScoreResponseDto> {
+    return this.atsService.analyze(dto, user.id);
   }
 }

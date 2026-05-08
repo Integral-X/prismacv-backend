@@ -7,7 +7,7 @@ export class HealthService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async getHealth() {
+  async getHealth(): Promise<{ status: 'ok' | 'degraded'; database: string }> {
     try {
       await this.prisma.$queryRaw`SELECT 1`;
       return { status: 'ok', database: 'connected' };
@@ -15,5 +15,18 @@ export class HealthService {
       this.logger.warn('Database health check failed', error);
       return { status: 'degraded', database: 'disconnected' };
     }
+  }
+
+  async getReadiness(): Promise<{
+    status: 'ready' | 'not_ready';
+    checks: { database: string };
+  }> {
+    const health = await this.getHealth();
+    return {
+      status: health.status === 'ok' ? 'ready' : 'not_ready',
+      checks: {
+        database: health.database,
+      },
+    };
   }
 }

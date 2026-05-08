@@ -7,15 +7,28 @@ services:
     container_name: prismacv-backend
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - '3000:3000'
     env_file:
       - .env
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - prismacv-network
     environment:
       - DATABASE_URL=postgres://prismacv:password@postgres:5432/prismacv_dev
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'wget -qO- http://localhost:3000/api/health/ready >/dev/null 2>&1 || exit 1',
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
 
   # PostgreSQL Database
   postgres:
@@ -27,11 +40,16 @@ services:
       POSTGRES_USER: prismacv
       POSTGRES_PASSWORD: password
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - prismacv-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U prismacv -d prismacv_dev']
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Test PostgreSQL Database
   postgres_test:
@@ -43,9 +61,49 @@ services:
       POSTGRES_USER: prismacv
       POSTGRES_PASSWORD: password
     ports:
-      - "5433:5432"
+      - '5433:5432'
     networks:
       - prismacv-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U prismacv -d prismacv_test']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (optional queue backend)
+  redis:
+    image: redis:7-alpine
+    container_name: prismacv-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    networks:
+      - prismacv-network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MailHog (SMTP sink + UI for email smoke tests)
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: prismacv-mailhog
+    restart: unless-stopped
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+    networks:
+      - prismacv-network
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'wget -qO- http://localhost:8025/api/v2/messages >/dev/null 2>&1 || exit 1',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:

@@ -26,9 +26,7 @@ export function generateWelcomeEmailTemplate(
 ): string {
   const safeAppName = escapeHtml(data.appName);
   const safeUserName = data.userName ? escapeHtml(data.userName) : undefined;
-  const greeting = safeUserName
-    ? `Hello ${safeUserName},`
-    : 'Hello,';
+  const greeting = safeUserName ? `Hello ${safeUserName},` : 'Hello,';
 
   return `
 <!DOCTYPE html>

@@ -1,4 +1,5 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, Param, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { UnleashService, FeatureFlag } from './unleash.service';
 import {
   ApiTags,
@@ -6,7 +7,10 @@ import {
   ApiResponse,
   ApiQuery,
   ApiBearerAuth,
+  ApiParam,
 } from '@nestjs/swagger';
+import { Public } from '@/common/decorators/public.decorator';
+import { JwtAdminAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 
 @ApiTags('Feature Flags')
 @ApiBearerAuth('JWT-auth')
@@ -15,6 +19,8 @@ export class UnleashController {
   constructor(private readonly unleashService: UnleashService) {}
 
   @Get()
+  @Public()
+  @Throttle({ default: { limit: 120, ttl: 60000 } })
   @ApiOperation({ summary: 'Get all feature flags with their current status' })
   @ApiResponse({
     status: 200,
@@ -74,7 +80,10 @@ export class UnleashController {
   }
 
   @Get('check/:featureName')
+  @Public()
+  @Throttle({ default: { limit: 120, ttl: 60000 } })
   @ApiOperation({ summary: 'Check if a specific feature flag is enabled' })
+  @ApiParam({ name: 'featureName', description: 'Feature flag name' })
   @ApiResponse({
     status: 200,
     description: 'Feature flag status',
@@ -91,7 +100,7 @@ export class UnleashController {
   @ApiQuery({ name: 'userId', required: false })
   @ApiQuery({ name: 'environment', required: false })
   checkFeature(
-    @Query('featureName') featureName: string,
+    @Param('featureName') featureName: string,
     @Query('userId') userId?: string,
     @Query('environment') environment?: string,
   ) {
@@ -111,6 +120,8 @@ export class UnleashController {
   }
 
   @Get('refresh')
+  @UseGuards(JwtAdminAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Refresh feature flags from Unleash server' })
   @ApiResponse({
     status: 200,
@@ -127,6 +138,8 @@ export class UnleashController {
   }
 
   @Get('status')
+  @Public()
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
   @ApiOperation({ summary: 'Get Unleash service status' })
   @ApiResponse({ status: 200, description: 'Service status information' })
   getStatus() {

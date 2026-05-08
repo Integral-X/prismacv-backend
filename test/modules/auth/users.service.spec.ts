@@ -143,7 +143,7 @@ describe('UsersService', () => {
         updatedAt: new Date(),
       };
 
-      prismaService.user.findUnique.mockResolvedValue(existingPrismaUser);
+      prismaService.user.findUnique.mockResolvedValue(existingPrismaUser as any);
 
       await expect(usersService.create(userEntity)).rejects.toThrow(
         ConflictException,
@@ -279,7 +279,7 @@ describe('UsersService', () => {
         updatedAt: new Date(),
       };
 
-      prismaService.user.findUnique.mockResolvedValue(prismaUser);
+      prismaService.user.findUnique.mockResolvedValue(prismaUser as any);
 
       const result = await usersService.findByEmail('test@example.com');
 
@@ -327,7 +327,7 @@ describe('UsersService', () => {
         updatedAt: new Date(),
       };
 
-      prismaService.user.findUnique.mockResolvedValue(prismaUser);
+      prismaService.user.findUnique.mockResolvedValue(prismaUser as any);
 
       const result = await usersService.findById('1');
 
@@ -380,7 +380,7 @@ describe('UsersService', () => {
         updatedAt: new Date(),
       };
 
-      prismaService.user.update.mockResolvedValue(updatedPrismaUser);
+      prismaService.user.update.mockResolvedValue(updatedPrismaUser as any);
 
       const result = await usersService.update('1', userEntityUpdate);
 
@@ -433,7 +433,7 @@ describe('UsersService', () => {
         updatedAt: new Date(),
       };
 
-      prismaService.user.update.mockResolvedValue(updatedPrismaUser);
+      prismaService.user.update.mockResolvedValue(updatedPrismaUser as any);
 
       const result = await usersService.update('1', partialUpdate);
 
