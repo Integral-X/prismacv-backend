@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@/config/prisma.service';
 import { AiUsageService } from '@/modules/ai/ai-usage.service';
 import { MetricsService } from '@/modules/metrics/metrics.service';
+import { AiUsageFeature } from '@prisma/client';
 
 describe('AiService', () => {
   let service: AiService;
@@ -22,7 +23,7 @@ describe('AiService', () => {
   let prismaService: {
     aiAnalysisCache: { findUnique: jest.Mock; upsert: jest.Mock };
   };
-  let aiUsageService: { consumeQuota: jest.Mock };
+  let aiUsageService: { consumeQuota: jest.Mock; refundQuota: jest.Mock };
   let metricsService: { recordAiCall: jest.Mock };
 
   const userId = 'user-123';
@@ -96,7 +97,10 @@ describe('AiService', () => {
         upsert: jest.fn().mockResolvedValue(undefined),
       },
     };
-    aiUsageService = { consumeQuota: jest.fn().mockResolvedValue(undefined) };
+    aiUsageService = {
+      consumeQuota: jest.fn().mockResolvedValue(undefined),
+      refundQuota: jest.fn().mockResolvedValue(undefined),
+    };
     metricsService = { recordAiCall: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -164,6 +168,38 @@ describe('AiService', () => {
       expect(result).toEqual(cached);
       expect(prismaService.aiAnalysisCache.upsert).not.toHaveBeenCalled();
     });
+
+    it('refunds quota when OpenAI analyze fails', async () => {
+      cvService.findOne.mockResolvedValue(mockCv);
+      configService.get.mockImplementation(
+        (key: string, fallback?: unknown) => {
+          if (key === 'AI_PROVIDER') return 'openai';
+          if (key === 'AI_ANALYSIS_CACHE_TTL_SECONDS') return 86400;
+          return fallback;
+        },
+      );
+      openAiProvider.isAvailable.mockReturnValue(true);
+      openAiProvider.analyzeCv.mockRejectedValue(new Error('OpenAI timeout'));
+
+      await expect(service.analyzeCv(cvId, userId)).rejects.toThrow(
+        'OpenAI timeout',
+      );
+      expect(aiUsageService.consumeQuota).toHaveBeenCalledWith(
+        userId,
+        AiUsageFeature.CV_ANALYZE,
+      );
+      expect(aiUsageService.refundQuota).toHaveBeenCalledWith(
+        userId,
+        AiUsageFeature.CV_ANALYZE,
+      );
+      expect(metricsService.recordAiCall).toHaveBeenCalledWith(
+        expect.objectContaining({
+          feature: 'cv_analyze',
+          provider: 'Object',
+          status: 'error',
+        }),
+      );
+    });
   });
 
   describe('optimizeCvForJob', () => {
@@ -223,6 +259,40 @@ describe('AiService', () => {
 
       expect(result).toEqual(openAiResult);
       expect(aiUsageService.consumeQuota).toHaveBeenCalled();
+    });
+
+    it('refunds quota when OpenAI optimization fails', async () => {
+      cvService.findOne.mockResolvedValue(mockCv);
+      configService.get.mockImplementation(
+        (key: string, fallback?: unknown) => {
+          if (key === 'AI_PROVIDER') return 'openai';
+          return fallback;
+        },
+      );
+      openAiProvider.isAvailable.mockReturnValue(true);
+      openAiProvider.optimizeCvForJob.mockRejectedValue(
+        new Error('rate_limit_exceeded'),
+      );
+
+      await expect(
+        service.optimizeCvForJob(cvId, userId, 'Need Kubernetes and Docker'),
+      ).rejects.toThrow('rate_limit_exceeded');
+
+      expect(aiUsageService.consumeQuota).toHaveBeenCalledWith(
+        userId,
+        AiUsageFeature.CV_OPTIMIZE,
+      );
+      expect(aiUsageService.refundQuota).toHaveBeenCalledWith(
+        userId,
+        AiUsageFeature.CV_OPTIMIZE,
+      );
+      expect(metricsService.recordAiCall).toHaveBeenCalledWith(
+        expect.objectContaining({
+          feature: 'cv_optimize',
+          provider: 'Object',
+          status: 'error',
+        }),
+      );
     });
   });
 });

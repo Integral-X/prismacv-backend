@@ -147,11 +147,13 @@ export class CoverLettersService {
     const highlights = this.extractHighlights(cv, dto);
     if (this.shouldUseLlm(userId)) {
       const startedAt = Date.now();
+      let quotaConsumed = false;
       try {
         await this.aiUsageService.consumeQuota(
           userId,
           AiUsageFeature.COVER_LETTER_GENERATE,
         );
+        quotaConsumed = true;
         const content = await this.openAiProvider.generateCoverLetter({
           fullName: cv.personalInfo?.fullName ?? undefined,
           summary: cv.personalInfo?.summary ?? undefined,
@@ -182,6 +184,14 @@ export class CoverLettersService {
           status: 'error',
           durationMs: Date.now() - startedAt,
         });
+
+        if (quotaConsumed) {
+          await this.refundQuotaOnProviderFailure(
+            userId,
+            AiUsageFeature.COVER_LETTER_GENERATE,
+          );
+        }
+
         const message = error instanceof Error ? error.message : String(error);
         this.logger.warn(
           `OpenAI cover letter generation failed; falling back to template builder. ${message}`,
@@ -192,6 +202,23 @@ export class CoverLettersService {
     const content = this.buildCoverLetter(cv, dto, template);
 
     return { content, highlights };
+  }
+
+  private async refundQuotaOnProviderFailure(
+    userId: string,
+    feature: AiUsageFeature,
+  ): Promise<void> {
+    try {
+      await this.aiUsageService.refundQuota(userId, feature);
+    } catch (refundError) {
+      const message =
+        refundError instanceof Error
+          ? refundError.message
+          : String(refundError);
+      this.logger.error(
+        `Failed to refund AI quota for feature=${feature.toLowerCase()}, userId=${userId}: ${message}`,
+      );
+    }
   }
 
   private shouldUseLlm(userId: string): boolean {

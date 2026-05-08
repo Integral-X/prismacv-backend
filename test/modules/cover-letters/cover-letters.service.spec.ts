@@ -7,6 +7,7 @@ import { OpenAiProvider } from '@/modules/ai/providers/openai.provider';
 import { AiUsageService } from '@/modules/ai/ai-usage.service';
 import { UnleashService } from '@/modules/unleash/unleash.service';
 import { MetricsService } from '@/modules/metrics/metrics.service';
+import { AiUsageFeature } from '@prisma/client';
 
 describe('CoverLettersService', () => {
   let service: CoverLettersService;
@@ -15,7 +16,7 @@ describe('CoverLettersService', () => {
     isAvailable: jest.Mock;
     generateCoverLetter: jest.Mock;
   };
-  let aiUsageService: { consumeQuota: jest.Mock };
+  let aiUsageService: { consumeQuota: jest.Mock; refundQuota: jest.Mock };
   let metricsService: { recordAiCall: jest.Mock };
 
   const mockCv = {
@@ -51,6 +52,7 @@ describe('CoverLettersService', () => {
     };
     aiUsageService = {
       consumeQuota: jest.fn().mockResolvedValue(undefined),
+      refundQuota: jest.fn().mockResolvedValue(undefined),
     };
     metricsService = {
       recordAiCall: jest.fn(),
@@ -92,6 +94,7 @@ describe('CoverLettersService', () => {
 
     expect(openAiProvider.generateCoverLetter).toHaveBeenCalled();
     expect(aiUsageService.consumeQuota).toHaveBeenCalled();
+    expect(aiUsageService.refundQuota).not.toHaveBeenCalled();
     expect(result.content).toContain('OpenAI provider');
     expect(result.highlights).toContain('Template: Impact Story');
   });
@@ -106,7 +109,28 @@ describe('CoverLettersService', () => {
       tone: 'professional',
     });
 
+    expect(aiUsageService.refundQuota).toHaveBeenCalledWith(
+      'user-1',
+      AiUsageFeature.COVER_LETTER_GENERATE,
+    );
     expect(result.content).toContain('Dear Hiring Manager');
     expect(result.highlights.length).toBeGreaterThan(0);
+  });
+
+  it('does not refund when quota consumption itself fails', async () => {
+    aiUsageService.consumeQuota.mockRejectedValueOnce(
+      new Error('quota exceeded'),
+    );
+
+    const result = await service.generate('user-1', {
+      cvId: 'cv-1',
+      jobTitle: 'Staff Backend Engineer',
+      company: 'Globex',
+      tone: 'professional',
+    });
+
+    expect(openAiProvider.generateCoverLetter).not.toHaveBeenCalled();
+    expect(aiUsageService.refundQuota).not.toHaveBeenCalled();
+    expect(result.content).toContain('Dear Hiring Manager');
   });
 });

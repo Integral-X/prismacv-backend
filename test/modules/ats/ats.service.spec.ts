@@ -14,7 +14,7 @@ describe('AtsService', () => {
     isAvailable: jest.Mock;
     generateAtsSuggestions: jest.Mock;
   };
-  let aiUsageService: { consumeQuota: jest.Mock };
+  let aiUsageService: { consumeQuota: jest.Mock; refundQuota: jest.Mock };
   let unleashService: { isEnabled: jest.Mock };
   let metricsService: { recordAiCall: jest.Mock };
 
@@ -38,6 +38,7 @@ describe('AtsService', () => {
     };
     aiUsageService = {
       consumeQuota: jest.fn().mockResolvedValue(undefined),
+      refundQuota: jest.fn().mockResolvedValue(undefined),
     };
     unleashService = {
       isEnabled: jest.fn().mockReturnValue(true),
@@ -88,6 +89,7 @@ describe('AtsService', () => {
       'user-2',
       AiUsageFeature.ATS_SCORE,
     );
+    expect(aiUsageService.refundQuota).not.toHaveBeenCalled();
     expect(openAiProvider.generateAtsSuggestions).toHaveBeenCalled();
     expect(result.suggestions).toContain(
       'Add NestJS and Kubernetes in your experience section.',
@@ -106,6 +108,23 @@ describe('AtsService', () => {
       'user-3',
       AiUsageFeature.ATS_SCORE,
     );
+    expect(aiUsageService.refundQuota).toHaveBeenCalledWith(
+      'user-3',
+      AiUsageFeature.ATS_SCORE,
+    );
+    expect(result.suggestions.length).toBeGreaterThan(0);
+  });
+
+  it('does not refund when quota consumption itself fails', async () => {
+    aiProvider = 'openai';
+    aiUsageService.consumeQuota.mockRejectedValueOnce(
+      new Error('quota exceeded'),
+    );
+
+    const result = await service.analyze(input, 'user-4');
+
+    expect(openAiProvider.generateAtsSuggestions).not.toHaveBeenCalled();
+    expect(aiUsageService.refundQuota).not.toHaveBeenCalled();
     expect(result.suggestions.length).toBeGreaterThan(0);
   });
 });

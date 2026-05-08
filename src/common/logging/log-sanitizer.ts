@@ -81,13 +81,17 @@ export function sanitizeForLogging<T>(value: T, depth = 0): T {
     return value;
   }
 
-  const sanitizedEntries = Object.entries(value).map(([key, entryValue]) => {
-    if (shouldRedactKey(key)) {
-      return [key, REDACTED_VALUE];
+  const sanitized: Record<PropertyKey, unknown> = {};
+
+  for (const key of Reflect.ownKeys(value)) {
+    const entryValue = (value as Record<PropertyKey, unknown>)[key];
+    if (typeof key === 'string' && shouldRedactKey(key)) {
+      sanitized[key] = REDACTED_VALUE;
+      continue;
     }
 
-    return [key, sanitizeForLogging(entryValue, depth + 1)];
-  });
+    sanitized[key] = sanitizeForLogging(entryValue, depth + 1);
+  }
 
-  return Object.fromEntries(sanitizedEntries) as T;
+  return sanitized as T;
 }

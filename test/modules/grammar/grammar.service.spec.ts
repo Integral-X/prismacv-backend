@@ -6,11 +6,12 @@ import { AiUsageService } from '@/modules/ai/ai-usage.service';
 import { UnleashService } from '@/modules/unleash/unleash.service';
 import { GrammarContext } from '@/modules/grammar/dto/check-grammar.request.dto';
 import { MetricsService } from '@/modules/metrics/metrics.service';
+import { AiUsageFeature } from '@prisma/client';
 
 describe('GrammarService', () => {
   let service: GrammarService;
   let openAiProvider: { isAvailable: jest.Mock; checkGrammar: jest.Mock };
-  let aiUsageService: { consumeQuota: jest.Mock };
+  let aiUsageService: { consumeQuota: jest.Mock; refundQuota: jest.Mock };
   let metricsService: { recordAiCall: jest.Mock };
 
   beforeEach(async () => {
@@ -34,6 +35,7 @@ describe('GrammarService', () => {
 
     aiUsageService = {
       consumeQuota: jest.fn().mockResolvedValue(undefined),
+      refundQuota: jest.fn().mockResolvedValue(undefined),
     };
     metricsService = {
       recordAiCall: jest.fn(),
@@ -72,6 +74,7 @@ describe('GrammarService', () => {
 
     expect(openAiProvider.checkGrammar).toHaveBeenCalled();
     expect(aiUsageService.consumeQuota).toHaveBeenCalled();
+    expect(aiUsageService.refundQuota).not.toHaveBeenCalled();
     expect(result.score).toBe(91);
     expect(result.issues[0].message).toContain('present tense');
   });
@@ -87,7 +90,29 @@ describe('GrammarService', () => {
       'user-1',
     );
 
+    expect(aiUsageService.refundQuota).toHaveBeenCalledWith(
+      'user-1',
+      AiUsageFeature.GRAMMAR_CHECK,
+    );
     expect(result.issues.length).toBeGreaterThan(0);
     expect(result.summary).toContain('issue');
+  });
+
+  it('does not refund when quota consumption itself fails', async () => {
+    aiUsageService.consumeQuota.mockRejectedValueOnce(
+      new Error('quota exceeded'),
+    );
+
+    const result = await service.check(
+      {
+        text: 'I was responsible for many tasks.',
+        context: GrammarContext.SUMMARY,
+      },
+      'user-1',
+    );
+
+    expect(openAiProvider.checkGrammar).not.toHaveBeenCalled();
+    expect(aiUsageService.refundQuota).not.toHaveBeenCalled();
+    expect(result.issues.length).toBeGreaterThan(0);
   });
 });

@@ -455,11 +455,13 @@ export class AtsService {
 
     if (this.shouldUseLlm(userId)) {
       const startedAt = Date.now();
+      let quotaConsumed = false;
       try {
         await this.aiUsageService.consumeQuota(
           userId,
           AiUsageFeature.ATS_SCORE,
         );
+        quotaConsumed = true;
         const llmSuggestions = await this.openAiProvider.generateAtsSuggestions(
           {
             cvText,
@@ -485,6 +487,14 @@ export class AtsService {
           status: 'error',
           durationMs: Date.now() - startedAt,
         });
+
+        if (quotaConsumed) {
+          await this.refundQuotaOnProviderFailure(
+            userId,
+            AiUsageFeature.ATS_SCORE,
+          );
+        }
+
         const message = error instanceof Error ? error.message : String(error);
         this.logger.warn(
           `OpenAI ATS suggestions failed; using heuristic suggestions only. ${message}`,
@@ -493,6 +503,23 @@ export class AtsService {
     }
 
     return result;
+  }
+
+  private async refundQuotaOnProviderFailure(
+    userId: string,
+    feature: AiUsageFeature,
+  ): Promise<void> {
+    try {
+      await this.aiUsageService.refundQuota(userId, feature);
+    } catch (refundError) {
+      const message =
+        refundError instanceof Error
+          ? refundError.message
+          : String(refundError);
+      this.logger.error(
+        `Failed to refund AI quota for feature=${feature.toLowerCase()}, userId=${userId}: ${message}`,
+      );
+    }
   }
 
   private shouldUseLlm(userId: string): boolean {

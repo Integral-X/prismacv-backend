@@ -94,11 +94,13 @@ export class GrammarService {
   ): Promise<CheckGrammarResponseDto> {
     if (this.shouldUseLlm(userId)) {
       const startedAt = Date.now();
+      let quotaConsumed = false;
       try {
         await this.aiUsageService.consumeQuota(
           userId,
           AiUsageFeature.GRAMMAR_CHECK,
         );
+        quotaConsumed = true;
         const llm = await this.openAiProvider.checkGrammar(
           dto.text,
           dto.context,
@@ -128,6 +130,14 @@ export class GrammarService {
           status: 'error',
           durationMs: Date.now() - startedAt,
         });
+
+        if (quotaConsumed) {
+          await this.refundQuotaOnProviderFailure(
+            userId,
+            AiUsageFeature.GRAMMAR_CHECK,
+          );
+        }
+
         const message = error instanceof Error ? error.message : String(error);
         this.logger.warn(
           `OpenAI grammar check failed; falling back to heuristic checker. ${message}`,
@@ -160,6 +170,23 @@ export class GrammarService {
     const summary = this.generateSummary(issues, score, dto.context);
 
     return { issues, score, summary };
+  }
+
+  private async refundQuotaOnProviderFailure(
+    userId: string,
+    feature: AiUsageFeature,
+  ): Promise<void> {
+    try {
+      await this.aiUsageService.refundQuota(userId, feature);
+    } catch (refundError) {
+      const message =
+        refundError instanceof Error
+          ? refundError.message
+          : String(refundError);
+      this.logger.error(
+        `Failed to refund AI quota for feature=${feature.toLowerCase()}, userId=${userId}: ${message}`,
+      );
+    }
   }
 
   private shouldUseLlm(userId: string): boolean {

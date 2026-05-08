@@ -75,6 +75,15 @@ export class AiService {
         status: 'error',
         durationMs: Date.now() - startedAt,
       });
+
+      if (this.isOpenAiProvider(provider)) {
+        await this.refundQuotaOnProviderFailure(
+          userId,
+          AiUsageFeature.CV_ANALYZE,
+          providerName,
+        );
+      }
+
       throw error;
     }
 
@@ -146,7 +155,34 @@ export class AiService {
         status: 'error',
         durationMs: Date.now() - startedAt,
       });
+
+      if (this.isOpenAiProvider(provider)) {
+        await this.refundQuotaOnProviderFailure(
+          userId,
+          AiUsageFeature.CV_OPTIMIZE,
+          providerName,
+        );
+      }
+
       throw error;
+    }
+  }
+
+  private async refundQuotaOnProviderFailure(
+    userId: string,
+    feature: AiUsageFeature,
+    providerName: string,
+  ): Promise<void> {
+    try {
+      await this.aiUsageService.refundQuota(userId, feature);
+    } catch (refundError) {
+      const message =
+        refundError instanceof Error
+          ? refundError.message
+          : String(refundError);
+      this.logger.error(
+        `Failed to refund AI quota for provider=${providerName}, feature=${feature.toLowerCase()}, userId=${userId}: ${message}`,
+      );
     }
   }
 

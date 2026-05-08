@@ -59,6 +59,44 @@ export class AiUsageService {
     });
   }
 
+  async refundQuota(userId: string, feature: AiUsageFeature): Promise<void> {
+    const limit = this.getMonthlyLimit(feature);
+    if (limit <= 0) {
+      return;
+    }
+
+    const { periodStart, periodEnd } = this.getMonthlyPeriod();
+
+    await this.prisma.$transaction(async tx => {
+      const existing = await tx.aiUsage.findUnique({
+        where: {
+          userId_feature_periodStart_periodEnd: {
+            userId,
+            feature,
+            periodStart,
+            periodEnd,
+          },
+        },
+      });
+
+      if (!existing || existing.callsUsed <= 0) {
+        return;
+      }
+
+      if (existing.callsUsed === 1) {
+        await tx.aiUsage.delete({
+          where: { id: existing.id },
+        });
+        return;
+      }
+
+      await tx.aiUsage.update({
+        where: { id: existing.id },
+        data: { callsUsed: { decrement: 1 } },
+      });
+    });
+  }
+
   private getMonthlyPeriod(now: Date = new Date()): {
     periodStart: Date;
     periodEnd: Date;
