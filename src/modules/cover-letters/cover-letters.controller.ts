@@ -19,14 +19,10 @@ import {
   ApiBearerAuth,
   ApiParam,
 } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
-import { UserPlan } from '@prisma/client';
 import { JwtUserAuthGuard } from '@/modules/auth/guards/jwt-user-auth.guard';
 import { GetUser } from '@/common/decorators/get-user.decorator';
 import { Public } from '@/common/decorators/public.decorator';
 import { User } from '@/modules/auth/entities/user.entity';
-import { RequiresPlan } from '@/modules/billing/decorators/requires-plan.decorator';
-import { RequiresPlanGuard } from '@/modules/billing/requires-plan.guard';
 import { PaginationQueryDto } from '@/shared/dto/pagination-query.dto';
 import { CoverLettersService } from './cover-letters.service';
 import {
@@ -72,7 +68,10 @@ export class CoverLettersController {
   @ApiParam({ name: 'id', description: 'Cover letter UUID' })
   @ApiResponse({ status: 200, type: CoverLetterResponseDto })
   @ApiResponse({ status: 404, description: 'Not found' })
-  async findOne(@GetUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
+  async findOne(
+    @GetUser() user: User,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.coverLettersService.findOne(id, user.id);
   }
 
@@ -95,17 +94,14 @@ export class CoverLettersController {
   @ApiParam({ name: 'id', description: 'Cover letter UUID' })
   @ApiResponse({ status: 204 })
   @ApiResponse({ status: 404, description: 'Not found' })
-  async delete(@GetUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
+  async delete(
+    @GetUser() user: User,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.coverLettersService.delete(id, user.id);
   }
 
   @Post('generate')
-  @UseGuards(RequiresPlanGuard)
-  @RequiresPlan({
-    plans: [UserPlan.PRO, UserPlan.TEAM],
-    feature: 'cover_letter_generate',
-  })
-  @Throttle({ default: { limit: 6, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Generate a cover letter from CV content',

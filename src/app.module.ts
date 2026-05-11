@@ -25,9 +25,9 @@ import { InterviewModule } from './modules/interview/interview.module';
 import { AtsModule } from './modules/ats/ats.module';
 import { GrammarModule } from './modules/grammar/grammar.module';
 import { CoverLettersModule } from './modules/cover-letters/cover-letters.module';
-import { BillingModule } from './modules/billing/billing.module';
-import { MetricsModule } from './modules/metrics/metrics.module';
-import { QueueModule } from './modules/queue/queue.module';
+
+// Guards
+import { JwtAdminAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 
 @Module({
   imports: [
@@ -71,11 +71,12 @@ import { QueueModule } from './modules/queue/queue.module';
     AtsModule,
     GrammarModule,
     CoverLettersModule,
-    BillingModule,
-    MetricsModule,
-    QueueModule,
   ],
   providers: [
+    {
+      provide: APP_GUARD,
+      useClass: JwtAdminAuthGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

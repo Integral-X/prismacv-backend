@@ -1,11 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { AiUsageFeature } from '@prisma/client';
-import { AiUsageService } from '@/modules/ai/ai-usage.service';
-import { OpenAiProvider } from '@/modules/ai/providers/openai.provider';
-import { UnleashService } from '@/modules/unleash/unleash.service';
-import { AI_LLM_GRAMMAR_FLAG } from '@/modules/ai/ai-feature-flags';
-import { MetricsService } from '@/modules/metrics/metrics.service';
+import { Injectable } from '@nestjs/common';
 import {
   CheckGrammarRequestDto,
   GrammarContext,
@@ -27,16 +20,6 @@ interface ReplacementRule {
 
 @Injectable()
 export class GrammarService {
-  private readonly logger = new Logger(GrammarService.name);
-
-  constructor(
-    private readonly configService: ConfigService,
-    private readonly openAiProvider: OpenAiProvider,
-    private readonly aiUsageService: AiUsageService,
-    private readonly unleashService: UnleashService,
-    private readonly metricsService: MetricsService,
-  ) {}
-
   private readonly weakVerbRules: ReplacementRule[] = [
     {
       pattern: /\bresponsible for\b/gi,
@@ -88,145 +71,24 @@ export class GrammarService {
   private readonly passiveVoicePattern =
     /\b(was|were|been|being|is|are)\s+(\w+ed|written|built|done|made|taken|given|shown|known)\b/gi;
 
-  async check(
-    dto: CheckGrammarRequestDto,
-    userId: string,
-  ): Promise<CheckGrammarResponseDto> {
-    if (this.shouldUseLlm(userId)) {
-      const startedAt = Date.now();
-      let quotaConsumed = false;
-      try {
-        await this.aiUsageService.consumeQuota(
-          userId,
-          AiUsageFeature.GRAMMAR_CHECK,
-        );
-        quotaConsumed = true;
-        const llm = await this.openAiProvider.checkGrammar(
-          dto.text,
-          dto.context,
-        );
-        this.metricsService.recordAiCall({
-          feature: 'grammar_check',
-          provider: 'openai',
-          status: 'success',
-          durationMs: Date.now() - startedAt,
-        });
-        return {
-          issues: llm.issues.map(issue => ({
-            type: this.mapIssueType(issue.type),
-            message: issue.message,
-            suggestion: issue.suggestion,
-            startIndex: issue.startIndex,
-            endIndex: issue.endIndex,
-            severity: this.mapIssueSeverity(issue.severity),
-          })),
-          score: llm.score,
-          summary: llm.summary,
-        };
-      } catch (error) {
-        this.metricsService.recordAiCall({
-          feature: 'grammar_check',
-          provider: 'openai',
-          status: 'error',
-          durationMs: Date.now() - startedAt,
-        });
-
-        if (quotaConsumed) {
-          await this.refundQuotaOnProviderFailure(
-            userId,
-            AiUsageFeature.GRAMMAR_CHECK,
-          );
-        }
-
-        const message = error instanceof Error ? error.message : String(error);
-        this.logger.warn(
-          `OpenAI grammar check failed; falling back to heuristic checker. ${message}`,
-        );
-      }
-    }
-
+  check(dto: CheckGrammarRequestDto): CheckGrammarResponseDto {
     const issues: GrammarIssueDto[] = [];
 
-    // Weak verbs
     for (const rule of this.weakVerbRules) {
       this.findMatches(dto.text, rule, issues);
     }
 
-    // Redundant phrases
     for (const rule of this.redundantPhraseRules) {
       this.findMatches(dto.text, rule, issues);
     }
 
-    // Passive voice
     this.detectPassiveVoice(dto.text, issues);
-
-    // Long sentences
     this.detectLongSentences(dto.text, issues);
 
-    // Calculate score
     const score = this.calculateScore(issues);
-
-    // Generate summary
     const summary = this.generateSummary(issues, score, dto.context);
 
     return { issues, score, summary };
-  }
-
-  private async refundQuotaOnProviderFailure(
-    userId: string,
-    feature: AiUsageFeature,
-  ): Promise<void> {
-    try {
-      await this.aiUsageService.refundQuota(userId, feature);
-    } catch (refundError) {
-      const message =
-        refundError instanceof Error
-          ? refundError.message
-          : String(refundError);
-      this.logger.error(
-        `Failed to refund AI quota for feature=${feature.toLowerCase()}, userId=${userId}: ${message}`,
-      );
-    }
-  }
-
-  private shouldUseLlm(userId: string): boolean {
-    const provider = this.configService
-      .get<string>('AI_PROVIDER', 'builtin')
-      ?.trim()
-      .toLowerCase();
-    if (provider !== 'openai') {
-      return false;
-    }
-
-    if (!this.openAiProvider.isAvailable()) {
-      return false;
-    }
-
-    return this.unleashService.isEnabled(AI_LLM_GRAMMAR_FLAG, { userId });
-  }
-
-  private mapIssueType(
-    value: 'grammar' | 'style' | 'impact',
-  ): GrammarIssueType {
-    if (value === 'grammar') {
-      return GrammarIssueType.GRAMMAR;
-    }
-    if (value === 'impact') {
-      return GrammarIssueType.IMPACT;
-    }
-    return GrammarIssueType.STYLE;
-  }
-
-  private mapIssueSeverity(
-    value: 'error' | 'warning' | 'info',
-  ): GrammarIssueSeverity {
-    if (value === 'error') {
-      return GrammarIssueSeverity.ERROR;
-    }
-    if (value === 'warning') {
-      return GrammarIssueSeverity.WARNING;
-    }
-    return GrammarIssueSeverity.INFO;
   }
 
   private findMatches(
