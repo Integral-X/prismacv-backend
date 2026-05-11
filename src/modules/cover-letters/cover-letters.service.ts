@@ -137,7 +137,7 @@ export class CoverLettersService {
     const experiences = cv.experiences ?? [];
     const totalYears = this.computeTotalYears(experiences);
     const topRole = experiences[0];
-    const skills = (cv.skills ?? []).map((s) => s.name);
+    const skills = (cv.skills ?? []).map(s => s.name);
     const topSkills = skills.slice(0, 5).join(', ');
 
     const greeting = this.getGreeting(tone);
@@ -150,7 +150,9 @@ export class CoverLettersService {
       `I am writing to express my interest in ${jobTitle} at ${company}. ` +
         (totalYears > 0
           ? `With ${totalYears}+ years of professional experience${topSkills ? ` and expertise in ${topSkills}` : ''}, `
-          : (topSkills ? `With expertise in ${topSkills}, ` : '')) +
+          : topSkills
+            ? `With expertise in ${topSkills}, `
+            : '') +
         `I am confident in my ability to contribute meaningfully to your team.`,
     );
 
@@ -175,7 +177,7 @@ export class CoverLettersService {
     if (dto.jobDescription) {
       const keywords = this.extractJobKeywords(dto.jobDescription);
       const matchedSkills = skills.filter((s: string) =>
-        keywords.some((k) => s.toLowerCase().includes(k)),
+        keywords.some(k => s.toLowerCase().includes(k)),
       );
       if (matchedSkills.length > 0) {
         paragraphs.push(
@@ -238,7 +240,7 @@ export class CoverLettersService {
       .toLowerCase()
       .replace(/[^a-z0-9\s]/g, ' ')
       .split(/\s+/)
-      .filter((w) => w.length > 3);
+      .filter(w => w.length > 3);
     return [...new Set(words)];
   }
 
@@ -256,7 +258,7 @@ export class CoverLettersService {
       );
     }
 
-    const skills = (cv.skills ?? []).map((s) => s.name);
+    const skills = (cv.skills ?? []).map(s => s.name);
     if (skills.length > 0) {
       highlights.push(`Key skills: ${skills.slice(0, 4).join(', ')}`);
     }

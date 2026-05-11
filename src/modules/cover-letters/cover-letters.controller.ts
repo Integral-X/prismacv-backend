@@ -68,10 +68,7 @@ export class CoverLettersController {
   @ApiParam({ name: 'id', description: 'Cover letter UUID' })
   @ApiResponse({ status: 200, type: CoverLetterResponseDto })
   @ApiResponse({ status: 404, description: 'Not found' })
-  async findOne(
-    @GetUser() user: User,
-    @Param('id', ParseUUIDPipe) id: string,
-  ) {
+  async findOne(@GetUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
     return this.coverLettersService.findOne(id, user.id);
   }
 
@@ -94,10 +91,7 @@ export class CoverLettersController {
   @ApiParam({ name: 'id', description: 'Cover letter UUID' })
   @ApiResponse({ status: 204 })
   @ApiResponse({ status: 404, description: 'Not found' })
-  async delete(
-    @GetUser() user: User,
-    @Param('id', ParseUUIDPipe) id: string,
-  ) {
+  async delete(@GetUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
     return this.coverLettersService.delete(id, user.id);
   }
 

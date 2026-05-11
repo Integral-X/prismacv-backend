@@ -143,7 +143,9 @@ describe('UsersService', () => {
         updatedAt: new Date(),
       };
 
-      prismaService.user.findUnique.mockResolvedValue(existingPrismaUser as any);
+      prismaService.user.findUnique.mockResolvedValue(
+        existingPrismaUser as any,
+      );
 
       await expect(usersService.create(userEntity)).rejects.toThrow(
         ConflictException,
